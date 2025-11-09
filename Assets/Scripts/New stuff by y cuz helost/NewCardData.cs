@@ -1,15 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
-using CardGame.Core;
-using NewCardData;
+
 namespace NewCardData 
 {
     /// <summary>
-    /// ScriptableObject representing a single card's data
+    /// ScriptableObject representing a single card's data with directional stats
     /// </summary>
-    [CreateAssetMenu(fileName = "New Card", menuName = "Card Game/Card Data")]
+    [CreateAssetMenu(fileName = "New Directional Card", menuName = "Card Game/Directional Card Data", order = 1)]
     public class NewCardData : ScriptableObject
     {
         [Header("Card Information")]
@@ -17,24 +15,21 @@ namespace NewCardData
         [TextArea(3, 5)]
         public string description;
         public Sprite artwork;
-        
+
         [Header("Card Stats")]
         public int TopStat;
         public int RightStat;
         public int DownStat;
         public int LeftStat;
         public CardType cardType;
-               
+
         [Header("Card Effects")]
-       /* public int attackValue;
-        public int defenseValue;
-        public int healValue; */
         public CardEffect[] effects;
-        
+
         [Header("Visual")]
         public Color cardColor = Color.white;
     }
-    
+
     [System.Serializable]
     public class CardEffect
     {
@@ -42,7 +37,7 @@ namespace NewCardData
         public int effectValue;
         public EffectTarget effectTarget;
     }
-    
+
     public enum CardType
     {
         Flame,
@@ -50,17 +45,15 @@ namespace NewCardData
         Earth,
         Lightning,
     }
-    
-     
+
     public enum EffectType
     {
         Cyclone,
         Burn,
         Bloom,
         VoltSwitch
-        
     }
-    
+
     public enum EffectTarget
     {
         Enemy,
@@ -69,7 +62,4 @@ namespace NewCardData
         AllAllies,
         Random
     }
-
-   
-   
 }
