@@ -13,8 +13,8 @@ namespace CardGame.UI
     public class NewCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler, IDragHandler
     {
         [Header("UI References")]
-        [SerializeField] private Image cardBackground;
-        [SerializeField] private Image artwork;
+        [SerializeField] private SpriteRenderer cardBackground;
+        [SerializeField] private SpriteRenderer artwork;
         [SerializeField] private TextMeshProUGUI cardNameText;
         [SerializeField] private TextMeshProUGUI descriptionText;
         
@@ -26,7 +26,7 @@ namespace CardGame.UI
         
         [Header("Card Type")]
         [SerializeField] private TextMeshProUGUI cardTypeText;
-        [SerializeField] private Image cardTypeIcon;
+        [SerializeField] private SpriteRenderer cardTypeIcon;
         
         [Header("Visual Settings")]
         [SerializeField] private float hoverScale = 1.1f;

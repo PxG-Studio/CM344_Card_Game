@@ -72,7 +72,7 @@ namespace CardGame.Managers
             }
             
             // Check hand size limit (you may want to make this configurable)
-            if (hand.Count >= 10) // Adjust max hand size as needed
+            if (hand.Count >= 5) // Adjust max hand size as needed
             {
                 Debug.LogWarning("Hand is full!");
                 return;

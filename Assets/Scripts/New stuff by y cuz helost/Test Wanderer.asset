@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 531ad17647d4dfb4d94b1d2aa689c2b5, type: 3}
-  m_Name: Flame Dreamer
+  m_Name: Test Wanderer
   m_EditorClassIdentifier: 
-  cardName: Flame Dreamer
+  cardName: Test Wanderer
   description: 
-  artwork: {fileID: 21300000, guid: a0147cd67a630c44091720690a4cca5f, type: 3}
-  TopStat: 10
+  artwork: {fileID: 21300000, guid: 7c2b8843edeb4de40b6b3add699b1445, type: 3}
+  TopStat: 6
   RightStat: 6
-  DownStat: 2
+  DownStat: 6
   LeftStat: 6
   cardType: 0
   effects: []
-  cardColor: {r: 0.96862745, g: 0.46666667, b: 0.30588236, a: 1}
+  cardColor: {r: 1, g: 1, b: 1, a: 1}
