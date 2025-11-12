@@ -10,7 +10,7 @@ namespace CardGame.UI
     /// <summary>
     /// UI representation of a NewCard with directional stats
     /// </summary>
-    public class NewCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler, IDragHandler
+    public class NewCardUI : MonoBehaviour
     {
         [Header("UI References")]
         [SerializeField] private SpriteRenderer cardBackground;
@@ -28,16 +28,10 @@ namespace CardGame.UI
         [SerializeField] private TextMeshProUGUI cardTypeText;
         [SerializeField] private SpriteRenderer cardTypeIcon;
         
-        [Header("Visual Settings")]
-        [SerializeField] private float hoverScale = 1.1f;
-        [SerializeField] private float hoverYOffset = 20f;
-        [SerializeField] private float animationSpeed = 10f;
-        
+       
         private NewCard card;
-        private Vector3 originalPosition;
-        private Vector3 originalScale;
-        private bool isHovering = false;
-        private bool isDragging = false;
+       
+        
         private Canvas canvas;
         private RectTransform rectTransform;
         
@@ -49,7 +43,7 @@ namespace CardGame.UI
         {
             rectTransform = GetComponent<RectTransform>();
             canvas = GetComponentInParent<Canvas>();
-            originalScale = transform.localScale;
+           
         }
         
         public void Initialize(NewCard cardData)
@@ -61,7 +55,7 @@ namespace CardGame.UI
             }
             
             card = cardData;
-            originalPosition = transform.position;
+          
             UpdateVisuals();
         }
         
@@ -103,77 +97,9 @@ namespace CardGame.UI
         
         private void Update()
         {
-            if (!isDragging)
-            {
-                // Smooth animation for hover effect
-                Vector3 targetPosition = originalPosition;
-                Vector3 targetScale = originalScale;
-                
-                if (isHovering)
-                {
-                    targetPosition += Vector3.up * hoverYOffset;
-                    targetScale = originalScale * hoverScale;
-                }
-                
-                transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * animationSpeed);
-                transform.localScale = Vector3.Lerp(transform.localScale, targetScale, Time.deltaTime * animationSpeed);
-            }
-        }
-        
-        public void OnPointerEnter(PointerEventData eventData)
-        {
-            if (card == null || !card.IsPlayable) return;
             
-            isHovering = true;
-            originalPosition = transform.position;
         }
         
-        public void OnPointerExit(PointerEventData eventData)
-        {
-            isHovering = false;
-        }
-        
-        public void OnPointerDown(PointerEventData eventData)
-        {
-            if (card == null || !card.IsPlayable) return;
-            
-            isDragging = true;
-            originalPosition = transform.position;
-        }
-        
-        public void OnPointerUp(PointerEventData eventData)
-        {
-            if (!isDragging) return;
-            
-            isDragging = false;
-            
-            // Check if card was dragged to valid play area
-            if (IsOverPlayArea(eventData.position))
-            {
-                PlayCard();
-            }
-            else
-            {
-                // Return to original position
-                transform.position = originalPosition;
-            }
-        }
-        
-        public void OnDrag(PointerEventData eventData)
-        {
-            if (isDragging && canvas != null)
-            {
-                Vector2 position;
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    canvas.transform as RectTransform,
-                    eventData.position,
-                    canvas.worldCamera,
-                    out position
-                );
-                
-                transform.position = canvas.transform.TransformPoint(position);
-            }
-        }
         
         private bool IsOverPlayArea(Vector2 screenPosition)
         {
