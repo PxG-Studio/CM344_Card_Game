@@ -110,7 +110,21 @@ namespace CardGame.UI
             if (cardUIToRemove != null)
             {
                 cardUIList.Remove(cardUIToRemove);
-                Destroy(cardUIToRemove.gameObject);
+                
+                // Only destroy if it's a UI card (NewCardUI), not a 2D board card (CardMover)
+                // CardMover cards should stay on the board when played
+                CardMover cardMover = cardUIToRemove.GetComponent<CardMover>();
+                if (cardMover == null)
+                {
+                    // It's a UI card, safe to destroy
+                    Destroy(cardUIToRemove.gameObject);
+                }
+                else
+                {
+                    // It's a board card (CardMover), just remove from UI list but keep the GameObject
+                    Debug.Log($"Card {card.Data.cardName} played on board - keeping GameObject");
+                }
+                
                 ArrangeCards();
             }
         }

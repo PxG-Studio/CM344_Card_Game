@@ -139,7 +139,7 @@ namespace CardGame.Testing
                 GUILayout.Space(10);
                 GUILayout.Label($"Draw Pile: {deckManager.DrawPileCount}");
                 GUILayout.Label($"Hand: {deckManager.Hand.Count}");
-                GUILayout.Label($"Discard: {deckManager.DiscardPileCount}");
+                GUILayout.Label($"Played: {deckManager.DiscardPileCount}");
             }
             
             GUILayout.EndArea();
