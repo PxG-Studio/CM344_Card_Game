@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 531ad17647d4dfb4d94b1d2aa689c2b5, type: 3}
+  m_Name: Flame Template
+  m_EditorClassIdentifier: 
+  cardName: 
+  description: 
+  artwork: {fileID: 0}
+  TopStat: 0
+  RightStat: 0
+  DownStat: 0
+  LeftStat: 0
+  cardType: 0
+  effects: []
+  cardColor: {r: 0.96862745, g: 0.46666667, b: 0.30588236, a: 1}
