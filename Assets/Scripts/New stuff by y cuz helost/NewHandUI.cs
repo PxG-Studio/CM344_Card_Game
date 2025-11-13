@@ -17,7 +17,7 @@ namespace CardGame.UI
         [Header("Layout Settings")]
         [SerializeField] private float cardSpacing = 120f;
         [SerializeField] private float maxSpread = 800f;
-        [SerializeField] private float arcHeight = 50f;
+        [SerializeField] private float arcHeight = 0f;
         [SerializeField] private float rotationAngle = 5f;
         
         private List<NewCardUI> cardUIList = new List<NewCardUI>();
@@ -129,8 +129,8 @@ namespace CardGame.UI
             int cardCount = cardUIList.Count;
             if (cardCount == 0) return;
             
-            float totalWidth = Mathf.Min((cardCount - 1) * cardSpacing, maxSpread);
-            float startX = -totalWidth / 2f;
+            float totalHeight = Mathf.Min((cardCount - 1) * cardSpacing, maxSpread);
+            float startY = -totalHeight / 2f;
             
             for (int i = 0; i < cardCount; i++)
             {
@@ -139,11 +139,11 @@ namespace CardGame.UI
                 
                 // Calculate position
                 float t = cardCount > 1 ? (float)i / (cardCount - 1) : 0.5f;
-                float x = startX + (t * totalWidth);
+                float y = startY + (t * totalHeight);
                 
                 // Calculate arc
                 float normalizedPos = (2f * t) - 1f; // -1 to 1
-                float y = -Mathf.Abs(normalizedPos) * arcHeight;
+                float x = -Mathf.Abs(normalizedPos) * arcHeight;
                 
                 // Calculate rotation
                 float rotation = normalizedPos * rotationAngle;
