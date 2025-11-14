@@ -326,7 +326,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bd27be675c43da4685bc9e1a49657c8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cardBackground: {fileID: 0}
+  cardBackground: {fileID: 2507132504498512175}
   artwork: {fileID: 7398150677083262397}
   cardNameText: {fileID: 7528081087265750492}
   descriptionText: {fileID: 5831208963704740993}
@@ -336,9 +336,6 @@ MonoBehaviour:
   leftStatText: {fileID: 7855375448868582952}
   cardTypeText: {fileID: 8764232736705520442}
   cardTypeIcon: {fileID: 0}
-  hoverScale: 1.1
-  hoverYOffset: 20
-  animationSpeed: 10
 --- !u!114 &396230099388163290
 MonoBehaviour:
   m_ObjectHideFlags: 0
