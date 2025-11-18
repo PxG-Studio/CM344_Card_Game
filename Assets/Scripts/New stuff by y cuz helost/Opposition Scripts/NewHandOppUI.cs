@@ -21,11 +21,11 @@ namespace CardGame.UI
         [SerializeField] private float rotationAngle = 5f;
         
         private List<NewCardUI> cardUIList = new List<NewCardUI>();
-        private NewDeckManager deckManager;
+        private NewDeckManagerOpp deckManager;
         
         private void Start()
         {
-            deckManager = FindObjectOfType<NewDeckManager>();
+            deckManager = FindObjectOfType<NewDeckManagerOpp>();
             
             if (deckManager != null)
             {
@@ -113,7 +113,7 @@ namespace CardGame.UI
                 
                 // Only destroy if it's a UI card (NewCardUI), not a 2D board card (CardMover)
                 // CardMover cards should stay on the board when played
-                CardMover cardMover = cardUIToRemove.GetComponent<CardMover>();
+                CardMoverOpp cardMover = cardUIToRemove.GetComponent<CardMoverOpp>();
                 if (cardMover == null)
                 {
                     // It's a UI card, safe to destroy
