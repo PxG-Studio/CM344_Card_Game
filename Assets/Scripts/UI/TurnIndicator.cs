@@ -41,7 +41,6 @@ namespace CardGame.UI
         private Vector3 targetPosition;
         private Color currentColor;
         private Color targetColor;
-        private bool isAnimating = false;
         private Coroutine moveCoroutine;
         private Coroutine glowCoroutine;
 
@@ -201,7 +200,6 @@ namespace CardGame.UI
 
         private IEnumerator MoveToPositionCoroutine()
         {
-            isAnimating = true;
             Vector3 startPosition = transform.position;
             Color startColor = currentColor;
             float elapsed = 0f;
@@ -228,7 +226,6 @@ namespace CardGame.UI
             transform.position = targetPosition;
             currentColor = targetColor;
             ApplyColor(currentColor);
-            isAnimating = false;
             moveCoroutine = null;
         }
 
