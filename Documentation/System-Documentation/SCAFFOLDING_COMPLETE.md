@@ -128,9 +128,9 @@ Assets/
 ## 📚 **Documentation Created**
 
 1. **README.md** - Project overview and structure
-2. **ARCHITECTURE.md** - Detailed technical documentation
-3. **QUICKSTART.md** - Step-by-step setup guide
-4. **SCAFFOLDING_COMPLETE.md** - This file
+2. **System-Documentation/ARCHITECTURE.md** - Detailed technical documentation
+3. **Quick-References/QUICKSTART.md** - Step-by-step setup guide
+4. **System-Documentation/SCAFFOLDING_COMPLETE.md** - This file
 5. **.gitignore** - Unity-specific git ignore rules
 
 ---
@@ -168,7 +168,7 @@ Assets/
 
 ### Immediate (Required)
 1. **Open Unity Editor** and let scripts compile
-2. **Create the scene layout** (see QUICKSTART.md)
+2. **Create the scene layout** (see Quick-References/QUICKSTART.md)
 3. **Create card prefab** with UI elements
 4. **Create starter cards** (Strike, Defend, etc.)
 5. **Test the basic game loop**
@@ -285,8 +285,8 @@ Consider these styles for your card game:
 ## 📖 **Learning Resources**
 
 To understand the architecture:
-1. Read `ARCHITECTURE.md` for technical details
-2. Read `QUICKSTART.md` for practical setup
+1. Read `System-Documentation/ARCHITECTURE.md` for technical details
+2. Read `Quick-References/QUICKSTART.md` for practical setup
 3. Read inline code comments (XML docs)
 4. Check Unity console for debug logs
 
@@ -383,8 +383,8 @@ Before considering scaffolding "done":
 ## 📞 **Support**
 
 If you need help:
-1. Check `QUICKSTART.md` for setup steps
-2. Check `ARCHITECTURE.md` for technical details
+1. Check `Quick-References/QUICKSTART.md` for setup steps
+2. Check `System-Documentation/ARCHITECTURE.md` for technical details
 3. Check Unity Console for error messages
 4. Check inline code comments
 5. Use Debug.Log() to trace execution

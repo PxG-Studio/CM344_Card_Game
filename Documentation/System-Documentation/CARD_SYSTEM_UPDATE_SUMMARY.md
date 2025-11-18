@@ -94,13 +94,13 @@ After prefab setup:
 
 ## Documentation Files
 
-- **CARD_FLIP_SETUP_GUIDE.md**: Detailed step-by-step setup instructions
-- **CARD_SYSTEM_UPDATE_SUMMARY.md**: This file (quick reference)
+- **Setup-Guides/CARD_FLIP_SETUP_GUIDE.md**: Detailed step-by-step setup instructions
+- **System-Documentation/CARD_SYSTEM_UPDATE_SUMMARY.md**: This file (quick reference)
 - **Assets/Scripts/Editor/NewCardPrefabValidator.cs**: Unity Editor validation tool
 
 ## Next Steps
 
-1. Follow `CARD_FLIP_SETUP_GUIDE.md` to set up the prefab
+1. Follow `Setup-Guides/CARD_FLIP_SETUP_GUIDE.md` to set up the prefab
 2. Use the validator tool to verify setup
 3. Test in Play mode
 4. Adjust timing/easing if desired
