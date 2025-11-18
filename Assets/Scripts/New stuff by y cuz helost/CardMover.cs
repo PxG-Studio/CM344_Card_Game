@@ -8,11 +8,21 @@ public class CardMover : MonoBehaviour
 {
     private Collider2D col;
     private Vector3 startDragPosition;
+    private bool isPlayed = false; // Track if card has been played/dropped on board
     
     [Header("Card Reference")]
     [SerializeField] private NewCard card; // Reference to the NewCard this represents
     
     public NewCard Card => card;
+    public bool IsPlayed => isPlayed;
+    
+    /// <summary>
+    /// Mark this card as played - prevents further dragging
+    /// </summary>
+    public void SetPlayed(bool played)
+    {
+        isPlayed = played;
+    }
     
     // Method to set the card reference
     public void SetCard(NewCard newCard)
@@ -109,12 +119,18 @@ public class CardMover : MonoBehaviour
     private bool hasLoggedWarning = false;
     private void OnMouseDown()
     {
+        // Don't allow dragging if card has been played
+        if (isPlayed) return;
+        
         startDragPosition = transform.position;
         transform.position = GetMousePositionInWorldSpace();
     }
 
     private void OnMouseDrag()
     {
+        // Don't allow dragging if card has been played
+        if (isPlayed) return;
+        
         transform.position = GetMousePositionInWorldSpace();
     }
     private void OnMouseUp()

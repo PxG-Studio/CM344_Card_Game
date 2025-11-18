@@ -69,11 +69,20 @@ namespace CardGame.UI
             }
             
             NewCardUI cardUI = Instantiate(cardPrefab, cardContainer);
+            
+            // Set staggered reveal delay BEFORE Initialize() call (critical timing fix)
+            if (cardUI.autoFlipOnReveal)
+            {
+                int cardIndex = cardUIList.Count;
+                cardUI.revealDelay = cardIndex * 0.1f; // 0s, 0.1s, 0.2s, etc.
+            }
+            
+            // Now initialize (will use the revealDelay we just set)
             cardUI.Initialize(card);
             cardUI.OnCardPlayed += HandleCardUIPlayed;
             
             cardUIList.Add(cardUI);
-            ArrangeCards();
+            ArrangeCards(); // This still works - no conflicts!
         }
         
         private void HandleCardUIPlayed(NewCardUI cardUI)

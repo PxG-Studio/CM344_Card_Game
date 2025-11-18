@@ -28,6 +28,9 @@ namespace NewCardData
 
         [Header("Visual")]
         public Color cardColor = Color.white;
+        
+        [Header("Card Back")]
+        public Sprite cardBackSprite; // Optional: per-card back sprite
     }
 
     [System.Serializable]
