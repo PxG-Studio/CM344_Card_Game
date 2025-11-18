@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cardName: Earth Witch
   description: 
-  artwork: {fileID: 0}
+  artwork: {fileID: 21300000, guid: 902c37b0452d7ce4fb3ac1d3f570bbca, type: 3}
   TopStat: 2
   RightStat: 8
   DownStat: 8

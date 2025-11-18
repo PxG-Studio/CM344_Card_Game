@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 531ad17647d4dfb4d94b1d2aa689c2b5, type: 3}
-  m_Name: Earth Weaver
+  m_Name: Earth Judge
   m_EditorClassIdentifier: 
-  cardName: Earth Weaver
+  cardName: Earth Judge
   description: 
-  artwork: {fileID: 21300000, guid: 8d5429d57f0d8f646b58511d93d974b6, type: 3}
-  TopStat: 2
-  RightStat: 6
-  DownStat: 10
-  LeftStat: 6
+  artwork: {fileID: 21300000, guid: 0b78c903f2c8e1f4a97f8578e1f7702d, type: 3}
+  TopStat: 5
+  RightStat: 7
+  DownStat: 5
+  LeftStat: 7
   cardType: 2
   effects: []
-  cardColor: {r: 0.19215687, g: 0.7529412, b: 0, a: 1}
+  cardColor: {r: 0.19399337, g: 0.754717, b: 0, a: 1}
