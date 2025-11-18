@@ -789,7 +789,6 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         // If placed card wins, other card should flip
         if (placedCardStat > otherCardStat)
         {
-            bool placedCardIsPlayer = IsPlayerCard(placedCardObject);
             Color captureColor = placedCardIsPlayer ? 
                 GetPlayerCaptureColor() : GetOpponentCaptureColor();
             
