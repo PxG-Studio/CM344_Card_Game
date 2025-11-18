@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 531ad17647d4dfb4d94b1d2aa689c2b5, type: 3}
-  m_Name: Flame Witch
+  m_Name: Flame Creature
   m_EditorClassIdentifier: 
-  cardName: Flame Witch
+  cardName: Flame Creature
   description: 
-  artwork: {fileID: 21300000, guid: 902c37b0452d7ce4fb3ac1d3f570bbca, type: 3}
-  TopStat: 2
-  RightStat: 8
+  artwork: {fileID: 21300000, guid: 9f7ebe5a1cd0b0a4b95a4f8b0d18bb55, type: 3}
+  TopStat: 6
+  RightStat: 5
   DownStat: 8
-  LeftStat: 6
+  LeftStat: 5
   cardType: 0
   effects: []
   cardColor: {r: 0.96862745, g: 0.46666667, b: 0.30588236, a: 1}

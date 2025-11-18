@@ -8,11 +8,11 @@ namespace CardGame.Testing
     /// Test script to easily initialize and test the NewCard system
     /// Attach this to a GameObject in your scene to test the card system
     /// </summary>
-    public class NewCardSystemTester : MonoBehaviour
+    public class NewCardSystemOpposition : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] private NewDeckManager deckManager;
-        [SerializeField] private NewHandUI handUI;
+        [SerializeField] private NewDeckManagerOpp deckManager;
+        [SerializeField] private NewHandOppUI handUI;
         
         [Header("Test Settings")]
         [SerializeField] private bool autoInitializeOnStart = true;
@@ -26,10 +26,10 @@ namespace CardGame.Testing
         {
             // Auto-find components if not assigned
             if (deckManager == null)
-                deckManager = FindObjectOfType<NewDeckManager>();
+                deckManager = FindObjectOfType<NewDeckManagerOpp>();
             
             if (handUI == null)
-                handUI = FindObjectOfType<NewHandUI>();
+                handUI = FindObjectOfType<NewHandOppUI>();
             
             if (autoInitializeOnStart && deckManager != null)
             {
@@ -104,10 +104,19 @@ namespace CardGame.Testing
         // Debug GUI (only in editor)
         private void OnGUI()
         {
-            if (!showDebugButtons || !Application.isPlaying) return;
-            
-            GUILayout.BeginArea(new Rect(10, 10, 200, 300));
-            GUILayout.Box("NewCard System Tester");
+             if (!showDebugButtons || !Application.isPlaying) return;
+
+                // Original input coordinates (left-based)
+            float x = 10;
+            float y = 10;
+            float w = 200;
+            float h = 300;
+
+                // Convert to right-side positioning
+            float flippedX = Screen.width - w - x;
+
+            GUILayout.BeginArea(new Rect(flippedX, y, w, h));
+            GUILayout.Box("NewCard System Test Opp");
             
             if (GUILayout.Button("Initialize Deck"))
             {

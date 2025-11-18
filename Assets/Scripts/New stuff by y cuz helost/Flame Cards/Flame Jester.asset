@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cardName: Flame Jester
   description: 
-  artwork: {fileID: 0}
+  artwork: {fileID: 21300000, guid: db6b4fec3f785a740a885fc533f7d11d, type: 3}
   TopStat: 6
   RightStat: 3
   DownStat: 6
