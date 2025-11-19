@@ -120,21 +120,23 @@ namespace CardGame.Managers
             }
             
             // Determine winner based on scores
+            var scoreUI = GameObject.FindObjectOfType<CardGame.UI.ScoreAndWinnerUI>();
             if (playerScore > opponentScore)
             {
                 Debug.Log("Player wins!");
+                if (scoreUI != null) scoreUI.ShowWinner("Player Wins!");
                 GameManager.Instance.ChangeState(GameState.Victory);
             }
             else if (opponentScore > playerScore)
             {
                 Debug.Log("Opponent wins!");
+                if (scoreUI != null) scoreUI.ShowWinner("Opponent Wins!");
                 GameManager.Instance.ChangeState(GameState.Defeat);
             }
             else
             {
-                // Tie - you may want to handle this differently
                 Debug.Log("It's a tie!");
-                // Default to player victory for ties, or you could add a Tie state
+                if (scoreUI != null) scoreUI.ShowWinner("It's a Tie!");
                 GameManager.Instance.ChangeState(GameState.Victory);
             }
         }

@@ -49,8 +49,7 @@ namespace CardGame.Managers
                 OnScoreChanged?.Invoke(false, opponentScore);
                 Debug.Log($"Opponent score: {opponentScore}");
             }
-            // Trigger UI updates based on the new scores
-            UpdateScoreUI();
+            // Removed UpdateScoreUI calls. UI updates are now handled by ScoreAndWinnerUI via OnScoreChanged event
         }
         
         /// <summary>
