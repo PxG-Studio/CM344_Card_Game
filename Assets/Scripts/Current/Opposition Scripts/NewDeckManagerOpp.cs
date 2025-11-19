@@ -148,5 +148,23 @@ namespace CardGame.Managers
         {
             return hand.GetCardAt(index);
         }
+        
+        /// <summary>
+        /// Checks if the opponent's hand is empty
+        /// </summary>
+        /// <returns>True if hand has no cards, false otherwise</returns>
+        public bool IsHandEmpty()
+        {
+            return hand.Count == 0;
+        }
+        
+        /// <summary>
+        /// Checks if the draw pile is empty (and discard pile is also empty)
+        /// </summary>
+        /// <returns>True if both draw pile and discard pile are empty, false otherwise</returns>
+        public bool IsDeckEmpty()
+        {
+            return drawPile.Count == 0 && discardPile.Count == 0;
+        }
     }
 }
