@@ -220,19 +220,19 @@ namespace CardGame.UI
             RectTransform rectTransform = panel.AddComponent<RectTransform>();
             if (isPlayer1)
             {
-                // Left side, vertically centered
-                rectTransform.anchorMin = new Vector2(0, 0.5f);
-                rectTransform.anchorMax = new Vector2(0, 0.5f);
-                rectTransform.pivot = new Vector2(0, 0.5f);
-                rectTransform.anchoredPosition = new Vector2(15, 0); // Middle-left
+                // Top-left
+                rectTransform.anchorMin = new Vector2(0, 1);
+                rectTransform.anchorMax = new Vector2(0, 1);
+                rectTransform.pivot = new Vector2(0, 1);
+                rectTransform.anchoredPosition = new Vector2(15, -80); // Top-left, below test buttons
             }
             else
             {
-                // Right side, vertically centered
-                rectTransform.anchorMin = new Vector2(1, 0.5f);
-                rectTransform.anchorMax = new Vector2(1, 0.5f);
-                rectTransform.pivot = new Vector2(1, 0.5f);
-                rectTransform.anchoredPosition = new Vector2(-15, 0); // Middle-right
+                // Top-right
+                rectTransform.anchorMin = new Vector2(1, 1);
+                rectTransform.anchorMax = new Vector2(1, 1);
+                rectTransform.pivot = new Vector2(1, 1);
+                rectTransform.anchoredPosition = new Vector2(-15, -80); // Top-right, below test buttons
             }
             rectTransform.sizeDelta = new Vector2(200, 105);
             
