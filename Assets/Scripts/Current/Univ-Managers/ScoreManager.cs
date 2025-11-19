@@ -197,80 +197,11 @@ namespace CardGame.Managers
         private bool IsPlayerCard(GameObject cardObject)
         {
             if (cardObject == null) return true;
-            
-            NewCardUI cardUI = cardObject.GetComponent<NewCardUI>();
-            if (cardUI == null)
-            {
-                cardUI = cardObject.GetComponentInChildren<NewCardUI>();
-            }
-            if (cardUI == null)
-            {
-                cardUI = cardObject.GetComponentInParent<NewCardUI>();
-            }
-            
-            if (cardUI == null)
-            {
-                // Fallback: check component type
-                CardMover mover = cardObject.GetComponent<CardMover>();
-                if (mover != null) return true;
-                CardMoverOpp moverOpp = cardObject.GetComponent<CardMoverOpp>();
-                if (moverOpp != null) return false;
-                return true;
-            }
-            
-            // Check the card's background color
-            var cardBackgroundField = typeof(NewCardUI).GetField("cardBackground",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (cardBackgroundField != null)
-            {
-                var cardBackground = cardBackgroundField.GetValue(cardUI);
-                if (cardBackground != null)
-                {
-                    Color borderColor = Color.white;
-                    
-                    SpriteRenderer bgSR = cardBackground as SpriteRenderer;
-                    if (bgSR != null)
-                    {
-                        borderColor = bgSR.color;
-                    }
-                    else
-                    {
-                        UnityEngine.UI.Image bgImg = cardBackground as UnityEngine.UI.Image;
-                        if (bgImg != null)
-                        {
-                            borderColor = bgImg.color;
-                        }
-                    }
-                    
-                    Color playerColor = new Color(1f, 0.5f, 0f, 1f); // Orange
-                    Color opponentColor = new Color(0f, 0.8f, 0f, 1f); // Green
-                    
-                    float colorTolerance = 0.1f;
-                    if (Mathf.Abs(borderColor.r - playerColor.r) < colorTolerance &&
-                        Mathf.Abs(borderColor.g - playerColor.g) < colorTolerance &&
-                        Mathf.Abs(borderColor.b - playerColor.b) < colorTolerance)
-                    {
-                        return true;
-                    }
-                    
-                    if (Mathf.Abs(borderColor.r - opponentColor.r) < colorTolerance &&
-                        Mathf.Abs(borderColor.g - opponentColor.g) < colorTolerance &&
-                        Mathf.Abs(borderColor.b - opponentColor.b) < colorTolerance)
-                    {
-                        return false;
-                    }
-                }
-            }
-            
-            // Default: check component type
-            CardMover defaultMover = cardObject.GetComponent<CardMover>();
-            if (defaultMover != null) return true;
-            CardMoverOpp defaultMoverOpp = cardObject.GetComponent<CardMoverOpp>();
-            if (defaultMoverOpp != null) return false;
-            
+            // Use tag to determine ownership
+            if (cardObject.CompareTag("p1")) return true;
+            if (cardObject.CompareTag("p2")) return false;
+            // Fallback: assume player card
             return true;
-            // Update the IsPlayerCard method to check for card tags instead of color/component
-            // Implement logic to check card tags here
         }
         
         /// <summary>
