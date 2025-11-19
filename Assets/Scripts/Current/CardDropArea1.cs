@@ -30,6 +30,64 @@ public class FlipTarget
 }
 
 public class CardDropArea1 : MonoBehaviour, ICardDropArea
+    // Utility for Bloom effect: get adjacent open slots
+    public List<int> GetAdjacentOpenSlots(int boardIndex)
+    {
+        // TODO: Implement logic to find adjacent open slots based on boardIndex
+        // Example: return indices of empty slots next to boardIndex
+        return new List<int>();
+    }
+
+    // Utility for Bloom effect: prompt player to select a slot
+    public int PromptPlayerToSelectSlot(List<int> openSlots)
+    {
+        // TODO: Implement UI selection logic
+        // Example: return first slot for now
+        return openSlots.Count > 0 ? openSlots[0] : -1;
+    }
+
+    // Utility for Bloom effect: create Overgrowth card
+    public NewCard CreateOvergrowthCard()
+    {
+        // TODO: Implement Overgrowth card creation (use prefab, ScriptableObject, etc.)
+        // Example: create a new NewCard with special properties
+        var data = ScriptableObject.CreateInstance<NewCardData.NewCardData>();
+        data.cardName = "Overgrowth";
+        data.description = "Locks space. Cannot score or be captured.";
+        // Set stats and flags as needed
+        var card = new NewCard(data);
+        card.IsPlayable = false;
+        card.IsExhausted = true;
+        return card;
+    }
+
+    // Utility for Bloom effect: place card in slot
+    public void PlaceCardInSlot(NewCard card, int slotIndex)
+    {
+        // TODO: Implement logic to place card GameObject in board slot
+        // Example: instantiate card prefab at slot position
+    }
+
+    // Utility for Burn effect: get adjacent cards
+    public List<int> GetAdjacentCards(int boardIndex)
+    {
+        // TODO: Implement logic to find indices of adjacent cards
+        return new List<int>();
+    }
+
+    // Utility for Burn effect: prompt player to select a card
+    public int PromptPlayerToSelectCard(List<int> adjacentCardIndices)
+    {
+        // TODO: Implement UI selection logic
+        // Example: return first card for now
+        return adjacentCardIndices.Count > 0 ? adjacentCardIndices[0] : -1;
+    }
+
+    // Utility for Burn effect: destroy card at index
+    public void DestroyCardAt(int cardIndex)
+    {
+        // TODO: Implement logic to remove/destroy card GameObject at cardIndex
+    }
 {
     [Header("Deck Manager Reference")]
     [SerializeField] private NewDeckManager deckManager;

@@ -1,23 +1,33 @@
-using CardGame.Managers;
-
+using CardGame.Core;
+using UnityEngine;
 namespace CardGame.Effects
 {
     public class BloomEffect : ICardEffect
     {
-        public void OnPlace(Card card, BoardManager board)
+        // card: the card being placed
+        // boardIndex: index or slot position on the board
+        public void OnPlace(NewCard card, int boardIndex)
         {
-            // After captures, let controller select adjacent open space
-            var openSpaces = board.GetAdjacentOpenSpaces(card.Position);
-            if (openSpaces.Count == 0) return;
+            // Find the CardDropArea1 instance
+            var dropArea = Object.FindObjectOfType<CardDropArea1>();
+            if (dropArea == null) return;
 
-            var selectedSpace = board.PromptPlayerToSelectSpace(openSpaces);
-            if (selectedSpace != null)
-            {
-                var overgrowthCard = board.SpawnCard("Overgrowth", selectedSpace);
-                overgrowthCard.Locked = true;
-                overgrowthCard.CanScore = false;
-                overgrowthCard.CanBeCaptured = false;
-            }
+            // Find adjacent open slots (implement GetAdjacentOpenSlots in CardDropArea1)
+            var openSlots = dropArea.GetAdjacentOpenSlots(boardIndex);
+            if (openSlots.Count == 0) return;
+
+            // Prompt player to select one (implement PromptPlayerToSelectSlot in CardDropArea1)
+            int selectedSlot = dropArea.PromptPlayerToSelectSlot(openSlots);
+            if (selectedSlot == -1) return;
+
+            // Create and place Overgrowth card (implement CreateOvergrowthCard in CardDropArea1)
+            NewCard overgrowthCard = dropArea.CreateOvergrowthCard();
+            dropArea.PlaceCardInSlot(overgrowthCard, selectedSlot);
+
+            // Lock the space and set Overgrowth properties
+            overgrowthCard.IsPlayable = false;
+            overgrowthCard.IsExhausted = true;
+            // Optionally set flags for scoring/capture prevention in NewCardData or NewCard
         }
     }
 }
