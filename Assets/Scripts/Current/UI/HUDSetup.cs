@@ -132,16 +132,16 @@ namespace CardGame.UI
         /// </summary>
         private void WireUpHUDReferences(HUDManager hudManager, Transform hudRoot)
         {
-            // Find or create panels
+            // Find or create panels (only use active panels)
             Transform p1Panel = hudRoot.Find("P1Panel");
-            if (p1Panel == null)
+            if (p1Panel == null || !p1Panel.gameObject.activeSelf)
             {
                 p1Panel = CreatePlayerPanel(hudRoot, "P1Panel", true);
                 Debug.Log("HUDSetup: Created P1Panel");
             }
             
             Transform p2Panel = hudRoot.Find("P2Panel");
-            if (p2Panel == null)
+            if (p2Panel == null || !p2Panel.gameObject.activeSelf)
             {
                 p2Panel = CreatePlayerPanel(hudRoot, "P2Panel", false);
                 Debug.Log("HUDSetup: Created P2Panel");
