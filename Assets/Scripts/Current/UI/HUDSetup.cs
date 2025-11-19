@@ -147,9 +147,9 @@ namespace CardGame.UI
             }
             
             Transform p2Panel = hudRoot.Find("P2Panel");
-            if (p2Panel != null && !p2Panel.gameObject.activeSelf)
+            if (p2Panel != null)
             {
-                Debug.Log("HUDSetup: Destroying inactive P2Panel");
+                Debug.Log("HUDSetup: Destroying existing P2Panel to recreate with new position");
                 GameObject.DestroyImmediate(p2Panel.gameObject);
                 p2Panel = null;
             }
