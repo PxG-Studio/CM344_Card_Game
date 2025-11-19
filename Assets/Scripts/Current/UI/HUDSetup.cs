@@ -36,6 +36,9 @@ namespace CardGame.UI
                 return;
             }
             
+            // Convert to proper Canvas if needed
+            ConvertToCanvas(hudCanvas);
+            
             // Get or add HUDManager component
             HUDManager hudManager = hudCanvas.GetComponent<HUDManager>();
             if (hudManager == null)
@@ -44,6 +47,9 @@ namespace CardGame.UI
                 Debug.Log("HUDSetup: Added HUDManager component to HUDOverlayCanvas");
             }
             
+            // Ensure game managers exist
+            EnsureGameManagers();
+            
             // Find and wire up all the text labels using reflection
             WireUpHUDReferences(hudManager, hudCanvas.transform);
             
@@ -51,18 +57,94 @@ namespace CardGame.UI
         }
         
         /// <summary>
+        /// Ensure required game managers exist in the scene.
+        /// </summary>
+        private void EnsureGameManagers()
+        {
+            // Check for ScoreManager
+            ScoreManager scoreManager = FindObjectOfType<ScoreManager>();
+            if (scoreManager == null)
+            {
+                GameObject managerObj = new GameObject("ScoreManager");
+                managerObj.AddComponent<ScoreManager>();
+                Debug.Log("HUDSetup: Created ScoreManager");
+            }
+            
+            // Check for GameEndManager
+            var gameEndManager = FindObjectOfType<GameEndManager>();
+            if (gameEndManager == null)
+            {
+                GameObject managerObj = new GameObject("GameEndManager");
+                managerObj.AddComponent<GameEndManager>();
+                Debug.Log("HUDSetup: Created GameEndManager");
+            }
+        }
+        
+        /// <summary>
+        /// Convert GameObject to a proper UI Canvas if it isn't already.
+        /// </summary>
+        private void ConvertToCanvas(GameObject canvasObject)
+        {
+            // Check if it already has a Canvas component
+            Canvas canvas = canvasObject.GetComponent<Canvas>();
+            if (canvas == null)
+            {
+                // Add Canvas component
+                canvas = canvasObject.AddComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 100; // Render on top
+                Debug.Log("HUDSetup: Added Canvas component");
+            }
+            
+            // Add CanvasScaler if missing
+            UnityEngine.UI.CanvasScaler scaler = canvasObject.GetComponent<UnityEngine.UI.CanvasScaler>();
+            if (scaler == null)
+            {
+                scaler = canvasObject.AddComponent<UnityEngine.UI.CanvasScaler>();
+                scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920, 1080);
+                scaler.matchWidthOrHeight = 0.5f;
+                Debug.Log("HUDSetup: Added CanvasScaler component");
+            }
+            
+            // Add GraphicRaycaster if missing
+            UnityEngine.UI.GraphicRaycaster raycaster = canvasObject.GetComponent<UnityEngine.UI.GraphicRaycaster>();
+            if (raycaster == null)
+            {
+                raycaster = canvasObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+                Debug.Log("HUDSetup: Added GraphicRaycaster component");
+            }
+            
+            // Ensure it has a RectTransform (should be automatic when Canvas is added)
+            RectTransform rectTransform = canvasObject.GetComponent<RectTransform>();
+            if (rectTransform != null)
+            {
+                // Set to fill parent
+                rectTransform.anchorMin = Vector2.zero;
+                rectTransform.anchorMax = Vector2.one;
+                rectTransform.sizeDelta = Vector2.zero;
+                rectTransform.anchoredPosition = Vector2.zero;
+            }
+        }
+        
+        /// <summary>
         /// Wire up all HUD references using reflection to set private serialized fields.
         /// </summary>
         private void WireUpHUDReferences(HUDManager hudManager, Transform hudRoot)
         {
-            // Find all the UI elements
+            // Find or create panels
             Transform p1Panel = hudRoot.Find("P1Panel");
-            Transform p2Panel = hudRoot.Find("P2Panel");
-            
-            if (p1Panel == null || p2Panel == null)
+            if (p1Panel == null)
             {
-                Debug.LogError("HUDSetup: Could not find P1Panel or P2Panel!");
-                return;
+                p1Panel = CreatePlayerPanel(hudRoot, "P1Panel", true);
+                Debug.Log("HUDSetup: Created P1Panel");
+            }
+            
+            Transform p2Panel = hudRoot.Find("P2Panel");
+            if (p2Panel == null)
+            {
+                p2Panel = CreatePlayerPanel(hudRoot, "P2Panel", false);
+                Debug.Log("HUDSetup: Created P2Panel");
             }
             
             // Find text labels
@@ -107,6 +189,75 @@ namespace CardGame.UI
                      $"TilesRemaining: {tilesRemainingLabel != null}, " +
                      $"DeckMgr1: {player1DeckManager != null}, " +
                      $"DeckMgr2: {player2DeckManager != null}");
+        }
+        
+        /// <summary>
+        /// Create a complete player panel with all UI elements.
+        /// </summary>
+        private Transform CreatePlayerPanel(Transform parent, string panelName, bool isPlayer1)
+        {
+            GameObject panel = new GameObject(panelName);
+            panel.transform.SetParent(parent, false);
+            panel.layer = 5; // UI layer
+            
+            // Add RectTransform and position
+            RectTransform rectTransform = panel.AddComponent<RectTransform>();
+            if (isPlayer1)
+            {
+                // Top-left
+                rectTransform.anchorMin = new Vector2(0, 1);
+                rectTransform.anchorMax = new Vector2(0, 1);
+                rectTransform.pivot = new Vector2(0, 1);
+                rectTransform.anchoredPosition = new Vector2(10, -10);
+            }
+            else
+            {
+                // Top-right
+                rectTransform.anchorMin = new Vector2(1, 1);
+                rectTransform.anchorMax = new Vector2(1, 1);
+                rectTransform.pivot = new Vector2(1, 1);
+                rectTransform.anchoredPosition = new Vector2(-10, -10);
+            }
+            rectTransform.sizeDelta = new Vector2(200, 100);
+            
+            // Add Image for background
+            UnityEngine.UI.Image image = panel.AddComponent<UnityEngine.UI.Image>();
+            image.color = new Color(0.1f, 0.1f, 0.1f, 0.7f);
+            
+            // Add VerticalLayoutGroup
+            UnityEngine.UI.VerticalLayoutGroup layout = panel.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
+            layout.padding = new RectOffset(10, 10, 10, 10);
+            layout.spacing = 5;
+            layout.childAlignment = isPlayer1 ? TextAnchor.UpperLeft : TextAnchor.UpperRight;
+            layout.childControlWidth = true;
+            layout.childControlHeight = false;
+            
+            // Create text labels
+            CreateTextLabel(panel.transform, "PlayerLabel", isPlayer1 ? "Player 1" : "Player 2", 18, true, isPlayer1);
+            CreateTextLabel(panel.transform, "ScoreLabel", "Score: 0", 14, false, isPlayer1);
+            CreateTextLabel(panel.transform, "HandDeckLabel", "Hand: 0 | Deck: 0", 12, false, isPlayer1);
+            
+            return panel.transform;
+        }
+        
+        /// <summary>
+        /// Create a text label for the panel.
+        /// </summary>
+        private void CreateTextLabel(Transform parent, string name, string text, float fontSize, bool bold, bool leftAlign)
+        {
+            GameObject label = new GameObject(name);
+            label.transform.SetParent(parent, false);
+            label.layer = 5;
+            
+            RectTransform rectTransform = label.AddComponent<RectTransform>();
+            rectTransform.sizeDelta = new Vector2(0, fontSize + 10);
+            
+            TMP_Text tmpText = label.AddComponent<TMP_Text>();
+            tmpText.text = text;
+            tmpText.fontSize = fontSize;
+            tmpText.fontStyle = bold ? TMPro.FontStyles.Bold : TMPro.FontStyles.Normal;
+            tmpText.alignment = leftAlign ? TMPro.TextAlignmentOptions.Left : TMPro.TextAlignmentOptions.Right;
+            tmpText.color = Color.white;
         }
         
         /// <summary>
