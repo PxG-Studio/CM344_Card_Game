@@ -273,5 +273,33 @@ namespace CardGame.Managers
             // Update the IsPlayerCard method to check for card tags instead of color/component
             // Implement logic to check card tags here
         }
+        
+        /// <summary>
+        /// Updates the score display UI for both players
+        /// </summary>
+        private void UpdateScoreUI()
+        {
+            // Find PlayerScoreText and OpponentScoreText in the scene
+            var playerScoreText = GameObject.Find("PlayerScoreText");
+            var opponentScoreText = GameObject.Find("OpponentScoreText");
+
+            if (playerScoreText != null)
+            {
+                var tmp = playerScoreText.GetComponent<TMPro.TextMeshProUGUI>();
+                if (tmp != null)
+                {
+                    tmp.text = $"Player: {playerScore}";
+                }
+            }
+
+            if (opponentScoreText != null)
+            {
+                var tmp = opponentScoreText.GetComponent<TMPro.TextMeshProUGUI>();
+                if (tmp != null)
+                {
+                    tmp.text = $"Opponent: {opponentScore}";
+                }
+            }
+        }
     }
 }
