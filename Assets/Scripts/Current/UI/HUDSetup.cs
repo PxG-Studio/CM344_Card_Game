@@ -212,11 +212,11 @@ namespace CardGame.UI
             }
             else
             {
-                // Right side, vertically centered
+                // Right side, slightly below center to avoid overlapping header
                 rectTransform.anchorMin = new Vector2(1, 0.5f);
                 rectTransform.anchorMax = new Vector2(1, 0.5f);
                 rectTransform.pivot = new Vector2(1, 0.5f);
-                rectTransform.anchoredPosition = new Vector2(-15, 0);
+                rectTransform.anchoredPosition = new Vector2(-15, -80); // Moved down 80px
             }
             rectTransform.sizeDelta = new Vector2(200, 105);
             
