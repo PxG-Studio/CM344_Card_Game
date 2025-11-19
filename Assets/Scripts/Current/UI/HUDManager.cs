@@ -34,7 +34,7 @@ namespace CardGame.UI
         [SerializeField] private Color inactiveTurnColor = new Color(0.3f, 0.3f, 0.3f, 0.3f); // Gray/Transparent
         
         private ScoreManager scoreManager;
-        private int totalBoardTiles = 64; // 8x8 board
+        private int totalBoardTiles = 16; // 4x4 board
         private bool isPlayer1Turn = true; // Track whose turn it is
         
         private void Start()
