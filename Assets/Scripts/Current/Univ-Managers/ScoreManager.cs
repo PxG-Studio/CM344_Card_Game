@@ -20,6 +20,9 @@ namespace CardGame.Managers
         // Event triggered when score changes
         public System.Action<bool, int> OnScoreChanged; // (isPlayer, newScore)
         
+        // Event for UI updates (both scores at once)
+        public System.Action<int, int> OnScoreUpdated; // (playerScore, opponentScore)
+        
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -49,6 +52,9 @@ namespace CardGame.Managers
                 OnScoreChanged?.Invoke(false, opponentScore);
                 Debug.Log($"Opponent score: {opponentScore}");
             }
+            
+            // Invoke combined score update event
+            OnScoreUpdated?.Invoke(playerScore, opponentScore);
         }
         
         /// <summary>
@@ -70,6 +76,7 @@ namespace CardGame.Managers
             opponentScore = 0;
             OnScoreChanged?.Invoke(true, playerScore);
             OnScoreChanged?.Invoke(false, opponentScore);
+            OnScoreUpdated?.Invoke(playerScore, opponentScore);
             Debug.Log("Scores reset");
         }
         
@@ -121,6 +128,7 @@ namespace CardGame.Managers
             
             OnScoreChanged?.Invoke(true, playerScore);
             OnScoreChanged?.Invoke(false, opponentScore);
+            OnScoreUpdated?.Invoke(playerScore, opponentScore);
             
             Debug.Log($"Recalculated scores - Player: {playerScore}, Opponent: {opponentScore}");
         }
