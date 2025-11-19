@@ -146,9 +146,14 @@ namespace CardGame.Testing
             if (deckManager != null)
             {
                 GUILayout.Space(10);
-                GUILayout.Label($"Draw Pile: {deckManager.DrawPileCount}");
-                GUILayout.Label($"Hand: {deckManager.Hand.Count}");
-                GUILayout.Label($"Played: {deckManager.DiscardPileCount}");
+                
+                // Create right-aligned style for labels
+                GUIStyle rightAlignedStyle = new GUIStyle(GUI.skin.label);
+                rightAlignedStyle.alignment = TextAnchor.MiddleRight;
+                
+                GUILayout.Label($"Draw Pile: {deckManager.DrawPileCount}", rightAlignedStyle);
+                GUILayout.Label($"Hand: {deckManager.Hand.Count}", rightAlignedStyle);
+                GUILayout.Label($"Played: {deckManager.DiscardPileCount}", rightAlignedStyle);
             }
             
             GUILayout.EndArea();
