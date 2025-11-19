@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 using CardGame.Managers;
 
@@ -52,6 +53,9 @@ namespace CardGame.UI
             
             // Find and wire up all the text labels using reflection
             WireUpHUDReferences(hudManager, hudCanvas.transform);
+            
+            // Setup Game End UI
+            SetupGameEndUI(hudCanvas.transform);
             
             Debug.Log("HUDSetup: HUD successfully configured!");
         }
@@ -331,6 +335,142 @@ namespace CardGame.UI
             {
                 Debug.LogWarning($"HUDSetup: Could not find field '{fieldName}' in {type.Name}");
             }
+        }
+        
+        /// <summary>
+        /// Setup the Game End UI panel
+        /// </summary>
+        private void SetupGameEndUI(Transform hudRoot)
+        {
+            // Check if GameEndUI already exists
+            GameEndUI existingUI = hudRoot.GetComponentInChildren<GameEndUI>(true);
+            if (existingUI != null)
+            {
+                Debug.Log("HUDSetup: GameEndUI already exists");
+                return;
+            }
+            
+            // Create Game End Panel
+            GameObject endPanel = new GameObject("GameEndPanel");
+            endPanel.transform.SetParent(hudRoot, false);
+            endPanel.layer = 5; // UI layer
+            
+            RectTransform endPanelRect = endPanel.AddComponent<RectTransform>();
+            endPanelRect.anchorMin = Vector2.zero;
+            endPanelRect.anchorMax = Vector2.one;
+            endPanelRect.sizeDelta = Vector2.zero;
+            endPanelRect.anchoredPosition = Vector2.zero;
+            
+            // Add semi-transparent background
+            UnityEngine.UI.Image bgImage = endPanel.AddComponent<UnityEngine.UI.Image>();
+            bgImage.color = new Color(0f, 0f, 0f, 0.85f);
+            
+            // Create content panel (centered)
+            GameObject contentPanel = new GameObject("ContentPanel");
+            contentPanel.transform.SetParent(endPanel.transform, false);
+            
+            RectTransform contentRect = contentPanel.AddComponent<RectTransform>();
+            contentRect.anchorMin = new Vector2(0.5f, 0.5f);
+            contentRect.anchorMax = new Vector2(0.5f, 0.5f);
+            contentRect.pivot = new Vector2(0.5f, 0.5f);
+            contentRect.sizeDelta = new Vector2(600, 400);
+            contentRect.anchoredPosition = Vector2.zero;
+            
+            // Add background to content panel
+            UnityEngine.UI.Image contentBg = contentPanel.AddComponent<UnityEngine.UI.Image>();
+            contentBg.color = new Color(0.1f, 0.1f, 0.15f, 0.95f);
+            
+            // Add vertical layout
+            UnityEngine.UI.VerticalLayoutGroup layout = contentPanel.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
+            layout.padding = new RectOffset(40, 40, 40, 40);
+            layout.spacing = 30;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = false;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            
+            // Create Winner Text
+            GameObject winnerTextObj = new GameObject("WinnerText");
+            winnerTextObj.transform.SetParent(contentPanel.transform, false);
+            
+            TextMeshProUGUI winnerText = winnerTextObj.AddComponent<TextMeshProUGUI>();
+            winnerText.text = "PLAYER WINS!";
+            winnerText.fontSize = 48;
+            winnerText.fontStyle = FontStyles.Bold;
+            winnerText.alignment = TextAlignmentOptions.Center;
+            winnerText.color = Color.white;
+            
+            RectTransform winnerRect = winnerTextObj.GetComponent<RectTransform>();
+            winnerRect.sizeDelta = new Vector2(0, 80);
+            
+            // Create Final Score Text
+            GameObject scoreTextObj = new GameObject("FinalScoreText");
+            scoreTextObj.transform.SetParent(contentPanel.transform, false);
+            
+            TextMeshProUGUI scoreText = scoreTextObj.AddComponent<TextMeshProUGUI>();
+            scoreText.text = "Final Score\nPlayer 1: 0  |  Player 2: 0";
+            scoreText.fontSize = 28;
+            scoreText.alignment = TextAlignmentOptions.Center;
+            scoreText.color = new Color(0.9f, 0.9f, 0.9f, 1f);
+            
+            RectTransform scoreRect = scoreTextObj.GetComponent<RectTransform>();
+            scoreRect.sizeDelta = new Vector2(0, 80);
+            
+            // Create Restart Button
+            GameObject restartBtnObj = CreateButton(contentPanel.transform, "RestartButton", "Play Again");
+            
+            // Create Quit Button
+            GameObject quitBtnObj = CreateButton(contentPanel.transform, "QuitButton", "Quit");
+            
+            // Add GameEndUI component
+            GameEndUI gameEndUI = endPanel.AddComponent<GameEndUI>();
+            
+            // Wire up references using reflection
+            System.Type gameEndUIType = typeof(GameEndUI);
+            SetPrivateField(gameEndUI, gameEndUIType, "endGamePanel", endPanel);
+            SetPrivateField(gameEndUI, gameEndUIType, "winnerText", winnerText);
+            SetPrivateField(gameEndUI, gameEndUIType, "finalScoreText", scoreText);
+            SetPrivateField(gameEndUI, gameEndUIType, "restartButton", restartBtnObj.GetComponent<UnityEngine.UI.Button>());
+            SetPrivateField(gameEndUI, gameEndUIType, "quitButton", quitBtnObj.GetComponent<UnityEngine.UI.Button>());
+            
+            Debug.Log("HUDSetup: Created GameEndUI panel");
+        }
+        
+        /// <summary>
+        /// Create a UI button
+        /// </summary>
+        private GameObject CreateButton(Transform parent, string name, string text)
+        {
+            GameObject btnObj = new GameObject(name);
+            btnObj.transform.SetParent(parent, false);
+            
+            RectTransform btnRect = btnObj.AddComponent<RectTransform>();
+            btnRect.sizeDelta = new Vector2(300, 60);
+            
+            UnityEngine.UI.Image btnImage = btnObj.AddComponent<UnityEngine.UI.Image>();
+            btnImage.color = new Color(0.2f, 0.4f, 0.8f, 1f);
+            
+            UnityEngine.UI.Button button = btnObj.AddComponent<UnityEngine.UI.Button>();
+            
+            // Create button text
+            GameObject textObj = new GameObject("Text");
+            textObj.transform.SetParent(btnObj.transform, false);
+            
+            TextMeshProUGUI btnText = textObj.AddComponent<TextMeshProUGUI>();
+            btnText.text = text;
+            btnText.fontSize = 24;
+            btnText.fontStyle = FontStyles.Bold;
+            btnText.alignment = TextAlignmentOptions.Center;
+            btnText.color = Color.white;
+            
+            RectTransform textRect = textObj.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.sizeDelta = Vector2.zero;
+            textRect.anchoredPosition = Vector2.zero;
+            
+            return btnObj;
         }
     }
 }
