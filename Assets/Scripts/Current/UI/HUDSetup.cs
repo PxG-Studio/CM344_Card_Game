@@ -252,7 +252,8 @@ namespace CardGame.UI
             RectTransform rectTransform = label.AddComponent<RectTransform>();
             rectTransform.sizeDelta = new Vector2(0, fontSize + 10);
             
-            TMP_Text tmpText = label.AddComponent<TMP_Text>();
+            // Use TextMeshProUGUI instead of TMP_Text (which is abstract)
+            TMPro.TextMeshProUGUI tmpText = label.AddComponent<TMPro.TextMeshProUGUI>();
             tmpText.text = text;
             tmpText.fontSize = fontSize;
             tmpText.fontStyle = bold ? TMPro.FontStyles.Bold : TMPro.FontStyles.Normal;
