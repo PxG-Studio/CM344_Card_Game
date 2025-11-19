@@ -208,7 +208,7 @@ namespace CardGame.UI
                 rectTransform.anchorMin = new Vector2(0, 0.5f);
                 rectTransform.anchorMax = new Vector2(0, 0.5f);
                 rectTransform.pivot = new Vector2(0, 0.5f);
-                rectTransform.anchoredPosition = new Vector2(20, 0);
+                rectTransform.anchoredPosition = new Vector2(15, 0);
             }
             else
             {
@@ -216,26 +216,26 @@ namespace CardGame.UI
                 rectTransform.anchorMin = new Vector2(1, 0.5f);
                 rectTransform.anchorMax = new Vector2(1, 0.5f);
                 rectTransform.pivot = new Vector2(1, 0.5f);
-                rectTransform.anchoredPosition = new Vector2(-20, 0);
+                rectTransform.anchoredPosition = new Vector2(-15, 0);
             }
-            rectTransform.sizeDelta = new Vector2(220, 110);
+            rectTransform.sizeDelta = new Vector2(200, 105);
             
-            // Add Image for background
+            // Add Image for background with better styling
             UnityEngine.UI.Image image = panel.AddComponent<UnityEngine.UI.Image>();
-            image.color = new Color(0.1f, 0.1f, 0.1f, 0.7f);
+            image.color = new Color(0.08f, 0.08f, 0.12f, 0.88f);
             
             // Add VerticalLayoutGroup
             UnityEngine.UI.VerticalLayoutGroup layout = panel.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
-            layout.padding = new RectOffset(10, 10, 10, 10);
-            layout.spacing = 5;
+            layout.padding = new RectOffset(12, 12, 12, 12);
+            layout.spacing = 7;
             layout.childAlignment = isPlayer1 ? TextAnchor.UpperLeft : TextAnchor.UpperRight;
             layout.childControlWidth = true;
             layout.childControlHeight = false;
             
-            // Create text labels
-            CreateTextLabel(panel.transform, "PlayerLabel", isPlayer1 ? "Player 1" : "Player 2", 18, true, isPlayer1);
-            CreateTextLabel(panel.transform, "ScoreLabel", "Score: 0", 14, false, isPlayer1);
-            CreateTextLabel(panel.transform, "HandDeckLabel", "Hand: 0 | Deck: 0", 12, false, isPlayer1);
+            // Create text labels with better sizing
+            CreateTextLabel(panel.transform, "PlayerLabel", isPlayer1 ? "Player 1" : "Player 2", 16, true, isPlayer1);
+            CreateTextLabel(panel.transform, "ScoreLabel", "Score: 0", 15, false, isPlayer1);
+            CreateTextLabel(panel.transform, "HandDeckLabel", "Hand: 0 | Deck: 0", 13, false, isPlayer1);
             
             return panel.transform;
         }
@@ -258,7 +258,9 @@ namespace CardGame.UI
             tmpText.fontSize = fontSize;
             tmpText.fontStyle = bold ? TMPro.FontStyles.Bold : TMPro.FontStyles.Normal;
             tmpText.alignment = leftAlign ? TMPro.TextAlignmentOptions.Left : TMPro.TextAlignmentOptions.Right;
-            tmpText.color = Color.white;
+            tmpText.color = new Color(1f, 1f, 1f, 0.95f); // Slightly transparent white for softer look
+            tmpText.enableAutoSizing = false;
+            tmpText.fontStyle |= TMPro.FontStyles.Normal;
         }
         
         /// <summary>
