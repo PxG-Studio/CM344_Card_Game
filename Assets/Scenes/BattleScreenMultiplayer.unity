@@ -2017,7 +2017,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 964397635}
-  m_Layer: 0
+  - component: {fileID: 964397637}
+  - component: {fileID: 964397636}
+  m_Layer: 5
   m_Name: HUDOverlayCanvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2043,6 +2045,44 @@ Transform:
   - {fileID: 1157545467}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &964397636
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 964397634}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c93f8d0006237f84bae3468cd1392b66, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  autoSetupOnAwake: 1
+--- !u!114 &964397637
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 964397634}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70adfa57addeb104aafabf45590108b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  p1ScoreLabel: {fileID: 0}
+  p1HandDeckLabel: {fileID: 0}
+  p1PlayerLabel: {fileID: 0}
+  p1TurnIndicator: {fileID: 0}
+  p2ScoreLabel: {fileID: 0}
+  p2HandDeckLabel: {fileID: 0}
+  p2PlayerLabel: {fileID: 0}
+  p2TurnIndicator: {fileID: 0}
+  tilesRemainingLabel: {fileID: 0}
+  player1DeckManager: {fileID: 0}
+  player2DeckManager: {fileID: 0}
+  activeTurnColor: {r: 1, g: 0.8, b: 0, a: 1}
+  inactiveTurnColor: {r: 0.3, g: 0.3, b: 0.3, a: 0.3}
 --- !u!1 &1052655886
 GameObject:
   m_ObjectHideFlags: 0

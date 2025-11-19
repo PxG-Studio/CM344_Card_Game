@@ -13,10 +13,14 @@ namespace CardGame.UI
         [Header("Player 1 Panel")]
         [SerializeField] private TMP_Text p1ScoreLabel;
         [SerializeField] private TMP_Text p1HandDeckLabel;
+        [SerializeField] private TMP_Text p1PlayerLabel;
+        [SerializeField] private UnityEngine.UI.Image p1TurnIndicator;
         
         [Header("Player 2 Panel")]
         [SerializeField] private TMP_Text p2ScoreLabel;
         [SerializeField] private TMP_Text p2HandDeckLabel;
+        [SerializeField] private TMP_Text p2PlayerLabel;
+        [SerializeField] private UnityEngine.UI.Image p2TurnIndicator;
         
         [Header("Tiles Remaining")]
         [SerializeField] private TMP_Text tilesRemainingLabel;
@@ -25,8 +29,13 @@ namespace CardGame.UI
         [SerializeField] private NewDeckManager player1DeckManager;
         [SerializeField] private NewDeckManagerOpp player2DeckManager;
         
+        [Header("Turn Indicator Settings")]
+        [SerializeField] private Color activeTurnColor = new Color(1f, 0.8f, 0f, 1f); // Gold
+        [SerializeField] private Color inactiveTurnColor = new Color(0.3f, 0.3f, 0.3f, 0.3f); // Gray/Transparent
+        
         private ScoreManager scoreManager;
         private int totalBoardTiles = 64; // 8x8 board
+        private bool isPlayer1Turn = true; // Track whose turn it is
         
         private void Start()
         {
@@ -55,6 +64,7 @@ namespace CardGame.UI
             UpdateScores(0, 0);
             UpdateHandDeckCounts();
             UpdateTilesRemaining();
+            UpdateTurnIndicators();
         }
         
         private void Update()
@@ -144,6 +154,52 @@ namespace CardGame.UI
         }
         
         /// <summary>
+        /// Update turn indicator visuals to show whose turn it is.
+        /// </summary>
+        private void UpdateTurnIndicators()
+        {
+            if (p1TurnIndicator != null)
+            {
+                p1TurnIndicator.color = isPlayer1Turn ? activeTurnColor : inactiveTurnColor;
+            }
+            
+            if (p2TurnIndicator != null)
+            {
+                p2TurnIndicator.color = isPlayer1Turn ? inactiveTurnColor : activeTurnColor;
+            }
+            
+            // Optionally update player label styling
+            if (p1PlayerLabel != null)
+            {
+                p1PlayerLabel.fontStyle = isPlayer1Turn ? TMPro.FontStyles.Bold : TMPro.FontStyles.Normal;
+            }
+            
+            if (p2PlayerLabel != null)
+            {
+                p2PlayerLabel.fontStyle = isPlayer1Turn ? TMPro.FontStyles.Normal : TMPro.FontStyles.Bold;
+            }
+        }
+        
+        /// <summary>
+        /// Set which player's turn it is.
+        /// </summary>
+        public void SetTurn(bool isPlayer1)
+        {
+            isPlayer1Turn = isPlayer1;
+            UpdateTurnIndicators();
+        }
+        
+        /// <summary>
+        /// Toggle to the next player's turn.
+        /// </summary>
+        public void NextTurn()
+        {
+            isPlayer1Turn = !isPlayer1Turn;
+            UpdateTurnIndicators();
+            Debug.Log($"Turn changed to: {(isPlayer1Turn ? "Player 1" : "Player 2")}");
+        }
+        
+        /// <summary>
         /// Manually refresh all HUD displays.
         /// </summary>
         public void RefreshAll()
@@ -154,6 +210,7 @@ namespace CardGame.UI
             }
             UpdateHandDeckCounts();
             UpdateTilesRemaining();
+            UpdateTurnIndicators();
         }
     }
 }
