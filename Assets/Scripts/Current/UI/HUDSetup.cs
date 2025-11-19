@@ -200,25 +200,25 @@ namespace CardGame.UI
             panel.transform.SetParent(parent, false);
             panel.layer = 5; // UI layer
             
-            // Add RectTransform and position
+            // Add RectTransform and position - moved towards middle/center
             RectTransform rectTransform = panel.AddComponent<RectTransform>();
             if (isPlayer1)
             {
-                // Top-left
-                rectTransform.anchorMin = new Vector2(0, 1);
-                rectTransform.anchorMax = new Vector2(0, 1);
-                rectTransform.pivot = new Vector2(0, 1);
-                rectTransform.anchoredPosition = new Vector2(10, -10);
+                // Left side, vertically centered
+                rectTransform.anchorMin = new Vector2(0, 0.5f);
+                rectTransform.anchorMax = new Vector2(0, 0.5f);
+                rectTransform.pivot = new Vector2(0, 0.5f);
+                rectTransform.anchoredPosition = new Vector2(20, 0);
             }
             else
             {
-                // Top-right
-                rectTransform.anchorMin = new Vector2(1, 1);
-                rectTransform.anchorMax = new Vector2(1, 1);
-                rectTransform.pivot = new Vector2(1, 1);
-                rectTransform.anchoredPosition = new Vector2(-10, -10);
+                // Right side, vertically centered
+                rectTransform.anchorMin = new Vector2(1, 0.5f);
+                rectTransform.anchorMax = new Vector2(1, 0.5f);
+                rectTransform.pivot = new Vector2(1, 0.5f);
+                rectTransform.anchoredPosition = new Vector2(-20, 0);
             }
-            rectTransform.sizeDelta = new Vector2(200, 100);
+            rectTransform.sizeDelta = new Vector2(220, 110);
             
             // Add Image for background
             UnityEngine.UI.Image image = panel.AddComponent<UnityEngine.UI.Image>();
