@@ -228,7 +228,7 @@ namespace CardGame.UI
                 rectTransform.anchorMin = new Vector2(1, 0.5f);
                 rectTransform.anchorMax = new Vector2(1, 0.5f);
                 rectTransform.pivot = new Vector2(1, 0.5f);
-                rectTransform.anchoredPosition = new Vector2(-15, -200); // P2 moved down 200px
+                rectTransform.anchoredPosition = new Vector2(-15, -300); // P2 moved down 300px
             }
             rectTransform.sizeDelta = new Vector2(200, 105);
             
