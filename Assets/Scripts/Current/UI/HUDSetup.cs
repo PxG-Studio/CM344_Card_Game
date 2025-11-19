@@ -137,7 +137,7 @@ namespace CardGame.UI
             if (p1Panel != null && !p1Panel.gameObject.activeSelf)
             {
                 Debug.Log("HUDSetup: Destroying inactive P1Panel");
-                GameObject.Destroy(p1Panel.gameObject);
+                GameObject.DestroyImmediate(p1Panel.gameObject);
                 p1Panel = null;
             }
             if (p1Panel == null)
@@ -150,7 +150,7 @@ namespace CardGame.UI
             if (p2Panel != null && !p2Panel.gameObject.activeSelf)
             {
                 Debug.Log("HUDSetup: Destroying inactive P2Panel");
-                GameObject.Destroy(p2Panel.gameObject);
+                GameObject.DestroyImmediate(p2Panel.gameObject);
                 p2Panel = null;
             }
             if (p2Panel == null)
