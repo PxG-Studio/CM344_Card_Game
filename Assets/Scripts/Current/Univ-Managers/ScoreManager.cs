@@ -49,8 +49,6 @@ namespace CardGame.Managers
                 OnScoreChanged?.Invoke(false, opponentScore);
                 Debug.Log($"Opponent score: {opponentScore}");
             }
-            // Trigger UI updates based on the new scores
-            UpdateScoreUI();
         }
         
         /// <summary>
@@ -125,8 +123,6 @@ namespace CardGame.Managers
             OnScoreChanged?.Invoke(false, opponentScore);
             
             Debug.Log($"Recalculated scores - Player: {playerScore}, Opponent: {opponentScore}");
-            // Trigger UI updates after recalculating scores
-            UpdateScoreUI();
         }
         
         /// <summary>
@@ -270,8 +266,6 @@ namespace CardGame.Managers
             if (defaultMoverOpp != null) return false;
             
             return true;
-            // Update the IsPlayerCard method to check for card tags instead of color/component
-            // Implement logic to check card tags here
         }
     }
 }
