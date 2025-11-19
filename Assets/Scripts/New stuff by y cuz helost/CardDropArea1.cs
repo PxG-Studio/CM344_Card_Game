@@ -47,6 +47,19 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
     [SerializeField] private float rippleDelayPerUnit = 0.15f; // Delay between flips per unit of distance
     [SerializeField] private float rippleBaseDelay = 0.1f; // Base delay before first flip starts
     
+    [Header("Managers")]
+    private ScoreManager scoreManager;
+    private GameEndManager gameEndManager;
+    
+    // Track cards played this turn (cannot be captured during same turn)
+    private HashSet<GameObject> cardsPlayedThisTurn = new HashSet<GameObject>();
+    
+    // Track cards currently being processed in chain captures (to prevent infinite loops)
+    private HashSet<GameObject> cardsInCurrentChain = new HashSet<GameObject>();
+    
+    // Track if chains are in progress
+    private int activeChainCount = 0;
+    
     private void Start()
     {
         // Auto-find NewDeckManager if not assigned
@@ -57,6 +70,55 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
             {
                 Debug.LogWarning("CardDropArea1: NewDeckManager not found! Card play functionality will not work.");
             }
+        }
+        
+        // Auto-find ScoreManager
+        if (scoreManager == null)
+        {
+            scoreManager = FindObjectOfType<ScoreManager>();
+            if (scoreManager == null)
+            {
+                Debug.LogWarning("CardDropArea1: ScoreManager not found! Scoring will not work.");
+            }
+        }
+        
+        // Auto-find GameEndManager
+        if (gameEndManager == null)
+        {
+            gameEndManager = FindObjectOfType<GameEndManager>();
+            if (gameEndManager == null)
+            {
+                Debug.LogWarning("CardDropArea1: GameEndManager not found! Game end detection will not work.");
+            }
+        }
+        
+        // Subscribe to GameManager events to clear turn tracking
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnTurnStarted += ClearTurnTracking;
+            GameManager.Instance.OnTurnEnded += ClearTurnTracking;
+        }
+    }
+    
+    private void OnDestroy()
+    {
+        // Unsubscribe from events
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnTurnStarted -= ClearTurnTracking;
+            GameManager.Instance.OnTurnEnded -= ClearTurnTracking;
+        }
+    }
+    
+    /// <summary>
+    /// Clears the tracking of cards played this turn
+    /// </summary>
+    private void ClearTurnTracking()
+    {
+        cardsPlayedThisTurn.Clear();
+        if (debugBattles)
+        {
+            Debug.Log("Turn tracking cleared - new cards can now be captured");
         }
     }
     
@@ -96,6 +158,12 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                     
                     // Mark card as played - prevents further dragging
                     cardMover.SetPlayed(true);
+                    
+                    // Track card as played this turn (cannot be captured during same turn)
+                    cardsPlayedThisTurn.Add(cardMover.gameObject);
+                    
+                    // Check board occupancy after card is placed
+                    CheckBoardOccupancy();
                     
                     // Check for card battles with adjacent cards
                     if (enableCardBattles)
@@ -401,6 +469,12 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                     // Mark card as played - prevents further dragging
                     cardMoverOpp.SetPlayed(true);
                     
+                    // Track card as played this turn (cannot be captured during same turn)
+                    cardsPlayedThisTurn.Add(cardMoverOpp.gameObject);
+                    
+                    // Check board occupancy after card is placed
+                    CheckBoardOccupancy();
+                    
                     // Check for card battles with adjacent cards
                     if (enableCardBattles)
                     {
@@ -611,31 +685,44 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         
         if (placedCardStat > otherCardStat)
         {
-            // Determine capture color: The captured card gets the color of who captured it
-            // Use the capturer's color (the placed card that won)
-            Color captureColor = placedCardIsPlayer ? 
-                GetPlayerCaptureColor() : GetOpponentCaptureColor();
-            
-            // Convert direction name to FlipDirection enum
-            CardGame.UI.FlipDirection flipDir = CardGame.UI.FlipDirection.Right; // Default
-            switch (directionName.ToLower())
+            // Placed card won - if using ripple effect, don't flip immediately (will be handled by ripple)
+            // Only flip immediately if ripple effect is disabled
+            if (!useRippleEffect)
             {
-                case "left":
-                    flipDir = CardGame.UI.FlipDirection.Left;
-                    break;
-                case "right":
-                    flipDir = CardGame.UI.FlipDirection.Right;
-                    break;
-                case "top":
-                    flipDir = CardGame.UI.FlipDirection.Top;
-                    break;
-                case "down":
-                    flipDir = CardGame.UI.FlipDirection.Down;
-                    break;
+                // Determine capture color: The captured card gets the color of who captured it
+                // Use the capturer's color (the placed card that won)
+                Color captureColor = placedCardIsPlayer ? 
+                    GetPlayerCaptureColor() : GetOpponentCaptureColor();
+                
+                // Convert direction name to FlipDirection enum
+                CardGame.UI.FlipDirection flipDir = CardGame.UI.FlipDirection.Right; // Default
+                switch (directionName.ToLower())
+                {
+                    case "left":
+                        flipDir = CardGame.UI.FlipDirection.Left;
+                        break;
+                    case "right":
+                        flipDir = CardGame.UI.FlipDirection.Right;
+                        break;
+                    case "top":
+                        flipDir = CardGame.UI.FlipDirection.Top;
+                        break;
+                    case "down":
+                        flipDir = CardGame.UI.FlipDirection.Down;
+                        break;
+                }
+                
+                FlipCardGameObject(otherCardObject, otherCard, captureColor, flipDir);
+                Debug.Log($"✅ Card Battle: {placedCard.Data.cardName} ({placedCardStat}) > {otherCard.Data.cardName} ({otherCardStat}) in {directionName} direction. {otherCard.Data.cardName} captured with {captureColor}!");
             }
-            
-            FlipCardGameObject(otherCardObject, otherCard, captureColor, flipDir);
-            Debug.Log($"✅ Card Battle: {placedCard.Data.cardName} ({placedCardStat}) > {otherCard.Data.cardName} ({otherCardStat}) in {directionName} direction. {otherCard.Data.cardName} captured with {captureColor}!");
+            else
+            {
+                // Using ripple effect - just log, don't flip (will be handled by ripple)
+                if (debugBattles)
+                {
+                    Debug.Log($"  → {placedCard.Data.cardName} ({placedCardStat}) > {otherCard.Data.cardName} ({otherCardStat}) in {directionName} direction. Will be captured in ripple effect.");
+                }
+            }
             return false; // Placed card won, don't flip it
         }
         else if (otherCardStat > placedCardStat)
@@ -714,6 +801,15 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
 
         flipAnim.CaptureCard(captureColor, direction);
         Debug.Log($"✅ Captured card {card.Data.cardName} with border color {captureColor} (flip direction: {direction})");
+        
+        // Notify ScoreManager of the capture
+        if (scoreManager != null)
+        {
+            bool isPlayerCapture = IsPlayerCard(cardObject);
+            // Note: The card is being captured, so the capture color determines who gets the score
+            bool isPlayerScoring = (captureColor == GetPlayerCaptureColor());
+            scoreManager.AddScore(isPlayerScoring);
+        }
     }
     
     /// <summary>
@@ -836,6 +932,13 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         // Wait for base delay before starting
         yield return new WaitForSeconds(rippleBaseDelay);
         
+        // Increment active chain count for initial ripple
+        activeChainCount++;
+        if (gameEndManager != null)
+        {
+            gameEndManager.SetChainsInProgress(true);
+        }
+        
         // Flip each card with increasing delay based on distance
         float lastDistance = 0f;
         foreach (var target in flipTargets)
@@ -852,12 +955,280 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
             // Execute the flip
             FlipCardGameObject(target.cardObject, target.card, target.captureColor, target.direction);
             
+            // Wait for the flip animation to complete before checking for chain captures
+            // Flip animation takes about 1 second total (0.5s flip to back + 0.5s flip back to front)
+            // Use a safe delay to ensure animation completes
+            yield return new WaitForSeconds(1.1f);
+            
+            // Check if this newly captured card can capture others (chain capture)
+            CheckChainCapture(target.cardObject, target.card);
+            
             lastDistance = target.distance;
         }
         
         if (debugBattles)
         {
             Debug.Log($"ExecuteRippleFlips: Ripple effect complete!");
+        }
+        
+        // Decrement active chain count
+        activeChainCount--;
+        if (activeChainCount <= 0)
+        {
+            activeChainCount = 0;
+            if (gameEndManager != null)
+            {
+                gameEndManager.SetChainsInProgress(false);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Checks board occupancy to determine if the board is full
+    /// </summary>
+    private void CheckBoardOccupancy()
+    {
+        // Count total CardDropArea1 instances (total board spaces)
+        CardDropArea1[] allDropAreas = FindObjectsOfType<CardDropArea1>();
+        int totalSpaces = allDropAreas.Length;
+        
+        // Count occupied spaces (spaces with cards on them)
+        int occupiedSpaces = 0;
+        
+        // Find all cards on the board
+        CardMover[] allCardMovers = FindObjectsOfType<CardMover>();
+        CardMoverOpp[] allCardMoverOpps = FindObjectsOfType<CardMoverOpp>();
+        
+        // Check each drop area to see if it has a card nearby
+        foreach (CardDropArea1 dropArea in allDropAreas)
+        {
+            bool hasCard = false;
+            
+            // Check CardMovers
+            foreach (CardMover cardMover in allCardMovers)
+            {
+                if (cardMover.Card != null)
+                {
+                    float distance = Vector3.Distance(dropArea.transform.position, cardMover.transform.position);
+                    if (distance < 0.5f) // Cards are considered on a space if within 0.5 units
+                    {
+                        hasCard = true;
+                        break;
+                    }
+                }
+            }
+            
+            // Check CardMoverOpps
+            if (!hasCard)
+            {
+                foreach (CardMoverOpp cardMoverOpp in allCardMoverOpps)
+                {
+                    if (cardMoverOpp.Card != null)
+                    {
+                        float distance = Vector3.Distance(dropArea.transform.position, cardMoverOpp.transform.position);
+                        if (distance < 0.5f)
+                        {
+                            hasCard = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (hasCard)
+            {
+                occupiedSpaces++;
+            }
+        }
+        
+        if (debugBattles)
+        {
+            Debug.Log($"Board occupancy: {occupiedSpaces}/{totalSpaces} spaces filled");
+        }
+        
+        // Check if board is full
+        if (occupiedSpaces >= totalSpaces && totalSpaces > 0)
+        {
+            Debug.Log("Board is full! Last card has been placed.");
+            if (gameEndManager != null)
+            {
+                gameEndManager.CheckGameEnd();
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Checks if a newly captured card can capture adjacent cards (chain capture)
+    /// </summary>
+    private void CheckChainCapture(GameObject capturedCard, NewCard card)
+    {
+        if (capturedCard == null || card == null) return;
+        
+        // Skip if card is already in current chain (prevent infinite loops)
+        if (cardsInCurrentChain.Contains(capturedCard))
+        {
+            if (debugBattles)
+            {
+                Debug.Log($"CheckChainCapture: {card.Data.cardName} already in current chain, skipping");
+            }
+            return;
+        }
+        
+        // Skip if card was played this turn (same-turn protection rule)
+        if (cardsPlayedThisTurn.Contains(capturedCard))
+        {
+            if (debugBattles)
+            {
+                Debug.Log($"CheckChainCapture: {card.Data.cardName} was played this turn, cannot be captured");
+            }
+            return;
+        }
+        
+        // Add to current chain
+        cardsInCurrentChain.Add(capturedCard);
+        
+        Vector3 cardPosition = capturedCard.transform.position;
+        List<FlipTarget> chainFlipTargets = new List<FlipTarget>();
+        
+        // Find all cards on the board
+        CardMover[] allCardMovers = FindObjectsOfType<CardMover>();
+        CardMoverOpp[] allCardMoverOpps = FindObjectsOfType<CardMoverOpp>();
+        
+        // Check adjacent cards
+        foreach (CardMover otherCardMover in allCardMovers)
+        {
+            if (otherCardMover.Card == null) continue;
+            if (otherCardMover.gameObject == capturedCard) continue; // Skip self
+            
+            // Skip if in current chain or played this turn
+            if (cardsInCurrentChain.Contains(otherCardMover.gameObject)) continue;
+            if (cardsPlayedThisTurn.Contains(otherCardMover.gameObject)) continue;
+            
+            // Only check battles if cards belong to different players (after capture)
+            bool capturedCardIsPlayer = IsPlayerCard(capturedCard);
+            bool otherCardIsPlayer = IsPlayerCard(otherCardMover.gameObject);
+            
+            // Skip if both cards belong to same player (no battle)
+            if (capturedCardIsPlayer == otherCardIsPlayer) continue;
+            
+            FlipTarget target = CheckBattleBetweenCardsForRipple(
+                cardPosition, card,
+                otherCardMover.transform.position, otherCardMover.Card,
+                otherCardMover.gameObject, capturedCard);
+            
+            if (target != null)
+            {
+                chainFlipTargets.Add(target);
+            }
+        }
+        
+        foreach (CardMoverOpp otherCardMoverOpp in allCardMoverOpps)
+        {
+            if (otherCardMoverOpp.Card == null) continue;
+            if (otherCardMoverOpp.gameObject == capturedCard) continue; // Skip self
+            
+            // Skip if in current chain or played this turn
+            if (cardsInCurrentChain.Contains(otherCardMoverOpp.gameObject)) continue;
+            if (cardsPlayedThisTurn.Contains(otherCardMoverOpp.gameObject)) continue;
+            
+            // Only check battles if cards belong to different players (after capture)
+            bool capturedCardIsPlayer = IsPlayerCard(capturedCard);
+            bool otherCardIsPlayer = IsPlayerCard(otherCardMoverOpp.gameObject);
+            
+            // Skip if both cards belong to same player (no battle)
+            if (capturedCardIsPlayer == otherCardIsPlayer) continue;
+            
+            FlipTarget target = CheckBattleBetweenCardsForRipple(
+                cardPosition, card,
+                otherCardMoverOpp.transform.position, otherCardMoverOpp.Card,
+                otherCardMoverOpp.gameObject, capturedCard);
+            
+            if (target != null)
+            {
+                chainFlipTargets.Add(target);
+            }
+        }
+        
+        // If we found chain captures, execute them
+        if (chainFlipTargets.Count > 0)
+        {
+            if (debugBattles)
+            {
+                Debug.Log($"Chain capture triggered! {card.Data.cardName} can capture {chainFlipTargets.Count} adjacent cards");
+            }
+            
+            // Increment active chain count
+            activeChainCount++;
+            if (gameEndManager != null)
+            {
+                gameEndManager.SetChainsInProgress(true);
+            }
+            
+            // Execute chain captures with ripple effect
+            StartCoroutine(ExecuteChainCaptureRipple(chainFlipTargets, cardPosition));
+        }
+        else
+        {
+            // No more chain captures, remove from current chain
+            cardsInCurrentChain.Remove(capturedCard);
+        }
+    }
+    
+    /// <summary>
+    /// Executes chain captures with ripple effect, then checks for further chains
+    /// </summary>
+    private IEnumerator ExecuteChainCaptureRipple(List<FlipTarget> flipTargets, Vector3 sourcePosition)
+    {
+        if (flipTargets == null || flipTargets.Count == 0) yield break;
+        
+        // Sort by distance
+        flipTargets.Sort((a, b) => a.distance.CompareTo(b.distance));
+        
+        if (debugBattles)
+        {
+            Debug.Log($"ExecuteChainCaptureRipple: Starting chain capture ripple with {flipTargets.Count} cards");
+        }
+        
+        // Execute each flip with ripple timing
+        float lastDistance = 0f;
+        foreach (var target in flipTargets)
+        {
+            float distanceDelta = target.distance - lastDistance;
+            float delay = distanceDelta * rippleDelayPerUnit;
+            
+            if (delay > 0f)
+            {
+                yield return new WaitForSeconds(delay);
+            }
+            
+            // Execute the flip
+            FlipCardGameObject(target.cardObject, target.card, target.captureColor, target.direction);
+            
+            // Wait for the flip animation to complete before checking for next chain
+            // Flip animation takes about 1 second total (0.5s flip to back + 0.5s flip back to front)
+            yield return new WaitForSeconds(1.1f); // Wait for animation
+            
+            // Check if this newly captured card can capture others (recursive chain)
+            CheckChainCapture(target.cardObject, target.card);
+            
+            lastDistance = target.distance;
+        }
+        
+        // Decrement active chain count when this chain level is done
+        activeChainCount--;
+        if (activeChainCount <= 0)
+        {
+            activeChainCount = 0;
+            cardsInCurrentChain.Clear(); // Clear chain tracking when all chains complete
+            if (gameEndManager != null)
+            {
+                gameEndManager.SetChainsInProgress(false);
+            }
+        }
+        
+        if (debugBattles)
+        {
+            Debug.Log($"ExecuteChainCaptureRipple: Chain capture ripple complete!");
         }
     }
 }

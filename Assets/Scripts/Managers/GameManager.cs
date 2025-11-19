@@ -95,6 +95,17 @@ namespace CardGame.Managers
         private void PrepareGame()
         {
             Debug.Log("Preparing game...");
+            
+            // Reset managers for new game
+            if (ScoreManager.Instance != null)
+            {
+                ScoreManager.Instance.ResetScores();
+            }
+            if (GameEndManager.Instance != null)
+            {
+                GameEndManager.Instance.Reset();
+            }
+            
             // Initialization will be handled by other managers
             Invoke(nameof(StartFirstTurn), 1f);
         }
