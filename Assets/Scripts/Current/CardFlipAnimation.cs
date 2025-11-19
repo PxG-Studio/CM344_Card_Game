@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using CardGame.Managers;
@@ -620,14 +621,17 @@ namespace CardGame.UI
                 }
                 
                 // Check if it's a CardMover (player card) vs CardMoverOpp (opponent card)
-                CardMover cardMover = GetComponent<CardMover>();
-                if (cardMover != null)
+                //CardMover cardMover = GetComponent<CardMover>();
+               
+                //if (cardMover != null)
+                if (frontContainer.CompareTag("p1"))
                 {
                     return true; // Player card
                 }
                 
-                CardMoverOpp cardMoverOpp = GetComponent<CardMoverOpp>();
-                if (cardMoverOpp != null)
+                //CardMoverOpp cardMoverOpp = GetComponent<CardMoverOpp>();
+                //if (cardMoverOpp != null)
+                if (frontContainer.CompareTag("p2"))
                 {
                     return false; // Opponent card
                 }

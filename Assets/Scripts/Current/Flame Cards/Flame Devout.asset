@@ -22,3 +22,4 @@ MonoBehaviour:
   cardType: 0
   effects: []
   cardColor: {r: 0.96862745, g: 0.46666667, b: 0.30588236, a: 1}
+  cardBackSprite: {fileID: 0}
