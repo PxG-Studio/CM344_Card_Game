@@ -242,7 +242,7 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         }
         
         // Check if placed card should flip (lost to another card)
-        foreach (CardMover otherCardMover in allCardMovers)
+        /*foreach (CardMover otherCardMover in allCardMovers)
         {
             if (otherCardMover == placedCardMover) continue;
             if (otherCardMover.Card == null) continue;
@@ -258,7 +258,7 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                 break;
             }
         }
-        
+        */
         // Check opponent cards for placed card loss
         if (placedCardFlipTarget == null)
         {
@@ -540,7 +540,7 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         }
         
         // Check if placed card should flip (lost to another card)
-        foreach (CardMover otherCardMover in allCardMovers)
+        /*foreach (CardMover otherCardMover in allCardMovers)
         {
             if (otherCardMover.Card == null) continue;
             bool placedCardLost = CheckBattleBetweenCards(placedPosition, placedCard, otherCardMover.transform.position, otherCardMover.Card, otherCardMover.gameObject, placedCardMover.gameObject);
@@ -554,9 +554,9 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                 break;
             }
         }
-        
+        */
         // Check opponent cards for placed card loss
-        if (placedCardFlipTarget == null)
+       /* if (placedCardFlipTarget == null)
         {
             foreach (CardMoverOpp otherCardMoverOpp in allCardMoverOpps)
             {
@@ -574,7 +574,7 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                 }
             }
         }
-        
+        */
         // Add placed card flip target if it lost
         if (placedCardFlipTarget != null)
         {
