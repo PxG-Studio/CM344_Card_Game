@@ -260,7 +260,7 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         }
         */
         // Check opponent cards for placed card loss
-        if (placedCardFlipTarget == null)
+        /*if (placedCardFlipTarget == null)
         {
             foreach (CardMoverOpp otherCardMoverOpp in allCardMoverOpps)
             {
@@ -277,7 +277,7 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                 }
             }
         }
-        
+        */
         // Add placed card flip target if it lost
         if (placedCardFlipTarget != null)
         {
