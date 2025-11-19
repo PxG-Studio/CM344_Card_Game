@@ -122,6 +122,11 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &18223382 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8331869115627169107, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
+  m_PrefabInstance: {fileID: 4193552611983131129}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &97315585
 GameObject:
   m_ObjectHideFlags: 0
@@ -686,6 +691,11 @@ MonoBehaviour:
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+--- !u!1 &448732881 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3395844615914960357, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
+  m_PrefabInstance: {fileID: 4193552611983131129}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &557991971
 GameObject:
   m_ObjectHideFlags: 0
@@ -923,6 +933,11 @@ MonoBehaviour:
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+--- !u!1 &809068035 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8331869115627169107, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
+  m_PrefabInstance: {fileID: 1075397403}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &894701328
 GameObject:
   m_ObjectHideFlags: 0
@@ -1632,6 +1647,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: NewCardPrefabOpp
       objectReference: {fileID: 0}
+    - target: {fileID: 3150673925289756411, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
+      propertyPath: flipAnimation
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 4313227376160776814, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
       propertyPath: m_SizeDelta.x
       value: 0.625
@@ -1846,9 +1865,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 396230099388163290, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
+    - {fileID: 4139798117971288157, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2756439749987025949, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1774526119}
     - targetCorrespondingSourceObject: {fileID: 2756439749987025949, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1774526117}
@@ -3111,6 +3134,45 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 2.5, y: 2.5}
   m_EdgeRadius: 0
+--- !u!114 &1523577931
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1523577924}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3839bb5ae4b66ee42abe1d464c2561eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  flipDuration: 0.5
+  flipEasing:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  frontContainer: {fileID: 18223382}
+  backContainer: {fileID: 448732881}
 --- !u!1 &1550445171
 GameObject:
   m_ObjectHideFlags: 0
@@ -3701,6 +3763,50 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bd27be675c43da4685bc9e1a49657c8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1774526119
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1774526114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3839bb5ae4b66ee42abe1d464c2561eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  flipDuration: 0.5
+  flipEasing:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  frontContainer: {fileID: 809068035}
+  backContainer: {fileID: 1791929087}
+--- !u!1 &1791929087 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3395844615914960357, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
+  m_PrefabInstance: {fileID: 1075397403}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1815283445
 GameObject:
   m_ObjectHideFlags: 0
@@ -4302,6 +4408,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: NewCardPrefab
       objectReference: {fileID: 0}
+    - target: {fileID: 3150673925289756411, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
+      propertyPath: flipAnimation
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 4313227376160776814, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
       propertyPath: m_SizeDelta.x
       value: 0.625
@@ -4514,10 +4624,14 @@ PrefabInstance:
       propertyPath: m_HorizontalAlignment
       value: 2
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4139798117971288157, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2756439749987025949, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1523577931}
     - targetCorrespondingSourceObject: {fileID: 2756439749987025949, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1523577928}
