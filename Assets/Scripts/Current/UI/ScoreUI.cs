@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using CardGame.Managers;
 
 /// <summary>
 /// UI component for displaying player scores in real-time.
