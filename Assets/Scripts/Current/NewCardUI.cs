@@ -475,7 +475,8 @@ namespace CardGame.UI
                         }
                     }
                 }
-                Debug.LogWarning("NewCardUI: No card back sprite assigned (neither in card data nor default). Using default colored back.", this);
+                // Silently use default colored back - no warning needed as this is expected behavior
+                // Debug.LogWarning("NewCardUI: No card back sprite assigned (neither in card data nor default). Using default colored back.", this);
             }
         }
         
