@@ -216,11 +216,11 @@ namespace CardGame.UI
             RectTransform rectTransform = panel.AddComponent<RectTransform>();
             if (isPlayer1)
             {
-                // Left side, vertically centered
+                // Left side, vertically centered, moved down to match P2
                 rectTransform.anchorMin = new Vector2(0, 0.5f);
                 rectTransform.anchorMax = new Vector2(0, 0.5f);
                 rectTransform.pivot = new Vector2(0, 0.5f);
-                rectTransform.anchoredPosition = new Vector2(15, 0);
+                rectTransform.anchoredPosition = new Vector2(15, -200); // Match P2 vertical position
             }
             else
             {
