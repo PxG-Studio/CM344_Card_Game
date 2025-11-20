@@ -195,18 +195,18 @@ namespace CardGame.UI
                 p1TurnIndicator.SetActive(true); // Always active
                 
                 // Move indicator to the active player's panel
-                RectTransform indicatorRect = p1TurnIndicator.GetComponent<RectTransform>();
+                RectTransform indicatorRect = p1TurnIndicator.gameObject.GetComponent<RectTransform>();
                 if (indicatorRect != null)
                 {
                     if (isPlayer1Turn)
                     {
                         // Position above P1 panel (left side)
-                        indicatorRect.anchoredPosition = new Vector2(-120 + 200, -80); // P1 panel top-right
+                        indicatorRect.anchoredPosition = new Vector2(80, -80); // P1 panel top-right (simplified)
                     }
                     else
                     {
                         // Position above P2 panel (right side)
-                        indicatorRect.anchoredPosition = new Vector2(120 + 200, -80); // P2 panel top-right
+                        indicatorRect.anchoredPosition = new Vector2(320, -80); // P2 panel top-right (simplified)
                     }
                 }
             }
