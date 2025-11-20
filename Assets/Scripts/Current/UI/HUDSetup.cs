@@ -57,6 +57,20 @@ namespace CardGame.UI
             // Setup Game End UI
             SetupGameEndUI(hudCanvas.transform);
             
+            // Ensure turn controller & end turn button exist
+            TurnController turnController = hudCanvas.GetComponent<TurnController>();
+            if (turnController == null)
+            {
+                turnController = hudCanvas.AddComponent<TurnController>();
+            }
+
+            GameObject endTurnButtonObj = CreateHUDButton(hudCanvas.transform, "EndTurnButton", "End Turn");
+            Button endTurnButton = endTurnButtonObj.GetComponent<Button>();
+            TextMeshProUGUI endTurnLabel = endTurnButtonObj.GetComponentInChildren<TextMeshProUGUI>();
+            
+            SetPrivateField(turnController, typeof(TurnController), "endTurnButton", endTurnButton);
+            SetPrivateField(turnController, typeof(TurnController), "endTurnLabel", endTurnLabel);
+            
             Debug.Log("HUDSetup: HUD successfully configured!");
         }
         
@@ -292,45 +306,25 @@ namespace CardGame.UI
         /// </summary>
         private TurnIndicatorUI FindOrCreateTurnIndicator(Transform parent, string name, bool isPlayer1)
         {
-            // Check if indicator already exists
-            Transform existing = GameObject.Find($"{name}_UI")?.transform;
+            // Check if indicator already exists under parent
+            Transform existing = parent.Find($"{name}_UI");
             if (existing != null && existing.GetComponent<TurnIndicatorUI>() != null)
             {
                 return existing.GetComponent<TurnIndicatorUI>();
             }
             
-            // Create UI diamond indicator as a child of the HUD canvas
+            // Create UI diamond indicator as a child of the player panel
             GameObject indicatorUI = new GameObject($"{name}_UI");
             indicatorUI.layer = 5; // UI layer
+            indicatorUI.transform.SetParent(parent, false);
             
-            // Get the canvas root
-            Canvas canvas = parent.GetComponentInParent<Canvas>();
-            if (canvas != null)
-            {
-                indicatorUI.transform.SetParent(canvas.transform, false);
-                
-                // Add RectTransform for UI positioning
-                RectTransform rectUI = indicatorUI.AddComponent<RectTransform>();
-                
-                if (isPlayer1)
-                {
-                    // Player 1: Top-right corner of P1 panel
-                    rectUI.anchorMin = new Vector2(0.5f, 1);
-                    rectUI.anchorMax = new Vector2(0.5f, 1);
-                    rectUI.pivot = new Vector2(1f, 1f); // Top-right pivot
-                    rectUI.anchoredPosition = new Vector2(-120 + 200, -80); // Panel X + panel width, panel Y
-                    rectUI.sizeDelta = new Vector2(30, 30); // Compact size
-                }
-                else
-                {
-                    // Player 2: Top-right corner of P2 panel
-                    rectUI.anchorMin = new Vector2(0.5f, 1);
-                    rectUI.anchorMax = new Vector2(0.5f, 1);
-                    rectUI.pivot = new Vector2(1f, 1f); // Top-right pivot
-                    rectUI.anchoredPosition = new Vector2(120 + 200, -80); // Panel X + panel width, panel Y
-                    rectUI.sizeDelta = new Vector2(30, 30); // Compact size
-                }
-            }
+            // Add RectTransform for UI positioning relative to the panel
+            RectTransform rectUI = indicatorUI.AddComponent<RectTransform>();
+            rectUI.anchorMin = new Vector2(0.5f, 1f);
+            rectUI.anchorMax = new Vector2(0.5f, 1f);
+            rectUI.pivot = new Vector2(0.5f, 0f); // Sit just above the top edge
+            rectUI.anchoredPosition = new Vector2(0f, 10f);
+            rectUI.sizeDelta = new Vector2(30f, 30f);
             
             // Add TextMeshPro component for the triangle indicator
             TMPro.TextMeshProUGUI textIndicator = indicatorUI.AddComponent<TMPro.TextMeshProUGUI>();
@@ -502,6 +496,17 @@ namespace CardGame.UI
             textRect.anchoredPosition = Vector2.zero;
             
             return btnObj;
+        }
+        
+        private GameObject CreateHUDButton(Transform parent, string name, string text)
+        {
+            GameObject buttonObj = CreateButton(parent, name, text);
+            RectTransform rect = buttonObj.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0f);
+            rect.anchorMax = new Vector2(0.5f, 0f);
+            rect.pivot = new Vector2(0.5f, 0f);
+            rect.anchoredPosition = new Vector2(0f, 60f);
+            return buttonObj;
         }
     }
 }

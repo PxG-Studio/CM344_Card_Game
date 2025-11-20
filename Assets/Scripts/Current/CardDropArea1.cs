@@ -54,6 +54,10 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
     private ScoreManager scoreManager;
     private GameEndManager gameEndManager;
     
+    // Board occupancy tracking
+    [SerializeField] private GameObject occupyingCard;
+    public bool IsOccupied => occupyingCard != null;
+    
     // Track cards played this turn (cannot be captured during same turn)
     private HashSet<GameObject> cardsPlayedThisTurn = new HashSet<GameObject>();
     
@@ -186,8 +190,31 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         }
     }
     
+    private bool IsPlayerTurn => GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.PlayerTurn;
+    private bool IsEnemyTurn => GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.EnemyTurn;
+    
     public void OnCardDrop(CardMover cardMover)
     {
+        if (!IsPlayerTurn)
+        {
+            if (debugBattles)
+            {
+                Debug.Log("CardDropArea1: Cannot play card - not Player 1's turn.");
+            }
+            cardMover.ReturnToStartPosition();
+            return;
+        }
+        
+        if (IsOccupied)
+        {
+            if (debugBattles)
+            {
+                Debug.Log("CardDropArea1: Tile already occupied.");
+            }
+            cardMover.ReturnToStartPosition();
+            return;
+        }
+        
         // Snap card to slot position
         if (snapCardToPosition)
         {
@@ -229,6 +256,8 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                     // Track card as played this turn (cannot be captured during same turn)
                     cardsPlayedThisTurn.Add(cardMover.gameObject);
                     
+                    occupyingCard = cardMover.gameObject;
+                    
                     // Check board occupancy after card is placed
                     CheckBoardOccupancy();
                     
@@ -238,12 +267,6 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                         CheckCardBattles(cardMover, card);
                     }
                     
-                    // Switch turns after card is placed
-                    HUDManager hudManager = FindObjectOfType<HUDManager>();
-                    if (hudManager != null)
-                    {
-                        hudManager.NextTurn();
-                    }
                 }
                 else
                 {
@@ -508,6 +531,26 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
 
     public void OnCardDropOpp(CardMoverOpp cardMoverOpp)
     {
+        if (!IsEnemyTurn)
+        {
+            if (debugBattles)
+            {
+                Debug.Log("CardDropArea1: Cannot play card - not Player 2's turn.");
+            }
+            cardMoverOpp.ReturnToStartPosition();
+            return;
+        }
+        
+        if (IsOccupied)
+        {
+            if (debugBattles)
+            {
+                Debug.Log("CardDropArea1: Tile already occupied.");
+            }
+            cardMoverOpp.ReturnToStartPosition();
+            return;
+        }
+        
         // Snap card to slot position
         if (snapCardToPosition)
         {
@@ -549,6 +592,8 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                     // Track card as played this turn (cannot be captured during same turn)
                     cardsPlayedThisTurn.Add(cardMoverOpp.gameObject);
                     
+                    occupyingCard = cardMoverOpp.gameObject;
+                    
                     // Check board occupancy after card is placed
                     CheckBoardOccupancy();
                     
@@ -558,12 +603,7 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                         CheckCardBattlesOpp(cardMoverOpp, card);
                     }
                     
-                    // Switch turns after card is placed
-                    HUDManager hudManager = FindObjectOfType<HUDManager>();
-                    if (hudManager != null)
-                    {
-                        hudManager.NextTurn();
-                    }
+                    // Switch turns handled by End Turn button/logic
                 }
                 else
                 {

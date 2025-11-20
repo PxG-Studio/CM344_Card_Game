@@ -189,32 +189,15 @@ namespace CardGame.UI
         /// </summary>
         private void UpdateTurnIndicators()
         {
-            // Use only P1's indicator and move it between panels
+            // Activate the indicator above whichever panel is active
             if (p1TurnIndicator != null)
             {
-                p1TurnIndicator.SetActive(true); // Always active
-                
-                // Move indicator to the active player's panel
-                RectTransform indicatorRect = p1TurnIndicator.gameObject.GetComponent<RectTransform>();
-                if (indicatorRect != null)
-                {
-                    if (isPlayer1Turn)
-                    {
-                        // Position above P1 panel - match HUDSetup positioning
-                        indicatorRect.anchoredPosition = new Vector2(-120 + 200, -80); // P1 panel top-right: 80px from center
-                    }
-                    else
-                    {
-                        // Position above P2 panel - match HUDSetup positioning
-                        indicatorRect.anchoredPosition = new Vector2(120 + 200, -80); // P2 panel top-right: 320px from center
-                    }
-                }
+                p1TurnIndicator.SetActive(isPlayer1Turn);
             }
             
-            // Hide P2's indicator (we only use one)
             if (p2TurnIndicator != null)
             {
-                p2TurnIndicator.SetActive(false);
+                p2TurnIndicator.SetActive(!isPlayer1Turn);
             }
             
             // Update player label styling
@@ -236,16 +219,6 @@ namespace CardGame.UI
         {
             isPlayer1Turn = isPlayer1;
             UpdateTurnIndicators();
-        }
-        
-        /// <summary>
-        /// Toggle to the next player's turn.
-        /// </summary>
-        public void NextTurn()
-        {
-            isPlayer1Turn = !isPlayer1Turn;
-            UpdateTurnIndicators();
-            Debug.Log($"Turn changed to: {(isPlayer1Turn ? "Player 1" : "Player 2")}");
         }
         
         /// <summary>

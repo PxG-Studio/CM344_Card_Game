@@ -128,14 +128,12 @@ namespace CardGame.Managers
             ChangeState(GameState.EnemyTurn);
         }
         
-        private void StartEnemyTurn()
-        {
-            Debug.Log("Enemy Turn Started");
-            // Enemy AI will be handled separately
-            Invoke(nameof(EndEnemyTurn), 2f); // Placeholder delay
-        }
-        
-        private void EndEnemyTurn()
+    private void StartEnemyTurn()
+    {
+        Debug.Log("Enemy Turn Started");
+    }
+    
+    public void EndEnemyTurn()
         {
             Debug.Log("Enemy Turn Ended");
             ChangeState(GameState.PlayerTurn);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using CardGame.Core;
 using CardGame.UI;
+using CardGame.Managers;
 
 public class CardMover : MonoBehaviour
 {
@@ -114,10 +115,12 @@ public class CardMover : MonoBehaviour
         #endif
     }
     
+    private bool CanInteract => GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.PlayerTurn;
+    
     private void OnMouseDown()
     {
-        // Don't allow dragging if card has been played
-        if (isPlayed) return;
+        // Don't allow dragging if card has been played or it's not the player's turn
+        if (isPlayed || !CanInteract) return;
         
         startDragPosition = transform.position;
         transform.position = GetMousePositionInWorldSpace();
@@ -125,13 +128,18 @@ public class CardMover : MonoBehaviour
 
     private void OnMouseDrag()
     {
-        // Don't allow dragging if card has been played
-        if (isPlayed) return;
+        // Don't allow dragging if card has been played or it's not the player's turn
+        if (isPlayed || !CanInteract) return;
         
         transform.position = GetMousePositionInWorldSpace();
     }
     private void OnMouseUp()
     {
+        if (!CanInteract)
+        {
+            ReturnToStartPosition();
+            return;
+        }
         // Try to find card reference again in case it wasn't set at Start
         if (card == null)
         {
@@ -141,14 +149,14 @@ public class CardMover : MonoBehaviour
         col.enabled = false;
         Collider2D hitCollider = Physics2D.OverlapPoint(transform.position);
         col.enabled = true;
-         if (hitCollider != null && hitCollider.TryGetComponent(out ICardDropArea cardDropArea))
-         {
+        if (hitCollider != null && hitCollider.TryGetComponent(out ICardDropArea cardDropArea))
+        {
             cardDropArea.OnCardDrop(this);
-         }
-         else
-         {
-            transform.position = startDragPosition;
-         }
+        }
+        else
+        {
+            ReturnToStartPosition();
+        }
     }
 
     public Vector3 GetMousePositionInWorldSpace()
@@ -158,9 +166,8 @@ public class CardMover : MonoBehaviour
         return p;
     }
 
-    // Update is called once per frame
-    void Update()
+    public void ReturnToStartPosition()
     {
-        
+        transform.position = startDragPosition;
     }
 }
