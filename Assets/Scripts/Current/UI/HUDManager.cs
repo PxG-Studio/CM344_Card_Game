@@ -50,6 +50,16 @@ namespace CardGame.UI
                 Debug.LogWarning("HUDManager: ScoreManager not found in scene!");
             }
             
+            // Subscribe to GameManager state changes for turn indicators
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.OnGameStateChanged += HandleGameStateChanged;
+            }
+            else
+            {
+                Debug.LogWarning("HUDManager: GameManager.Instance not found!");
+            }
+            
             // Auto-find deck managers if not assigned
             if (player1DeckManager == null)
             {
@@ -79,6 +89,27 @@ namespace CardGame.UI
             if (scoreManager != null)
             {
                 scoreManager.OnScoreUpdated -= UpdateScores;
+            }
+            
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.OnGameStateChanged -= HandleGameStateChanged;
+            }
+        }
+        
+        /// <summary>
+        /// Handle game state changes to update turn indicators.
+        /// </summary>
+        private void HandleGameStateChanged(GameState newState)
+        {
+            switch (newState)
+            {
+                case GameState.PlayerTurn:
+                    SetTurn(true);
+                    break;
+                case GameState.EnemyTurn:
+                    SetTurn(false);
+                    break;
             }
         }
         

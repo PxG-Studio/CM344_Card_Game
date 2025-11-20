@@ -170,6 +170,12 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                     {
                         CheckCardBattles(cardMover, card);
                     }
+                    
+                    // End player turn after card is placed
+                    if (GameManager.Instance != null)
+                    {
+                        GameManager.Instance.EndPlayerTurn();
+                    }
                 }
                 else
                 {
@@ -479,6 +485,13 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                     if (enableCardBattles)
                     {
                         CheckCardBattlesOpp(cardMoverOpp, card);
+                    }
+                    
+                    // End enemy turn after card is placed (will switch back to player turn)
+                    if (GameManager.Instance != null)
+                    {
+                        // GameManager will handle the turn transition
+                        // EndEnemyTurn is called automatically after a delay in GameManager
                     }
                 }
                 else

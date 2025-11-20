@@ -122,7 +122,9 @@ public class CardMover : MonoBehaviour
         }
     }
     
+    #if UNITY_EDITOR
     private bool hasLoggedWarning = false;
+    #endif
     private void OnMouseDown()
     {
         // Don't allow dragging if card has been played
