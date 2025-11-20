@@ -50,26 +50,13 @@ namespace CardGame.UI
             
             // Ensure game managers exist
             EnsureGameManagers();
+            EnsureFateFlowController();
             
             // Find and wire up all the text labels using reflection
             WireUpHUDReferences(hudManager, hudCanvas.transform);
             
             // Setup Game End UI
             SetupGameEndUI(hudCanvas.transform);
-            
-            // Ensure turn controller & end turn button exist
-            TurnController turnController = hudCanvas.GetComponent<TurnController>();
-            if (turnController == null)
-            {
-                turnController = hudCanvas.AddComponent<TurnController>();
-            }
-
-            GameObject endTurnButtonObj = CreateHUDButton(hudCanvas.transform, "EndTurnButton", "End Turn");
-            Button endTurnButton = endTurnButtonObj.GetComponent<Button>();
-            TextMeshProUGUI endTurnLabel = endTurnButtonObj.GetComponentInChildren<TextMeshProUGUI>();
-            
-            SetPrivateField(turnController, typeof(TurnController), "endTurnButton", endTurnButton);
-            SetPrivateField(turnController, typeof(TurnController), "endTurnLabel", endTurnLabel);
             
             Debug.Log("HUDSetup: HUD successfully configured!");
         }
@@ -103,6 +90,17 @@ namespace CardGame.UI
                 GameObject managerObj = new GameObject("GameEndManager");
                 managerObj.AddComponent<GameEndManager>();
                 Debug.Log("HUDSetup: Created GameEndManager");
+            }
+        }
+        
+        private void EnsureFateFlowController()
+        {
+            FateFlowController controller = FindObjectOfType<FateFlowController>();
+            if (controller == null)
+            {
+                GameObject fateObj = new GameObject("FateFlowController");
+                fateObj.AddComponent<FateFlowController>();
+                Debug.Log("HUDSetup: Created FateFlowController");
             }
         }
         
@@ -266,14 +264,14 @@ namespace CardGame.UI
             UnityEngine.UI.VerticalLayoutGroup layout = panel.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
             layout.padding = new RectOffset(12, 12, 12, 12);
             layout.spacing = 7;
-            layout.childAlignment = isPlayer1 ? TextAnchor.UpperLeft : TextAnchor.UpperRight;
+            layout.childAlignment = TextAnchor.UpperLeft;
             layout.childControlWidth = true;
             layout.childControlHeight = false;
             
             // Create text labels with better sizing
-            CreateTextLabel(panel.transform, "PlayerLabel", isPlayer1 ? "Player 1" : "Player 2", 16, true, isPlayer1);
-            CreateTextLabel(panel.transform, "ScoreLabel", "Score: 0", 15, false, isPlayer1);
-            CreateTextLabel(panel.transform, "HandDeckLabel", "Hand: 0 | Deck: 0", 13, false, isPlayer1);
+            CreateTextLabel(panel.transform, "PlayerLabel", isPlayer1 ? "Player 1" : "Player 2", 16, true, true);
+            CreateTextLabel(panel.transform, "ScoreLabel", "Score: 0", 15, false, true);
+            CreateTextLabel(panel.transform, "HandDeckLabel", "Hand: 0 | Deck: 0", 13, false, true);
             
             return panel.transform;
         }
@@ -325,6 +323,10 @@ namespace CardGame.UI
             rectUI.pivot = new Vector2(0.5f, 0f); // Sit just above the top edge
             rectUI.anchoredPosition = new Vector2(0f, 10f);
             rectUI.sizeDelta = new Vector2(30f, 30f);
+
+            // Prevent panel layout group from moving this indicator
+            UnityEngine.UI.LayoutElement layoutElement = indicatorUI.AddComponent<UnityEngine.UI.LayoutElement>();
+            layoutElement.ignoreLayout = true;
             
             // Add TextMeshPro component for the triangle indicator
             TMPro.TextMeshProUGUI textIndicator = indicatorUI.AddComponent<TMPro.TextMeshProUGUI>();
@@ -447,9 +449,74 @@ namespace CardGame.UI
             
             // Create Quit Button
             GameObject quitBtnObj = CreateButton(contentPanel.transform, "QuitButton", "Quit");
+
+            // Create Persona-style Victory Cut-In overlay
+            GameObject cutInObj = new GameObject("VictoryCutIn");
+            cutInObj.transform.SetParent(hudRoot, false);
+            
+            RectTransform cutInRect = cutInObj.AddComponent<RectTransform>();
+            cutInRect.anchorMin = new Vector2(0.5f, 0.5f);
+            cutInRect.anchorMax = new Vector2(0.5f, 0.5f);
+            cutInRect.pivot = new Vector2(0.5f, 0.5f);
+            cutInRect.sizeDelta = new Vector2(1200f, 260f);
+            cutInRect.anchoredPosition = new Vector2(0f, 140f);
+            cutInRect.localRotation = Quaternion.Euler(0f, 0f, -8f);
+            
+            CanvasGroup cutInCanvasGroup = cutInObj.AddComponent<CanvasGroup>();
+            cutInCanvasGroup.alpha = 0f;
+            
+            Image cutInBackground = cutInObj.AddComponent<Image>();
+            cutInBackground.color = new Color(0.05f, 0.05f, 0.05f, 0.95f);
+            cutInBackground.raycastTarget = false;
+            
+            GameObject pulseObj = new GameObject("AccentPulse");
+            pulseObj.transform.SetParent(cutInObj.transform, false);
+            pulseObj.transform.SetSiblingIndex(0);
+            RectTransform pulseRect = pulseObj.AddComponent<RectTransform>();
+            pulseRect.anchorMin = new Vector2(0f, 0f);
+            pulseRect.anchorMax = new Vector2(1f, 1f);
+            pulseRect.sizeDelta = Vector2.zero;
+            Image pulseImage = pulseObj.AddComponent<Image>();
+            pulseImage.color = new Color(1f, 0.55f, 0.2f, 0f);
+            pulseImage.raycastTarget = false;
+            
+            GameObject shadowTextObj = new GameObject("CutInShadowText");
+            shadowTextObj.transform.SetParent(cutInObj.transform, false);
+            RectTransform shadowRect = shadowTextObj.AddComponent<RectTransform>();
+            shadowRect.anchorMin = new Vector2(0.5f, 0.5f);
+            shadowRect.anchorMax = new Vector2(0.5f, 0.5f);
+            shadowRect.sizeDelta = new Vector2(1100f, 200f);
+            shadowRect.anchoredPosition = new Vector2(8f, -8f);
+            TextMeshProUGUI shadowTMP = shadowTextObj.AddComponent<TextMeshProUGUI>();
+            shadowTMP.text = "PLAYER 1 WINS!";
+            shadowTMP.fontSize = 96;
+            shadowTMP.fontStyle = FontStyles.Bold;
+            shadowTMP.alignment = TextAlignmentOptions.Center;
+            shadowTMP.color = new Color(0f, 0f, 0f, 0.7f);
+            shadowTMP.raycastTarget = false;
+            
+            GameObject mainTextObj = new GameObject("CutInMainText");
+            mainTextObj.transform.SetParent(cutInObj.transform, false);
+            RectTransform mainRect = mainTextObj.AddComponent<RectTransform>();
+            mainRect.anchorMin = new Vector2(0.5f, 0.5f);
+            mainRect.anchorMax = new Vector2(0.5f, 0.5f);
+            mainRect.sizeDelta = new Vector2(1100f, 200f);
+            mainRect.anchoredPosition = Vector2.zero;
+            TextMeshProUGUI mainTMP = mainTextObj.AddComponent<TextMeshProUGUI>();
+            mainTMP.text = "PLAYER 1 WINS!";
+            mainTMP.fontSize = 96;
+            mainTMP.fontStyle = FontStyles.Bold;
+            mainTMP.alignment = TextAlignmentOptions.Center;
+            mainTMP.color = new Color(0.99f, 0.95f, 0.87f, 1f);
+            mainTMP.raycastTarget = false;
+            
+            AudioSource cutInAudioSource = cutInObj.AddComponent<AudioSource>();
+            cutInAudioSource.playOnAwake = false;
+            cutInAudioSource.loop = false;
             
             // Add GameEndUI component
             GameEndUI gameEndUI = endPanel.AddComponent<GameEndUI>();
+            VictoryCutInController victoryCutIn = cutInObj.AddComponent<VictoryCutInController>();
             
             // Wire up references using reflection
             System.Type gameEndUIType = typeof(GameEndUI);
@@ -458,6 +525,16 @@ namespace CardGame.UI
             SetPrivateField(gameEndUI, gameEndUIType, "finalScoreText", scoreText);
             SetPrivateField(gameEndUI, gameEndUIType, "restartButton", restartBtnObj.GetComponent<UnityEngine.UI.Button>());
             SetPrivateField(gameEndUI, gameEndUIType, "quitButton", quitBtnObj.GetComponent<UnityEngine.UI.Button>());
+            SetPrivateField(gameEndUI, gameEndUIType, "victoryCutIn", victoryCutIn);
+
+            System.Type cutInType = typeof(VictoryCutInController);
+            SetPrivateField(victoryCutIn, cutInType, "cutInRoot", cutInRect);
+            SetPrivateField(victoryCutIn, cutInType, "canvasGroup", cutInCanvasGroup);
+            SetPrivateField(victoryCutIn, cutInType, "mainText", mainTMP);
+            SetPrivateField(victoryCutIn, cutInType, "shadowText", shadowTMP);
+            SetPrivateField(victoryCutIn, cutInType, "backgroundImage", cutInBackground);
+            SetPrivateField(victoryCutIn, cutInType, "accentPulseImage", pulseImage);
+            SetPrivateField(victoryCutIn, cutInType, "audioSource", cutInAudioSource);
             
             Debug.Log("HUDSetup: Created GameEndUI panel");
         }
@@ -498,16 +575,6 @@ namespace CardGame.UI
             return btnObj;
         }
         
-        private GameObject CreateHUDButton(Transform parent, string name, string text)
-        {
-            GameObject buttonObj = CreateButton(parent, name, text);
-            RectTransform rect = buttonObj.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.5f, 0f);
-            rect.anchorMax = new Vector2(0.5f, 0f);
-            rect.pivot = new Vector2(0.5f, 0f);
-            rect.anchoredPosition = new Vector2(0f, 60f);
-            return buttonObj;
-        }
     }
 }
 

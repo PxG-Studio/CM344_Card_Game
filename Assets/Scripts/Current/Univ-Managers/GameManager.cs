@@ -27,6 +27,7 @@ namespace CardGame.Managers
         public System.Action<GameState> OnGameStateChanged;
         public System.Action OnTurnStarted;
         public System.Action OnTurnEnded;
+        public System.Action<CardDropArea1, NewCard> OnCardPlaced;
         
         private void Awake()
         {
@@ -152,6 +153,11 @@ namespace CardGame.Managers
         public void CheckWinCondition()
         {
             // Will be implemented based on specific game rules
+        }
+        
+        public void NotifyCardPlaced(CardDropArea1 tile, NewCard card)
+        {
+            OnCardPlaced?.Invoke(tile, card);
         }
     }
     

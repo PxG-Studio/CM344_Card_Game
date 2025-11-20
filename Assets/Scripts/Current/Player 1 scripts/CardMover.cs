@@ -10,12 +10,18 @@ public class CardMover : MonoBehaviour
     private Collider2D col;
     private Vector3 startDragPosition;
     private bool isPlayed = false; // Track if card has been played/dropped on board
+    private bool isDragging;
+    private bool hasMovedDuringDrag;
+    [SerializeField] private float dragThreshold = 0.1f;
+    private Vector3 pointerStartPosition;
     
     [Header("Card Reference")]
     [SerializeField] private NewCard card; // Reference to the NewCard this represents
+    [SerializeField] private FateSide ownerSide = FateSide.Player;
     
     public NewCard Card => card;
     public bool IsPlayed => isPlayed;
+    public FateSide OwnerSide => ownerSide;
     
     /// <summary>
     /// Mark this card as played - prevents further dragging
@@ -30,10 +36,16 @@ public class CardMover : MonoBehaviour
     {
         card = newCard;
     }
+    
+    public void RefreshHomePosition()
+    {
+        startDragPosition = transform.position;
+    }
 
     void Start()
     {
         col = GetComponent<Collider2D>();
+        startDragPosition = transform.position;
         
         // Try to find card reference automatically if not set
         if (card == null)
@@ -115,26 +127,51 @@ public class CardMover : MonoBehaviour
         #endif
     }
     
-    private bool CanInteract => GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.PlayerTurn;
+    private bool CanInteract => FateFlowController.Instance != null && FateFlowController.Instance.CanAct(ownerSide);
     
     private void OnMouseDown()
     {
         // Don't allow dragging if card has been played or it's not the player's turn
         if (isPlayed || !CanInteract) return;
         
+        isDragging = true;
+        hasMovedDuringDrag = false;
         startDragPosition = transform.position;
+        pointerStartPosition = GetMousePositionInWorldSpace();
         transform.position = GetMousePositionInWorldSpace();
     }
 
     private void OnMouseDrag()
     {
         // Don't allow dragging if card has been played or it's not the player's turn
-        if (isPlayed || !CanInteract) return;
+        if (isPlayed || !CanInteract || !isDragging) return;
         
-        transform.position = GetMousePositionInWorldSpace();
+        Vector3 currentPointer = GetMousePositionInWorldSpace();
+        if (!hasMovedDuringDrag)
+        {
+            float distance = Vector3.Distance(pointerStartPosition, currentPointer);
+            if (distance >= dragThreshold)
+            {
+                hasMovedDuringDrag = true;
+            }
+        }
+        transform.position = currentPointer;
     }
     private void OnMouseUp()
     {
+        if (!isDragging)
+        {
+            return;
+        }
+
+        isDragging = false;
+
+        if (!hasMovedDuringDrag)
+        {
+            ReturnToStartPosition();
+            return;
+        }
+
         if (!CanInteract)
         {
             ReturnToStartPosition();
@@ -169,5 +206,6 @@ public class CardMover : MonoBehaviour
     public void ReturnToStartPosition()
     {
         transform.position = startDragPosition;
+        hasMovedDuringDrag = false;
     }
 }
