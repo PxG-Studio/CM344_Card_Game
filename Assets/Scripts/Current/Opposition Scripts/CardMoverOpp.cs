@@ -106,25 +106,13 @@ public class CardMoverOpp : MonoBehaviour
         
         // If still not found, only log in Editor (not during play)
         #if UNITY_EDITOR
-        if (card == null)
+        if (card == null && !gameObject.name.Contains("Prefab"))
         {
-            // Only log once per GameObject and only in development builds
-            if (!hasLoggedWarning)
-            {
-                // Suppress warning if this is a prefab instance that will be initialized later
-                if (!gameObject.name.Contains("Prefab"))
-                {
-                    Debug.LogWarning($"CardMover on {gameObject.name}: Could not find NewCard reference. Card will not be playable until reference is set. You can assign it manually in Inspector or ensure NewCardUI component exists.");
-                }
-                hasLoggedWarning = true;
-            }
+            // Suppress warning if this is a prefab instance that will be initialized later
+            Debug.LogWarning($"CardMoverOpp on {gameObject.name}: Could not find NewCard reference. Card will not be playable until reference is set. You can assign it manually in Inspector or ensure NewCardUI component exists.");
         }
         #endif
     }
-    
-    #if UNITY_EDITOR
-    private bool hasLoggedWarning = false;
-    #endif
     
     private void OnMouseDown()
     {
