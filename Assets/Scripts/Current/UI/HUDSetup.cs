@@ -181,8 +181,8 @@ namespace CardGame.UI
             TMP_Text tilesRemainingLabel = hudRoot.Find("TilesRemainingLabel")?.GetComponent<TMP_Text>();
             
             // Find or create turn indicators
-            UnityEngine.UI.Image p1TurnIndicator = FindOrCreateTurnIndicator(p1Panel, "TurnIndicator");
-            UnityEngine.UI.Image p2TurnIndicator = FindOrCreateTurnIndicator(p2Panel, "TurnIndicator");
+            UnityEngine.UI.Image p1TurnIndicator = FindOrCreateTurnIndicator(p1Panel, "TurnIndicator", true);
+            UnityEngine.UI.Image p2TurnIndicator = FindOrCreateTurnIndicator(p2Panel, "TurnIndicator", false);
             
             // Find deck managers
             NewDeckManager player1DeckManager = FindObjectOfType<NewDeckManager>();
@@ -290,7 +290,7 @@ namespace CardGame.UI
         /// <summary>
         /// Find or create a turn indicator Image component.
         /// </summary>
-        private UnityEngine.UI.Image FindOrCreateTurnIndicator(Transform parent, string name)
+        private UnityEngine.UI.Image FindOrCreateTurnIndicator(Transform parent, string name, bool isPlayer1)
         {
             Transform existing = parent.Find(name);
             if (existing != null)
@@ -302,27 +302,42 @@ namespace CardGame.UI
                 }
             }
             
-            // Create new turn indicator as child of PlayerLabel if it exists
-            Transform playerLabel = parent.Find("PlayerLabel");
-            Transform indicatorParent = playerLabel != null ? playerLabel : parent;
-            
+            // Create new turn indicator
             GameObject indicator = new GameObject(name);
-            indicator.transform.SetParent(indicatorParent, false);
             indicator.layer = 5; // UI layer
             
             // Add RectTransform
             RectTransform rectTransform = indicator.AddComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0, 0.5f);
-            rectTransform.anchorMax = new Vector2(0, 0.5f);
-            rectTransform.pivot = new Vector2(0, 0.5f);
-            rectTransform.anchoredPosition = new Vector2(-5, 0);
-            rectTransform.sizeDelta = new Vector2(8, 20);
+            
+            if (isPlayer1)
+            {
+                // Player 1: Top-right corner of panel
+                indicator.transform.SetParent(parent, false);
+                rectTransform.anchorMin = new Vector2(1, 1);
+                rectTransform.anchorMax = new Vector2(1, 1);
+                rectTransform.pivot = new Vector2(1, 1);
+                rectTransform.anchoredPosition = new Vector2(-5, -5);
+                rectTransform.sizeDelta = new Vector2(15, 15);
+            }
+            else
+            {
+                // Player 2: Left side of PlayerLabel (original position)
+                Transform playerLabel = parent.Find("PlayerLabel");
+                Transform indicatorParent = playerLabel != null ? playerLabel : parent;
+                indicator.transform.SetParent(indicatorParent, false);
+                rectTransform.anchorMin = new Vector2(0, 0.5f);
+                rectTransform.anchorMax = new Vector2(0, 0.5f);
+                rectTransform.pivot = new Vector2(0, 0.5f);
+                rectTransform.anchoredPosition = new Vector2(-5, 0);
+                rectTransform.sizeDelta = new Vector2(8, 20);
+            }
             
             // Add Image component
             UnityEngine.UI.Image image = indicator.AddComponent<UnityEngine.UI.Image>();
             image.color = new Color(0.3f, 0.3f, 0.3f, 0.3f); // Default inactive color
             
-            Debug.Log($"HUDSetup: Created turn indicator '{name}' under {indicatorParent.name}");
+            string position = isPlayer1 ? "top-right corner" : "left of PlayerLabel";
+            Debug.Log($"HUDSetup: Created turn indicator '{name}' at {position}");
             return image;
         }
         
