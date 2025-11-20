@@ -65,6 +65,14 @@ namespace CardGame.UI
         /// </summary>
         private void EnsureGameManagers()
         {
+            // Check for GameManager (singleton, persists across scenes)
+            if (GameManager.Instance == null)
+            {
+                GameObject managerObj = new GameObject("GameManager");
+                managerObj.AddComponent<GameManager>();
+                Debug.Log("HUDSetup: Created GameManager");
+            }
+            
             // Check for ScoreManager
             ScoreManager scoreManager = FindObjectOfType<ScoreManager>();
             if (scoreManager == null)
