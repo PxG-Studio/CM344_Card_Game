@@ -38,6 +38,14 @@ namespace CardGame.UI
 
         private void SetupMainMenu()
         {
+            // Set beautiful gradient background
+            Camera mainCamera = Camera.main;
+            if (mainCamera != null)
+            {
+                mainCamera.clearFlags = CameraClearFlags.SolidColor;
+                mainCamera.backgroundColor = new Color(0.1f, 0.15f, 0.25f); // Dark blue
+            }
+
             // Find or create canvas
             Canvas canvas = FindObjectOfType<Canvas>();
             if (canvas == null)
@@ -58,6 +66,9 @@ namespace CardGame.UI
             }
 
             Transform canvasTransform = canvas.transform;
+
+            // Create gradient background panel
+            CreateBackgroundPanel(canvasTransform);
 
             // Create title
             CreateTitle(canvasTransform);
@@ -90,6 +101,47 @@ namespace CardGame.UI
             Debug.Log("MainMenuSetup: Beautiful menu created!");
         }
 
+        private void CreateBackgroundPanel(Transform parent)
+        {
+            GameObject bgPanel = new GameObject("BackgroundPanel");
+            bgPanel.transform.SetParent(parent, false);
+            bgPanel.layer = 5;
+
+            RectTransform bgRect = bgPanel.AddComponent<RectTransform>();
+            bgRect.anchorMin = Vector2.zero;
+            bgRect.anchorMax = Vector2.one;
+            bgRect.sizeDelta = Vector2.zero;
+            bgRect.anchoredPosition = Vector2.zero;
+
+            Image bgImage = bgPanel.AddComponent<Image>();
+            // Beautiful gradient from dark blue to purple
+            bgImage.color = new Color(0.08f, 0.12f, 0.2f, 1f); // Deep blue-purple
+            bgImage.sprite = CreateGradientSprite();
+        }
+
+        private Sprite CreateGradientSprite()
+        {
+            Texture2D texture = new Texture2D(2, 256);
+            Color[] pixels = new Color[2 * 256];
+            
+            for (int y = 0; y < 256; y++)
+            {
+                float t = y / 255f;
+                // Gradient from dark blue at bottom to lighter blue-purple at top
+                Color color = Color.Lerp(
+                    new Color(0.05f, 0.08f, 0.15f, 1f), // Dark blue bottom
+                    new Color(0.15f, 0.2f, 0.35f, 1f)   // Lighter blue-purple top
+                );
+                pixels[y * 2] = color;
+                pixels[y * 2 + 1] = color;
+            }
+            
+            texture.SetPixels(pixels);
+            texture.Apply();
+            
+            return Sprite.Create(texture, new Rect(0, 0, 2, 256), new Vector2(0.5f, 0.5f));
+        }
+
         private void CreateTitle(Transform parent)
         {
             GameObject titleObj = new GameObject("GameTitle");
@@ -108,15 +160,15 @@ namespace CardGame.UI
             titleText.fontSize = 72;
             titleText.fontStyle = FontStyles.Bold;
             titleText.alignment = TextAlignmentOptions.Center;
-            titleText.color = new Color(1f, 0.9f, 0.3f); // Gold color
+            titleText.color = Color.white;
 
-            // Add shadow/outline
+            // Add beautiful cyan/blue gradient
             titleText.enableVertexGradient = true;
             titleText.colorGradient = new VertexGradient(
-                new Color(1f, 1f, 0.5f),
-                new Color(1f, 1f, 0.5f),
-                new Color(1f, 0.7f, 0f),
-                new Color(1f, 0.7f, 0f)
+                new Color(0.5f, 0.9f, 1f),    // Light cyan top
+                new Color(0.5f, 0.9f, 1f),    // Light cyan top
+                new Color(0.2f, 0.6f, 1f),    // Bright blue bottom
+                new Color(0.2f, 0.6f, 1f)     // Bright blue bottom
             );
         }
 
@@ -134,16 +186,16 @@ namespace CardGame.UI
             
             // Add image for button background
             Image buttonImage = buttonObj.AddComponent<Image>();
-            buttonImage.color = new Color(0.2f, 0.6f, 0.2f, 1f); // Green
+            buttonImage.color = new Color(0.2f, 0.5f, 0.9f, 1f); // Blue
             buttonImage.sprite = CreateButtonSprite();
 
-            // Configure button colors
+            // Configure button colors - beautiful blue shades
             ColorBlock colors = button.colors;
-            colors.normalColor = new Color(0.2f, 0.6f, 0.2f, 1f);
-            colors.highlightedColor = new Color(0.3f, 0.8f, 0.3f, 1f);
-            colors.pressedColor = new Color(0.15f, 0.5f, 0.15f, 1f);
-            colors.selectedColor = new Color(0.3f, 0.8f, 0.3f, 1f);
-            colors.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+            colors.normalColor = new Color(0.2f, 0.5f, 0.9f, 1f);      // Medium blue
+            colors.highlightedColor = new Color(0.3f, 0.65f, 1f, 1f);  // Bright blue
+            colors.pressedColor = new Color(0.15f, 0.4f, 0.75f, 1f);   // Dark blue
+            colors.selectedColor = new Color(0.3f, 0.65f, 1f, 1f);     // Bright blue
+            colors.disabledColor = new Color(0.4f, 0.4f, 0.5f, 0.5f);  // Gray
             colors.colorMultiplier = 1f;
             colors.fadeDuration = 0.1f;
             button.colors = colors;
