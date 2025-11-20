@@ -189,15 +189,32 @@ namespace CardGame.UI
         /// </summary>
         private void UpdateTurnIndicators()
         {
-            // Update turn indicators (wired up by HUDSetup)
+            // Use only P1's indicator and move it between panels
             if (p1TurnIndicator != null)
             {
-                p1TurnIndicator.SetActive(isPlayer1Turn);
+                p1TurnIndicator.SetActive(true); // Always active
+                
+                // Move indicator to the active player's panel
+                RectTransform indicatorRect = p1TurnIndicator.GetComponent<RectTransform>();
+                if (indicatorRect != null)
+                {
+                    if (isPlayer1Turn)
+                    {
+                        // Position above P1 panel (left side)
+                        indicatorRect.anchoredPosition = new Vector2(-120 + 200, -80); // P1 panel top-right
+                    }
+                    else
+                    {
+                        // Position above P2 panel (right side)
+                        indicatorRect.anchoredPosition = new Vector2(120 + 200, -80); // P2 panel top-right
+                    }
+                }
             }
             
+            // Hide P2's indicator (we only use one)
             if (p2TurnIndicator != null)
             {
-                p2TurnIndicator.SetActive(!isPlayer1Turn);
+                p2TurnIndicator.SetActive(false);
             }
             
             // Update player label styling
