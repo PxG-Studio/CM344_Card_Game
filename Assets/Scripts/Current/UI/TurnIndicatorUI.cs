@@ -17,7 +17,7 @@ namespace CardGame.UI
         [SerializeField] private float hoverSpeed = 2f;
         
         [Header("Colors")]
-        [SerializeField] private Color activeColor = new Color(1f, 0f, 0f, 1f); // BRIGHT RED for testing
+        [SerializeField] private Color activeColor = new Color(1f, 0.8f, 0f, 1f); // Gold/Yellow
         [SerializeField] private Color inactiveColor = new Color(0.3f, 0.3f, 0.3f, 0f); // Transparent
         
         private RectTransform rectTransform;
