@@ -318,8 +318,8 @@ namespace CardGame.UI
                     rectUI.anchorMin = new Vector2(1, 1);
                     rectUI.anchorMax = new Vector2(1, 1);
                     rectUI.pivot = new Vector2(0.5f, 0.5f);
-                    rectUI.anchoredPosition = new Vector2(-100, -80); // Offset from top-right
-                    rectUI.sizeDelta = new Vector2(40, 40); // Size of the diamond
+                    rectUI.anchoredPosition = new Vector2(-150, -100); // Offset from top-right
+                    rectUI.sizeDelta = new Vector2(60, 60); // Bigger diamond (was 40x40)
                 }
                 else
                 {
@@ -327,8 +327,8 @@ namespace CardGame.UI
                     rectUI.anchorMin = new Vector2(0, 1);
                     rectUI.anchorMax = new Vector2(0, 1);
                     rectUI.pivot = new Vector2(0.5f, 0.5f);
-                    rectUI.anchoredPosition = new Vector2(100, -80); // Offset from top-left
-                    rectUI.sizeDelta = new Vector2(40, 40); // Size of the diamond
+                    rectUI.anchoredPosition = new Vector2(150, -100); // Offset from top-left
+                    rectUI.sizeDelta = new Vector2(60, 60); // Bigger diamond (was 40x40)
                 }
             }
             
