@@ -6,7 +6,6 @@ namespace CardGame.UI
     /// <summary>
     /// Simple rotating diamond UI indicator for player turns
     /// </summary>
-    [RequireComponent(typeof(Image))]
     public class TurnIndicatorUI : MonoBehaviour
     {
         [Header("Rotation Settings")]

@@ -181,8 +181,8 @@ namespace CardGame.UI
             TMP_Text tilesRemainingLabel = hudRoot.Find("TilesRemainingLabel")?.GetComponent<TMP_Text>();
             
             // Find or create turn indicators
-            UnityEngine.UI.Image p1TurnIndicator = FindOrCreateTurnIndicator(p1Panel, "TurnIndicator", true);
-            UnityEngine.UI.Image p2TurnIndicator = FindOrCreateTurnIndicator(p2Panel, "TurnIndicator", false);
+            TurnIndicatorUI p1TurnIndicator = FindOrCreateTurnIndicator(p1Panel, "TurnIndicator", true);
+            TurnIndicatorUI p2TurnIndicator = FindOrCreateTurnIndicator(p2Panel, "TurnIndicator", false);
             
             // Find deck managers
             NewDeckManager player1DeckManager = FindObjectOfType<NewDeckManager>();
@@ -288,15 +288,15 @@ namespace CardGame.UI
         }
         
         /// <summary>
-        /// Find or create a rotating diamond UI indicator that hovers above the panel.
+        /// Find or create a rotating triangle UI indicator that hovers above the panel.
         /// </summary>
-        private UnityEngine.UI.Image FindOrCreateTurnIndicator(Transform parent, string name, bool isPlayer1)
+        private TurnIndicatorUI FindOrCreateTurnIndicator(Transform parent, string name, bool isPlayer1)
         {
             // Check if indicator already exists
             Transform existing = GameObject.Find($"{name}_UI")?.transform;
             if (existing != null && existing.GetComponent<TurnIndicatorUI>() != null)
             {
-                return existing.GetComponent<UnityEngine.UI.Image>();
+                return existing.GetComponent<TurnIndicatorUI>();
             }
             
             // Create UI diamond indicator as a child of the HUD canvas
@@ -332,7 +332,7 @@ namespace CardGame.UI
                 }
             }
             
-            // Add TextMeshPro component instead of Image for better visibility
+            // Add TextMeshPro component for the triangle indicator
             TMPro.TextMeshProUGUI textIndicator = indicatorUI.AddComponent<TMPro.TextMeshProUGUI>();
             textIndicator.text = "▼"; // Down-pointing triangle (inverted pyramid)
             textIndicator.fontSize = 48;
@@ -340,17 +340,13 @@ namespace CardGame.UI
             textIndicator.alignment = TMPro.TextAlignmentOptions.Center;
             textIndicator.fontStyle = TMPro.FontStyles.Bold;
             
-            // Add Image component for the TurnIndicatorUI script to control
-            UnityEngine.UI.Image image = indicatorUI.AddComponent<UnityEngine.UI.Image>();
-            image.color = new Color(0, 0, 0, 0); // Transparent - we're using text instead
-            
             // Add the UI indicator component
             TurnIndicatorUI indicatorScript = indicatorUI.AddComponent<TurnIndicatorUI>();
             indicatorScript.SetActive(false); // Start inactive
             
             string position = isPlayer1 ? "above Player 1 panel" : "above Player 2 panel";
-            Debug.Log($"HUDSetup: Created UI diamond indicator '{name}_UI' {position}");
-            return image;
+            Debug.Log($"HUDSetup: Created UI triangle indicator '{name}_UI' {position}");
+            return indicatorScript;
         }
         
         /// <summary>

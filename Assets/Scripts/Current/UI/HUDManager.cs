@@ -14,13 +14,13 @@ namespace CardGame.UI
         [SerializeField] private TMP_Text p1ScoreLabel;
         [SerializeField] private TMP_Text p1HandDeckLabel;
         [SerializeField] private TMP_Text p1PlayerLabel;
-        [SerializeField] private UnityEngine.UI.Image p1TurnIndicator;
+        [SerializeField] private TurnIndicatorUI p1TurnIndicator;
         
         [Header("Player 2 Panel")]
         [SerializeField] private TMP_Text p2ScoreLabel;
         [SerializeField] private TMP_Text p2HandDeckLabel;
         [SerializeField] private TMP_Text p2PlayerLabel;
-        [SerializeField] private UnityEngine.UI.Image p2TurnIndicator;
+        [SerializeField] private TurnIndicatorUI p2TurnIndicator;
         
         [Header("Tiles Remaining")]
         [SerializeField] private TMP_Text tilesRemainingLabel;
