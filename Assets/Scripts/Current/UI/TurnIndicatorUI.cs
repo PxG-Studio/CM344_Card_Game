@@ -54,11 +54,12 @@ namespace CardGame.UI
         public void SetActive(bool active)
         {
             isActive = active;
-            gameObject.SetActive(active);
             
+            // Don't disable the GameObject, just make it invisible and stop animating
             if (image != null)
             {
                 image.color = active ? activeColor : inactiveColor;
+                image.enabled = active; // Enable/disable rendering
             }
         }
 

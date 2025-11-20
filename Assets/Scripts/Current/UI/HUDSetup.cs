@@ -341,7 +341,7 @@ namespace CardGame.UI
             indicatorScript.SetActive(false); // Start inactive
             
             string position = isPlayer1 ? "above Player 1 panel" : "above Player 2 panel";
-            Debug.Log($"HUDSetup: Created UI turn indicator '{name}' {position}");
+            Debug.Log($"HUDSetup: Created UI diamond indicator '{name}_UI' {position}");
             return image;
         }
         
