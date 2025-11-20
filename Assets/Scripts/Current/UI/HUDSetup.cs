@@ -314,21 +314,21 @@ namespace CardGame.UI
                 
                 if (isPlayer1)
                 {
-                    // Player 1: Above top-right corner
-                    rectUI.anchorMin = new Vector2(1, 1);
-                    rectUI.anchorMax = new Vector2(1, 1);
+                    // Player 1: CENTER OF SCREEN for testing
+                    rectUI.anchorMin = new Vector2(0.5f, 0.5f);
+                    rectUI.anchorMax = new Vector2(0.5f, 0.5f);
                     rectUI.pivot = new Vector2(0.5f, 0.5f);
-                    rectUI.anchoredPosition = new Vector2(-150, -100); // Offset from top-right
-                    rectUI.sizeDelta = new Vector2(60, 60); // Bigger diamond (was 40x40)
+                    rectUI.anchoredPosition = new Vector2(0, 0); // Dead center
+                    rectUI.sizeDelta = new Vector2(150, 150); // HUGE - 150x150
                 }
                 else
                 {
-                    // Player 2: Above top-left corner
-                    rectUI.anchorMin = new Vector2(0, 1);
-                    rectUI.anchorMax = new Vector2(0, 1);
+                    // Player 2: Also center but offset
+                    rectUI.anchorMin = new Vector2(0.5f, 0.5f);
+                    rectUI.anchorMax = new Vector2(0.5f, 0.5f);
                     rectUI.pivot = new Vector2(0.5f, 0.5f);
-                    rectUI.anchoredPosition = new Vector2(150, -100); // Offset from top-left
-                    rectUI.sizeDelta = new Vector2(60, 60); // Bigger diamond (was 40x40)
+                    rectUI.anchoredPosition = new Vector2(200, 0); // Offset from center
+                    rectUI.sizeDelta = new Vector2(150, 150); // HUGE - 150x150
                 }
             }
             
