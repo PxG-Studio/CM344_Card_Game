@@ -34,6 +34,9 @@ public class CardMoverOpp : MonoBehaviour
     {
         col = GetComponent<Collider2D>();
         
+        // Set card scale to match drop area size
+        transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+        
         // Try to find card reference automatically if not set
         if (card == null)
         {
