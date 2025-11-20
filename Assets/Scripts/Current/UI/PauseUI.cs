@@ -1,6 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 using CardGame.Managers;
+using UnityEngine.SceneManagement;
+using JetBrains.Annotations;
+using System;
 
 namespace CardGame.UI
 {
@@ -12,7 +15,9 @@ namespace CardGame.UI
         [Header("UI References")]
         [SerializeField] private GameObject pausePanel;
         [SerializeField] private Button resumeButton;
-        [SerializeField] private Button quitButton;
+        [SerializeField] private Button quitmenuButton;
+        [SerializeField] private Button quitgameButton;
+        [SerializeField] private Button restartButton;
 
         private bool isPaused = false;
 
@@ -20,9 +25,20 @@ namespace CardGame.UI
         {
             if (resumeButton != null)
                 resumeButton.onClick.AddListener(ResumeGame);
-            if (quitButton != null)
-                quitButton.onClick.AddListener(QuitGame);
+            if (quitmenuButton != null)
+                quitmenuButton.onClick.AddListener(QuitMenu);
+            if (quitgameButton != null)
+                quitgameButton.onClick.AddListener(QuitGame);
+            if (restartButton != null)
+                restartButton.onClick.AddListener(RestartGame);
             HidePausePanel();
+        }
+
+        private void QuitMenu()
+        {
+            Application.Quit();
+
+
         }
 
         private void Update()
@@ -70,9 +86,19 @@ namespace CardGame.UI
         {
             #if UNITY_EDITOR
                 UnityEditor.EditorApplication.isPlaying = false;
-            #else
+#else
                 Application.Quit();
-            #endif
+#endif
+            Application.Quit();
+        }
+
+        public void RestartGame()
+        {
+
+        }
+        public void GoToScene(string sceneName)
+        {
+            SceneManager.LoadScene(sceneName);
         }
     }
 }

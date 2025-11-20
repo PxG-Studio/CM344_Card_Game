@@ -20,4 +20,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/DeckCollection.unity
     guid: 31bc726f3c2f9f147af0128a4d051492
+  - enabled: 1
+    path: Assets/Scenes/TitleCard.unity
+    guid: 9418568a96c57bf489e6bd9b498ece67
   m_configObjects: {}
