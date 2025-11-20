@@ -38,6 +38,9 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
     [Header("Settings")]
     [SerializeField] private bool playCardOnDrop = true;
     [SerializeField] private bool snapCardToPosition = true;
+    [SerializeField] private Vector3 cardScaleOnBoard = Vector3.one; // Leave at (1,1,1) to auto-match drop area size
+    [SerializeField, Range(0.5f, 1.2f)] private float cardScaleFillPercent = 0.9f;
+    [SerializeField] private SpriteRenderer tileSpriteRenderer;
     [SerializeField] private float adjacentCardDistance = 3f; // Distance to consider cards adjacent (increased from 2f)
     [SerializeField] private bool enableCardBattles = true; // Enable stat comparison and card flipping
     [SerializeField] private bool debugBattles = true; // Log battle detection for debugging
@@ -51,6 +54,10 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
     private ScoreManager scoreManager;
     private GameEndManager gameEndManager;
     
+    // Board occupancy tracking
+    [SerializeField] private GameObject occupyingCard;
+    public bool IsOccupied => occupyingCard != null;
+    
     // Track cards played this turn (cannot be captured during same turn)
     private HashSet<GameObject> cardsPlayedThisTurn = new HashSet<GameObject>();
     
@@ -59,9 +66,20 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
     
     // Track if chains are in progress
     private int activeChainCount = 0;
+
+    private bool CanCardAct(FateSide side)
+    {
+        if (FateFlowController.Instance == null) return true;
+        return FateFlowController.Instance.CanAct(side);
+    }
     
     private void Start()
     {
+        if (tileSpriteRenderer == null)
+        {
+            tileSpriteRenderer = GetComponent<SpriteRenderer>();
+        }
+        
         // Auto-find NewDeckManager if not assigned
         if (deckManager == null)
         {
@@ -92,21 +110,73 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
             }
         }
         
-        // Subscribe to GameManager events to clear turn tracking
-        if (GameManager.Instance != null)
+        if (FateFlowController.Instance != null)
         {
-            GameManager.Instance.OnTurnStarted += ClearTurnTracking;
-            GameManager.Instance.OnTurnEnded += ClearTurnTracking;
+            FateFlowController.Instance.OnFateChanged += HandleFateWindowShift;
         }
     }
     
     private void OnDestroy()
     {
-        // Unsubscribe from events
-        if (GameManager.Instance != null)
+        if (FateFlowController.Instance != null)
         {
-            GameManager.Instance.OnTurnStarted -= ClearTurnTracking;
-            GameManager.Instance.OnTurnEnded -= ClearTurnTracking;
+            FateFlowController.Instance.OnFateChanged -= HandleFateWindowShift;
+        }
+    }
+    
+    /// <summary>
+    /// Applies scaling so a card visually fills the tile. If cardScaleOnBoard is left at Vector3.one, it derives the size from the drop area scale.
+    /// </summary>
+    private void ApplyCardScale(Transform cardTransform)
+    {
+        if (cardTransform == null) return;
+        
+        if (cardScaleOnBoard != Vector3.one)
+        {
+            cardTransform.localScale = cardScaleOnBoard;
+            if (debugBattles)
+            {
+                Debug.Log($"CardDropArea1: Applied explicit scale override {cardScaleOnBoard} to {cardTransform.name}");
+            }
+            return;
+        }
+        
+        bool scaledViaRenderers = false;
+        if (tileSpriteRenderer != null)
+        {
+            SpriteRenderer cardSprite = cardTransform.GetComponentInChildren<SpriteRenderer>();
+            if (cardSprite != null)
+            {
+                float tileSize = Mathf.Min(tileSpriteRenderer.bounds.size.x, tileSpriteRenderer.bounds.size.y);
+                float cardSize = Mathf.Max(cardSprite.bounds.size.x, cardSprite.bounds.size.y);
+                if (tileSize > 0f && cardSize > 0.0001f)
+                {
+                    float targetWorldSize = tileSize * cardScaleFillPercent;
+                    float scaleMultiplier = targetWorldSize / cardSize;
+                    Vector3 localScale = cardTransform.localScale;
+                    float newZ = Mathf.Approximately(localScale.z, 0f) ? 1f : localScale.z;
+                    Vector3 newScale = new Vector3(localScale.x * scaleMultiplier, localScale.y * scaleMultiplier, newZ);
+                    cardTransform.localScale = newScale;
+                    scaledViaRenderers = true;
+                    if (debugBattles)
+                    {
+                        Debug.Log($"CardDropArea1: Scaled {cardTransform.name} via renderer bounds. Tile size: {tileSize:F2}, Card size: {cardSize:F2}, Multiplier: {scaleMultiplier:F2}, Final scale: {newScale}");
+                    }
+                }
+            }
+        }
+        
+        if (!scaledViaRenderers)
+        {
+            float tileScale = Mathf.Min(transform.lossyScale.x, transform.lossyScale.y);
+            float finalScale = tileScale * cardScaleFillPercent;
+            float currentZ = Mathf.Approximately(cardTransform.localScale.z, 0f) ? 1f : cardTransform.localScale.z;
+            Vector3 fallbackScale = new Vector3(finalScale, finalScale, currentZ);
+            cardTransform.localScale = fallbackScale;
+            if (debugBattles)
+            {
+                Debug.Log($"CardDropArea1: Applied fallback scale {fallbackScale} to {cardTransform.name} (tile lossy scale {transform.lossyScale})");
+            }
         }
     }
     
@@ -122,70 +192,85 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         }
     }
     
+    private void HandleFateWindowShift(FateSide side)
+    {
+        ClearTurnTracking();
+    }
+    
     public void OnCardDrop(CardMover cardMover)
     {
-        // Snap card to slot position
+        if (cardMover == null)
+        {
+            return;
+        }
+
+        if (!CanCardAct(cardMover.OwnerSide))
+        {
+            if (debugBattles)
+            {
+                Debug.Log("CardDropArea1: Cannot play card - incorrect Fate Window.");
+            }
+            cardMover.ReturnToStartPosition();
+            return;
+        }
+
+        if (IsOccupied)
+        {
+            if (debugBattles)
+            {
+                Debug.Log("CardDropArea1: Tile already occupied.");
+            }
+            cardMover.ReturnToStartPosition();
+            return;
+        }
+        
         if (snapCardToPosition)
         {
             cardMover.transform.position = transform.position;
+            cardMover.RefreshHomePosition();
         }
         
-        // Play the card through DeckManager
+        ApplyCardScale(cardMover.transform);
+        
         if (playCardOnDrop && deckManager != null)
         {
             NewCard card = cardMover.Card;
             
-            // Try to find card reference if not set
             if (card == null)
             {
-                // Try to refresh the card reference
                 cardMover.SendMessage("FindCardReference", SendMessageOptions.DontRequireReceiver);
                 card = cardMover.Card;
             }
             
-            if (card != null)
+            if (card != null && deckManager.Hand.Contains(card))
             {
-                // Check if card is in hand before playing
-                if (deckManager.Hand.Contains(card))
+                deckManager.PlayCard(card);
+                Debug.Log($"Card {card.Data.cardName} played from drop area and placed on board");
+                
+                cardMover.SetPlayed(true);
+                cardsPlayedThisTurn.Add(cardMover.gameObject);
+                occupyingCard = cardMover.gameObject;
+                
+                CheckBoardOccupancy();
+                
+                if (enableCardBattles)
                 {
-                    // Play the card - this will trigger OnCardPlayed event
-                    // But we want to keep the card on the board, so we'll handle it differently
-                    deckManager.PlayCard(card);
-                    
-                    // Note: The card GameObject will stay on the board even though it's removed from hand
-                    // NewHandUI will try to destroy it, but if it's a CardMover (not NewCardUI), it won't find it
-                    Debug.Log($"Card {card.Data.cardName} played from drop area and placed on board");
-                    
-                    // Mark card as played - prevents further dragging
-                    cardMover.SetPlayed(true);
-                    
-                    // Track card as played this turn (cannot be captured during same turn)
-                    cardsPlayedThisTurn.Add(cardMover.gameObject);
-                    
-                    // Check board occupancy after card is placed
-                    CheckBoardOccupancy();
-                    
-                    // Check for card battles with adjacent cards
-                    if (enableCardBattles)
-                    {
-                        CheckCardBattles(cardMover, card);
-                    }
+                    CheckCardBattles(cardMover, card);
                 }
-                else
-                {
-                    Debug.LogWarning($"Card {card.Data.cardName} is not in hand, cannot play");
-                }
+
+                GameManager.Instance?.NotifyCardPlaced(this, card);
+                FateFlowController.Instance?.AdvanceFateFlow();
             }
             else
             {
-                Debug.LogWarning("CardMover does not have a NewCard reference! Trying to find it...");
-                // Last attempt: try to get card from deck manager by matching
-                // This is a fallback - ideally the card should be set when the GameObject is created
+                Debug.LogWarning("CardDropArea1: Card reference missing or not found in hand.");
+                cardMover.ReturnToStartPosition();
             }
         }
         else if (playCardOnDrop && deckManager == null)
         {
             Debug.LogWarning("CardDropArea1: Cannot play card - NewDeckManager not found!");
+            cardMover.ReturnToStartPosition();
         }
         
         Debug.Log("Card dropped here");
@@ -434,68 +519,78 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
 
     public void OnCardDropOpp(CardMoverOpp cardMoverOpp)
     {
-        // Snap card to slot position
+        if (cardMoverOpp == null)
+        {
+            return;
+        }
+
+        if (!CanCardAct(cardMoverOpp.OwnerSide))
+        {
+            if (debugBattles)
+            {
+                Debug.Log("CardDropArea1: Cannot play card - incorrect Fate Window.");
+            }
+            cardMoverOpp.ReturnToStartPosition();
+            return;
+        }
+        
+        if (IsOccupied)
+        {
+            if (debugBattles)
+            {
+                Debug.Log("CardDropArea1: Tile already occupied.");
+            }
+            cardMoverOpp.ReturnToStartPosition();
+            return;
+        }
+        
         if (snapCardToPosition)
         {
             cardMoverOpp.transform.position = transform.position;
+            cardMoverOpp.RefreshHomePosition();
         }
         
-        // Play the card through DeckManager
+        ApplyCardScale(cardMoverOpp.transform);
+        
         if (playCardOnDrop && deckManagerOpp != null)
         {
             NewCard card = cardMoverOpp.Card;
             
-            // Try to find card reference if not set
             if (card == null)
             {
-                // Try to refresh the card reference
                 cardMoverOpp.SendMessage("FindCardReference", SendMessageOptions.DontRequireReceiver);
                 card = cardMoverOpp.Card;
             }
             
-            if (card != null)
+            if (card != null && deckManagerOpp.Hand.Contains(card))
             {
-                // Check if card is in hand before playing
-                if (deckManagerOpp.Hand.Contains(card))
+                deckManagerOpp.PlayCard(card);
+                Debug.Log($"Card {card.Data.cardName} played from drop area and placed on board");
+                
+                cardMoverOpp.SetPlayed(true);
+                cardsPlayedThisTurn.Add(cardMoverOpp.gameObject);
+                occupyingCard = cardMoverOpp.gameObject;
+                
+                CheckBoardOccupancy();
+                
+                if (enableCardBattles)
                 {
-                    // Play the card - this will trigger OnCardPlayed event
-                    // But we want to keep the card on the board, so we'll handle it differently
-                    deckManagerOpp.PlayCard(card);
-                    
-                    // Note: The card GameObject will stay on the board even though it's removed from hand
-                    // NewHandUI will try to destroy it, but if it's a CardMover (not NewCardUI), it won't find it
-                    Debug.Log($"Card {card.Data.cardName} played from drop area and placed on board");
-                    
-                    // Mark card as played - prevents further dragging
-                    cardMoverOpp.SetPlayed(true);
-                    
-                    // Track card as played this turn (cannot be captured during same turn)
-                    cardsPlayedThisTurn.Add(cardMoverOpp.gameObject);
-                    
-                    // Check board occupancy after card is placed
-                    CheckBoardOccupancy();
-                    
-                    // Check for card battles with adjacent cards
-                    if (enableCardBattles)
-                    {
-                        CheckCardBattlesOpp(cardMoverOpp, card);
-                    }
+                    CheckCardBattlesOpp(cardMoverOpp, card);
                 }
-                else
-                {
-                    Debug.LogWarning($"Card {card.Data.cardName} is not in hand, cannot play");
-                }
+
+                GameManager.Instance?.NotifyCardPlaced(this, card);
+                FateFlowController.Instance?.AdvanceFateFlow();
             }
             else
             {
-                Debug.LogWarning("CardMover does not have a NewCard reference! Trying to find it...");
-                // Last attempt: try to get card from deck manager by matching
-                // This is a fallback - ideally the card should be set when the GameObject is created
+                Debug.LogWarning("CardDropArea1: Card reference missing or not found in opponent hand.");
+                cardMoverOpp.ReturnToStartPosition();
             }
         }
         else if (playCardOnDrop && deckManagerOpp == null)
         {
-            Debug.LogWarning("CardDropArea1: Cannot play card - NewDeckManager not found!");
+            Debug.LogWarning("CardDropArea1: Cannot play card - NewDeckManagerOpp not found!");
+            cardMoverOpp.ReturnToStartPosition();
         }
         
         Debug.Log("Card dropped here");
@@ -995,47 +1090,9 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         // Count occupied spaces (spaces with cards on them)
         int occupiedSpaces = 0;
         
-        // Find all cards on the board
-        CardMover[] allCardMovers = FindObjectsOfType<CardMover>();
-        CardMoverOpp[] allCardMoverOpps = FindObjectsOfType<CardMoverOpp>();
-        
-        // Check each drop area to see if it has a card nearby
         foreach (CardDropArea1 dropArea in allDropAreas)
         {
-            bool hasCard = false;
-            
-            // Check CardMovers
-            foreach (CardMover cardMover in allCardMovers)
-            {
-                if (cardMover.Card != null)
-                {
-                    float distance = Vector3.Distance(dropArea.transform.position, cardMover.transform.position);
-                    if (distance < 0.5f) // Cards are considered on a space if within 0.5 units
-                    {
-                        hasCard = true;
-                        break;
-                    }
-                }
-            }
-            
-            // Check CardMoverOpps
-            if (!hasCard)
-            {
-                foreach (CardMoverOpp cardMoverOpp in allCardMoverOpps)
-                {
-                    if (cardMoverOpp.Card != null)
-                    {
-                        float distance = Vector3.Distance(dropArea.transform.position, cardMoverOpp.transform.position);
-                        if (distance < 0.5f)
-                        {
-                            hasCard = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            if (hasCard)
+            if (dropArea != null && dropArea.IsOccupied)
             {
                 occupiedSpaces++;
             }

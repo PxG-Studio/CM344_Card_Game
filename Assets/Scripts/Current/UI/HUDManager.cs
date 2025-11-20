@@ -14,13 +14,13 @@ namespace CardGame.UI
         [SerializeField] private TMP_Text p1ScoreLabel;
         [SerializeField] private TMP_Text p1HandDeckLabel;
         [SerializeField] private TMP_Text p1PlayerLabel;
-        [SerializeField] private UnityEngine.UI.Image p1TurnIndicator;
+        [SerializeField] private TurnIndicatorUI p1TurnIndicator;
         
         [Header("Player 2 Panel")]
         [SerializeField] private TMP_Text p2ScoreLabel;
         [SerializeField] private TMP_Text p2HandDeckLabel;
         [SerializeField] private TMP_Text p2PlayerLabel;
-        [SerializeField] private UnityEngine.UI.Image p2TurnIndicator;
+        [SerializeField] private TurnIndicatorUI p2TurnIndicator;
         
         [Header("Tiles Remaining")]
         [SerializeField] private TMP_Text tilesRemainingLabel;
@@ -35,7 +35,7 @@ namespace CardGame.UI
         
         private ScoreManager scoreManager;
         private int totalBoardTiles = 16; // 4x4 board
-        private bool isPlayer1Turn = true; // Track whose turn it is
+        private FateSide currentFate = FateSide.Player;
         
         private void Start()
         {
@@ -49,6 +49,8 @@ namespace CardGame.UI
             {
                 Debug.LogWarning("HUDManager: ScoreManager not found in scene!");
             }
+            
+            SubscribeToFateFlow();
             
             // Auto-find deck managers if not assigned
             if (player1DeckManager == null)
@@ -80,6 +82,35 @@ namespace CardGame.UI
             {
                 scoreManager.OnScoreUpdated -= UpdateScores;
             }
+            
+            UnsubscribeFromFateFlow();
+        }
+        
+        private void SubscribeToFateFlow()
+        {
+            if (FateFlowController.Instance != null)
+            {
+                currentFate = FateFlowController.Instance.CurrentFate;
+                FateFlowController.Instance.OnFateChanged += HandleFateChanged;
+            }
+            else
+            {
+                Debug.LogWarning("HUDManager: FateFlowController.Instance not found!");
+            }
+        }
+
+        private void UnsubscribeFromFateFlow()
+        {
+            if (FateFlowController.Instance != null)
+            {
+                FateFlowController.Instance.OnFateChanged -= HandleFateChanged;
+            }
+        }
+
+        private void HandleFateChanged(FateSide side)
+        {
+            currentFate = side;
+            UpdateTurnIndicators();
         }
         
         /// <summary>
@@ -158,45 +189,27 @@ namespace CardGame.UI
         /// </summary>
         private void UpdateTurnIndicators()
         {
+            bool isPlayer1Active = currentFate == FateSide.Player;
+
             if (p1TurnIndicator != null)
             {
-                p1TurnIndicator.color = isPlayer1Turn ? activeTurnColor : inactiveTurnColor;
+                p1TurnIndicator.SetActive(isPlayer1Active);
             }
             
             if (p2TurnIndicator != null)
             {
-                p2TurnIndicator.color = isPlayer1Turn ? inactiveTurnColor : activeTurnColor;
+                p2TurnIndicator.SetActive(!isPlayer1Active);
             }
             
-            // Optionally update player label styling
             if (p1PlayerLabel != null)
             {
-                p1PlayerLabel.fontStyle = isPlayer1Turn ? TMPro.FontStyles.Bold : TMPro.FontStyles.Normal;
+                p1PlayerLabel.fontStyle = isPlayer1Active ? TMPro.FontStyles.Bold : TMPro.FontStyles.Normal;
             }
             
             if (p2PlayerLabel != null)
             {
-                p2PlayerLabel.fontStyle = isPlayer1Turn ? TMPro.FontStyles.Normal : TMPro.FontStyles.Bold;
+                p2PlayerLabel.fontStyle = isPlayer1Active ? TMPro.FontStyles.Normal : TMPro.FontStyles.Bold;
             }
-        }
-        
-        /// <summary>
-        /// Set which player's turn it is.
-        /// </summary>
-        public void SetTurn(bool isPlayer1)
-        {
-            isPlayer1Turn = isPlayer1;
-            UpdateTurnIndicators();
-        }
-        
-        /// <summary>
-        /// Toggle to the next player's turn.
-        /// </summary>
-        public void NextTurn()
-        {
-            isPlayer1Turn = !isPlayer1Turn;
-            UpdateTurnIndicators();
-            Debug.Log($"Turn changed to: {(isPlayer1Turn ? "Player 1" : "Player 2")}");
         }
         
         /// <summary>

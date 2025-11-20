@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using CardGame.UI;
 
 namespace CardGame.Managers
 {
@@ -16,6 +17,7 @@ namespace CardGame.Managers
         
         private bool isGameEnding = false;
         private bool areChainsInProgress = false;
+        [SerializeField] private CardGame.UI.GameEndUI gameEndUI;
         
         // References to deck managers (auto-found if not assigned)
         private NewDeckManager playerDeckManager;
@@ -42,6 +44,15 @@ namespace CardGame.Managers
             if (opponentDeckManager == null)
             {
                 opponentDeckManager = FindObjectOfType<NewDeckManagerOpp>();
+            }
+            
+            if (gameEndUI == null)
+            {
+                gameEndUI = FindObjectOfType<CardGame.UI.GameEndUI>();
+                if (gameEndUI == null)
+                {
+                    Debug.LogWarning("GameEndManager: GameEndUI not found. Winner screen will not display until it exists.");
+                }
             }
         }
         
@@ -110,6 +121,7 @@ namespace CardGame.Managers
             
             int playerScore = ScoreManager.Instance.PlayerScore;
             int opponentScore = ScoreManager.Instance.OpponentScore;
+            bool isTie = playerScore == opponentScore;
             
             Debug.Log($"Final Scores - Player: {playerScore}, Opponent: {opponentScore}");
             
@@ -124,11 +136,13 @@ namespace CardGame.Managers
             {
                 Debug.Log("Player wins!");
                 GameManager.Instance.ChangeState(GameState.Victory);
+                ShowWinnerUI(true, false);
             }
             else if (opponentScore > playerScore)
             {
                 Debug.Log("Opponent wins!");
                 GameManager.Instance.ChangeState(GameState.Defeat);
+                ShowWinnerUI(false, false);
             }
             else
             {
@@ -136,6 +150,19 @@ namespace CardGame.Managers
                 Debug.Log("It's a tie!");
                 // Default to player victory for ties, or you could add a Tie state
                 GameManager.Instance.ChangeState(GameState.Victory);
+                ShowWinnerUI(true, true);
+            }
+        }
+        
+        private void ShowWinnerUI(bool playerWon, bool isTie)
+        {
+            if (gameEndUI != null)
+            {
+                gameEndUI.ShowGameEnd(playerWon, isTie);
+            }
+            else
+            {
+                Debug.LogWarning("GameEndManager: Winner determined but GameEndUI is missing.");
             }
         }
         

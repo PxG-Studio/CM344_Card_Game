@@ -3,18 +3,25 @@ using System.Collections.Generic;
 using UnityEngine;
 using CardGame.Core;
 using CardGame.UI;
+using CardGame.Managers;
 
 public class CardMoverOpp : MonoBehaviour
 {
     private Collider2D col;
     private Vector3 startDragPosition;
     private bool isPlayed = false; // Track if card has been played/dropped on board
+    private bool isDragging;
+    private bool hasMovedDuringDrag;
+    [SerializeField] private float dragThreshold = 0.1f;
+    private Vector3 pointerStartPosition;
     
     [Header("Card Reference")]
     [SerializeField] private NewCard card; // Reference to the NewCard this represents
+    [SerializeField] private FateSide ownerSide = FateSide.Opponent;
     
     public NewCard Card => card;
     public bool IsPlayed => isPlayed;
+    public FateSide OwnerSide => ownerSide;
     
     /// <summary>
     /// Mark this card as played - prevents further dragging
@@ -29,10 +36,16 @@ public class CardMoverOpp : MonoBehaviour
     {
         card = newCard;
     }
+    
+    public void RefreshHomePosition()
+    {
+        startDragPosition = transform.position;
+    }
 
     void Start()
     {
         col = GetComponent<Collider2D>();
+        startDragPosition = transform.position;
         
         // Try to find card reference automatically if not set
         if (card == null)
@@ -105,59 +118,69 @@ public class CardMoverOpp : MonoBehaviour
         }
         
         // If still not found, only log in Editor (not during play)
-        if (card == null)
+        #if UNITY_EDITOR
+        if (card == null && !gameObject.name.Contains("Prefab"))
         {
-            // Only log once per GameObject and only in development builds
-            #if UNITY_EDITOR
-            if (!hasLoggedWarning)
-            {
-                // Suppress warning if this is a prefab instance that will be initialized later
-                if (!gameObject.name.Contains("Prefab"))
-                {
-                    Debug.LogWarning($"CardMover on {gameObject.name}: Could not find NewCard reference. Card will not be playable until reference is set. You can assign it manually in Inspector or ensure NewCardUI component exists.");
-                }
-                hasLoggedWarning = true;
-            }
-            #endif
+            // Suppress warning if this is a prefab instance that will be initialized later
+            Debug.LogWarning($"CardMoverOpp on {gameObject.name}: Could not find NewCard reference. Card will not be playable until reference is set. You can assign it manually in Inspector or ensure NewCardUI component exists.");
         }
+        #endif
     }
     
-    private bool hasLoggedWarning = false;
+    private bool CanInteract => FateFlowController.Instance != null && FateFlowController.Instance.CanAct(ownerSide);
+    
     private void OnMouseDown()
     {
-        // Don't allow dragging if card has been played
-        if (isPlayed) return;
+        // Don't allow dragging if card has been played or it's not the opponent's turn
+        if (isPlayed || !CanInteract) return;
         
+        isDragging = true;
+        hasMovedDuringDrag = false;
         startDragPosition = transform.position;
+        pointerStartPosition = GetMousePositionInWorldSpace();
         transform.position = GetMousePositionInWorldSpace();
     }
 
     private void OnMouseDrag()
     {
-        // Don't allow dragging if card has been played
-        if (isPlayed) return;
+        // Don't allow dragging if card has been played or it's not the opponent's turn
+        if (isPlayed || !CanInteract || !isDragging) return;
         
-        transform.position = GetMousePositionInWorldSpace();
+        Vector3 currentPointer = GetMousePositionInWorldSpace();
+        if (!hasMovedDuringDrag)
+        {
+            float distance = Vector3.Distance(pointerStartPosition, currentPointer);
+            if (distance >= dragThreshold)
+            {
+                hasMovedDuringDrag = true;
+            }
+        }
+        transform.position = currentPointer;
     }
     private void OnMouseUp()
     {
-        // Try to find card reference again in case it wasn't set at Start
-        if (card == null)
+        if (!isDragging)
         {
-            FindCardReference();
+            return;
         }
-        
-        col.enabled = false;
-        Collider2D hitCollider = Physics2D.OverlapPoint(transform.position);
-        col.enabled = true;
-         if (hitCollider != null && hitCollider.TryGetComponent(out ICardDropArea cardDropArea))
-         {
-            cardDropArea.OnCardDropOpp(this);
-         }
-         else
-         {
-            transform.position = startDragPosition;
-         }
+
+        isDragging = false;
+
+        if (!hasMovedDuringDrag)
+        {
+            ReturnToStartPosition();
+            return;
+        }
+
+        if (!CanInteract)
+        {
+            ReturnToStartPosition();
+            return;
+        }
+        if (!AttemptDrop(bypassTurnCheck: false))
+        {
+            ReturnToStartPosition();
+        }
     }
 
     public Vector3 GetMousePositionInWorldSpace()
@@ -167,9 +190,69 @@ public class CardMoverOpp : MonoBehaviour
         return p;
     }
 
-    // Update is called once per frame
-    void Update()
+    public void ReturnToStartPosition()
     {
-        
+        transform.position = startDragPosition;
+        hasMovedDuringDrag = false;
+    }
+
+    public bool AutomationAttemptDrop(Vector3 worldPosition, bool bypassTurnGate = true)
+    {
+        if (isPlayed)
+        {
+            return false;
+        }
+
+        if (!bypassTurnGate && !CanInteract)
+        {
+            return false;
+        }
+
+        Vector3 previousPosition = transform.position;
+        Vector3 previousStart = startDragPosition;
+
+        transform.position = worldPosition;
+        startDragPosition = previousPosition;
+        bool result = AttemptDrop(bypassTurnGate);
+
+        if (!result)
+        {
+            transform.position = previousPosition;
+            startDragPosition = previousStart;
+        }
+
+        return result;
+    }
+
+    private bool AttemptDrop(bool bypassTurnCheck)
+    {
+        if (!bypassTurnCheck && !CanInteract)
+        {
+            return false;
+        }
+
+        EnsureCardReference();
+
+        col.enabled = false;
+        Collider2D hitCollider = Physics2D.OverlapPoint(transform.position);
+        col.enabled = true;
+        if (hitCollider != null && hitCollider.TryGetComponent(out ICardDropArea cardDropArea))
+        {
+            cardDropArea.OnCardDropOpp(this);
+            hasMovedDuringDrag = false;
+            isDragging = false;
+            startDragPosition = transform.position;
+            return true;
+        }
+
+        return false;
+    }
+
+    private void EnsureCardReference()
+    {
+        if (card == null)
+        {
+            FindCardReference();
+        }
     }
 }

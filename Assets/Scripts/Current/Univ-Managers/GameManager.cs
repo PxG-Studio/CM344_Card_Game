@@ -27,6 +27,7 @@ namespace CardGame.Managers
         public System.Action<GameState> OnGameStateChanged;
         public System.Action OnTurnStarted;
         public System.Action OnTurnEnded;
+        public System.Action<CardDropArea1, NewCard> OnCardPlaced;
         
         private void Awake()
         {
@@ -128,14 +129,12 @@ namespace CardGame.Managers
             ChangeState(GameState.EnemyTurn);
         }
         
-        private void StartEnemyTurn()
-        {
-            Debug.Log("Enemy Turn Started");
-            // Enemy AI will be handled separately
-            Invoke(nameof(EndEnemyTurn), 2f); // Placeholder delay
-        }
-        
-        private void EndEnemyTurn()
+    private void StartEnemyTurn()
+    {
+        Debug.Log("Enemy Turn Started");
+    }
+    
+    public void EndEnemyTurn()
         {
             Debug.Log("Enemy Turn Ended");
             ChangeState(GameState.PlayerTurn);
@@ -154,6 +153,11 @@ namespace CardGame.Managers
         public void CheckWinCondition()
         {
             // Will be implemented based on specific game rules
+        }
+        
+        public void NotifyCardPlaced(CardDropArea1 tile, NewCard card)
+        {
+            OnCardPlaced?.Invoke(tile, card);
         }
     }
     

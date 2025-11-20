@@ -22,6 +22,12 @@ namespace CardGame.UI
         [SerializeField] private Color defeatColor = new Color(0.8f, 0.2f, 0.2f, 1f); // Red
         [SerializeField] private Color tieColor = new Color(0.8f, 0.8f, 0.2f, 1f); // Yellow
         
+        [Header("Cut-In")]
+        [SerializeField] private VictoryCutInController victoryCutIn;
+        [SerializeField] private Color playerAccentColor = new Color(0.95f, 0.42f, 0.19f, 1f);
+        [SerializeField] private Color opponentAccentColor = new Color(0.08f, 0.78f, 0.2f, 1f);
+        [SerializeField] private Color tieAccentColor = new Color(1f, 0.9f, 0.35f, 1f);
+        
         private void Start()
         {
             // Hide the panel initially
@@ -113,6 +119,8 @@ namespace CardGame.UI
             {
                 finalScoreText.text = $"Final Score\nPlayer 1: {playerScore}  |  Player 2: {opponentScore}";
             }
+            
+            TriggerCutIn(playerWon, isTie);
         }
         
         /// <summary>
@@ -144,6 +152,24 @@ namespace CardGame.UI
             #else
             Application.Quit();
             #endif
+        }
+        
+        private void TriggerCutIn(bool playerWon, bool isTie)
+        {
+            if (victoryCutIn == null)
+            {
+                return;
+            }
+            
+            Color accent = isTie
+                ? tieAccentColor
+                : (playerWon ? playerAccentColor : opponentAccentColor);
+            
+            string message = isTie
+                ? "IT'S A TIE!"
+                : (playerWon ? "PLAYER 1 WINS!" : "PLAYER 2 WINS!");
+            
+            victoryCutIn.Play(message, accent);
         }
     }
 }
