@@ -98,7 +98,18 @@ namespace CardGame.Testing
             }
             
             handUI.ClearHand();
-            Debug.Log("Hand cleared!");
+            
+            // Also clear all cards from the board
+            CardMover[] boardCards = FindObjectsOfType<CardMover>();
+            foreach (CardMover card in boardCards)
+            {
+                if (card.IsPlayed)
+                {
+                    Destroy(card.gameObject);
+                }
+            }
+            
+            Debug.Log("Hand and board cleared!");
         }
         
         // Debug GUI (only in editor)
