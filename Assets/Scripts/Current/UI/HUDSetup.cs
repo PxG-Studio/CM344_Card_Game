@@ -314,21 +314,21 @@ namespace CardGame.UI
                 
                 if (isPlayer1)
                 {
-                    // Player 1: Next to panel, clearly visible
+                    // Player 1: Directly on top of P1 panel
                     rectUI.anchorMin = new Vector2(1, 1);
                     rectUI.anchorMax = new Vector2(1, 1);
-                    rectUI.pivot = new Vector2(0.5f, 0.5f);
-                    rectUI.anchoredPosition = new Vector2(-300, -80); // Next to Player 1 panel
-                    rectUI.sizeDelta = new Vector2(50, 50); // Visible size
+                    rectUI.pivot = new Vector2(0.5f, 1f); // Pivot at top center
+                    rectUI.anchoredPosition = new Vector2(-100, -10); // On top of Player 1 panel
+                    rectUI.sizeDelta = new Vector2(40, 40); // Size
                 }
                 else
                 {
-                    // Player 2: Next to panel, clearly visible
+                    // Player 2: Directly on top of P2 panel
                     rectUI.anchorMin = new Vector2(0, 1);
                     rectUI.anchorMax = new Vector2(0, 1);
-                    rectUI.pivot = new Vector2(0.5f, 0.5f);
-                    rectUI.anchoredPosition = new Vector2(300, -80); // Next to Player 2 panel
-                    rectUI.sizeDelta = new Vector2(50, 50); // Visible size
+                    rectUI.pivot = new Vector2(0.5f, 1f); // Pivot at top center
+                    rectUI.anchoredPosition = new Vector2(100, -10); // On top of Player 2 panel
+                    rectUI.sizeDelta = new Vector2(40, 40); // Size
                 }
             }
             
