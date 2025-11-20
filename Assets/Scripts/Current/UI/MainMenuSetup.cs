@@ -131,7 +131,8 @@ namespace CardGame.UI
                 // Gradient from dark blue at bottom to lighter blue-purple at top
                 Color color = Color.Lerp(
                     new Color(0.05f, 0.08f, 0.15f, 1f), // Dark blue bottom
-                    new Color(0.15f, 0.2f, 0.35f, 1f)   // Lighter blue-purple top
+                    new Color(0.15f, 0.2f, 0.35f, 1f),  // Lighter blue-purple top
+                    t                                    // Interpolation value
                 );
                 pixels[y * 2] = color;
                 pixels[y * 2 + 1] = color;
