@@ -9,7 +9,7 @@ namespace CardGame.UI
     public class TurnIndicatorUI : MonoBehaviour
     {
         [Header("Rotation Settings")]
-        [SerializeField] private float rotationSpeed = 50f;
+        [SerializeField] private float rotationSpeed = 120f; // Y-axis spin speed
         
         [Header("Hover Animation")]
         [SerializeField] private float hoverHeight = 10f;
@@ -48,8 +48,8 @@ namespace CardGame.UI
         {
             if (!isActive) return;
             
-            // Rotate continuously
-            rectTransform.Rotate(0, 0, rotationSpeed * Time.deltaTime);
+            // Y-axis rotation (left-to-right flip/spin)
+            rectTransform.Rotate(0, rotationSpeed * Time.deltaTime, 0);
             
             // Hover up and down
             hoverOffset = Mathf.Sin(Time.time * hoverSpeed) * hoverHeight;
