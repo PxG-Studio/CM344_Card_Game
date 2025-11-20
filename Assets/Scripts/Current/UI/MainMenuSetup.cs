@@ -92,10 +92,8 @@ namespace CardGame.UI
             layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = false;
 
-            // Create buttons
+            // Create buttons - only working ones
             CreateMenuButton(buttonContainer.transform, "PLAY GAME", "BattleScreenMultiplayer");
-            CreateMenuButton(buttonContainer.transform, "COLLECTION", "DeckCollection");
-            CreateMenuButton(buttonContainer.transform, "SETTINGS", "Settings");
             CreateMenuButton(buttonContainer.transform, "QUIT", null);
 
             Debug.Log("MainMenuSetup: Beautiful menu created!");
