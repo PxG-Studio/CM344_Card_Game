@@ -305,30 +305,45 @@ namespace CardGame.UI
                 }
             }
             
-            // Create 3D inverted pyramid indicator in world space
+            // Create 3D inverted pyramid indicator as a child of the HUD canvas
             GameObject indicator3D = new GameObject($"{name}_3D");
-            indicator3D.layer = 0; // Default layer (not UI)
+            indicator3D.layer = 5; // UI layer so it renders on top
             
-            // Position above the panel in world space
-            // We'll position it relative to the canvas/panel
+            // Get the canvas root
             Canvas canvas = parent.GetComponentInParent<Canvas>();
             if (canvas != null)
             {
-                // Position in world space above the HUD
+                indicator3D.transform.SetParent(canvas.transform, false);
+                
+                // Add RectTransform for UI positioning
+                RectTransform rect3D = indicator3D.AddComponent<RectTransform>();
+                
                 if (isPlayer1)
                 {
-                    // Player 1: Above top-right area
-                    indicator3D.transform.position = new Vector3(7f, 5f, 0f);
+                    // Player 1: Above top-right corner
+                    rect3D.anchorMin = new Vector2(1, 1);
+                    rect3D.anchorMax = new Vector2(1, 1);
+                    rect3D.pivot = new Vector2(0.5f, 0.5f);
+                    rect3D.anchoredPosition = new Vector2(-100, -80); // Offset from top-right
+                    rect3D.sizeDelta = new Vector2(50, 50);
                 }
                 else
                 {
-                    // Player 2: Above top-left area
-                    indicator3D.transform.position = new Vector3(-7f, 5f, 0f);
+                    // Player 2: Above top-left corner
+                    rect3D.anchorMin = new Vector2(0, 1);
+                    rect3D.anchorMax = new Vector2(0, 1);
+                    rect3D.pivot = new Vector2(0.5f, 0.5f);
+                    rect3D.anchoredPosition = new Vector2(100, -80); // Offset from top-left
+                    rect3D.sizeDelta = new Vector2(50, 50);
                 }
+                
+                // Move it slightly forward in Z to ensure visibility
+                Vector3 localPos = indicator3D.transform.localPosition;
+                indicator3D.transform.localPosition = new Vector3(localPos.x, localPos.y, -10f);
             }
             
             // Scale the pyramid
-            indicator3D.transform.localScale = Vector3.one * 0.5f;
+            indicator3D.transform.localScale = Vector3.one * 30f; // Larger scale for UI space
             
             // Add the 3D indicator component
             TurnIndicator3D indicator3DScript = indicator3D.AddComponent<TurnIndicator3D>();
