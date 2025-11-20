@@ -345,6 +345,9 @@ namespace CardGame.UI
             // Scale the pyramid
             indicator3D.transform.localScale = Vector3.one * 30f; // Larger scale for UI space
             
+            // Add CanvasRenderer for UI rendering
+            indicator3D.AddComponent<CanvasRenderer>();
+            
             // Add the 3D indicator component
             TurnIndicator3D indicator3DScript = indicator3D.AddComponent<TurnIndicator3D>();
             indicator3DScript.SetActive(false); // Start inactive

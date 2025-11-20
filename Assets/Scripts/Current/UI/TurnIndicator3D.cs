@@ -122,12 +122,12 @@ namespace CardGame.UI
                 meshRenderer = gameObject.AddComponent<MeshRenderer>();
             }
 
-            // Create and assign material
-            Material mat = new Material(Shader.Find("Standard"));
+            // Create and assign material - use Unlit shader for UI rendering
+            Material mat = new Material(Shader.Find("Unlit/Color"));
             mat.color = inactiveColor;
-            mat.SetFloat("_Metallic", 0.5f);
-            mat.SetFloat("_Glossiness", 0.7f);
             meshRenderer.material = mat;
+            
+            Debug.Log($"TurnIndicator3D: Created inverted pyramid mesh on {gameObject.name}");
         }
     }
 }
