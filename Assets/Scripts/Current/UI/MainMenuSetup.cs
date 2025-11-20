@@ -92,8 +92,11 @@ namespace CardGame.UI
             layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = false;
 
-            // Create buttons - only working ones
+            // Create buttons
             CreateMenuButton(buttonContainer.transform, "PLAY GAME", "BattleScreenMultiplayer");
+            CreateMenuButton(buttonContainer.transform, "COLLECTION", "ComingSoon");
+            CreateMenuButton(buttonContainer.transform, "PLAY ONLINE", "ComingSoon");
+            CreateMenuButton(buttonContainer.transform, "SETTINGS", "ComingSoon");
             CreateMenuButton(buttonContainer.transform, "QUIT", null);
 
             Debug.Log("MainMenuSetup: Beautiful menu created!");
@@ -217,7 +220,11 @@ namespace CardGame.UI
             text.color = Color.white;
 
             // Add button functionality
-            if (sceneName != null)
+            if (sceneName == "ComingSoon")
+            {
+                button.onClick.AddListener(() => ShowComingSoon(buttonText));
+            }
+            else if (sceneName != null)
             {
                 button.onClick.AddListener(() => LoadScene(sceneName));
             }
@@ -257,6 +264,122 @@ namespace CardGame.UI
             texture.Apply();
             
             return Sprite.Create(texture, new Rect(0, 0, 100, 100), new Vector2(0.5f, 0.5f), 100, 0, SpriteMeshType.FullRect, new Vector4(10, 10, 10, 10));
+        }
+
+        private void ShowComingSoon(string featureName)
+        {
+            Debug.Log($"{featureName} - Coming Soon!");
+            
+            // Create a "Coming Soon" popup
+            Canvas canvas = FindObjectOfType<Canvas>();
+            if (canvas == null) return;
+
+            GameObject popup = new GameObject("ComingSoonPopup");
+            popup.transform.SetParent(canvas.transform, false);
+            popup.layer = 5;
+
+            RectTransform popupRect = popup.AddComponent<RectTransform>();
+            popupRect.anchorMin = Vector2.zero;
+            popupRect.anchorMax = Vector2.one;
+            popupRect.sizeDelta = Vector2.zero;
+
+            // Semi-transparent background
+            Image bgImage = popup.AddComponent<Image>();
+            bgImage.color = new Color(0, 0, 0, 0.8f);
+
+            // Message panel
+            GameObject messagePanel = new GameObject("MessagePanel");
+            messagePanel.transform.SetParent(popup.transform, false);
+            messagePanel.layer = 5;
+
+            RectTransform msgRect = messagePanel.AddComponent<RectTransform>();
+            msgRect.anchorMin = new Vector2(0.5f, 0.5f);
+            msgRect.anchorMax = new Vector2(0.5f, 0.5f);
+            msgRect.pivot = new Vector2(0.5f, 0.5f);
+            msgRect.anchoredPosition = Vector2.zero;
+            msgRect.sizeDelta = new Vector2(600, 300);
+
+            Image panelImage = messagePanel.AddComponent<Image>();
+            panelImage.color = new Color(0.15f, 0.2f, 0.35f, 1f);
+            panelImage.sprite = CreateButtonSprite();
+
+            // Title text
+            GameObject titleObj = new GameObject("Title");
+            titleObj.transform.SetParent(messagePanel.transform, false);
+            titleObj.layer = 5;
+
+            RectTransform titleRect = titleObj.AddComponent<RectTransform>();
+            titleRect.anchorMin = new Vector2(0.5f, 0.7f);
+            titleRect.anchorMax = new Vector2(0.5f, 0.7f);
+            titleRect.pivot = new Vector2(0.5f, 0.5f);
+            titleRect.anchoredPosition = Vector2.zero;
+            titleRect.sizeDelta = new Vector2(500, 80);
+
+            TextMeshProUGUI titleText = titleObj.AddComponent<TextMeshProUGUI>();
+            titleText.text = "COMING SOON";
+            titleText.fontSize = 48;
+            titleText.fontStyle = FontStyles.Bold;
+            titleText.alignment = TextAlignmentOptions.Center;
+            titleText.color = new Color(0.5f, 0.9f, 1f);
+
+            // Feature text
+            GameObject featureObj = new GameObject("Feature");
+            featureObj.transform.SetParent(messagePanel.transform, false);
+            featureObj.layer = 5;
+
+            RectTransform featureRect = featureObj.AddComponent<RectTransform>();
+            featureRect.anchorMin = new Vector2(0.5f, 0.5f);
+            featureRect.anchorMax = new Vector2(0.5f, 0.5f);
+            featureRect.pivot = new Vector2(0.5f, 0.5f);
+            featureRect.anchoredPosition = Vector2.zero;
+            featureRect.sizeDelta = new Vector2(500, 60);
+
+            TextMeshProUGUI featureText = featureObj.AddComponent<TextMeshProUGUI>();
+            featureText.text = $"{featureName} is under development!";
+            featureText.fontSize = 24;
+            featureText.alignment = TextAlignmentOptions.Center;
+            featureText.color = Color.white;
+
+            // Close button
+            GameObject closeButton = new GameObject("CloseButton");
+            closeButton.transform.SetParent(messagePanel.transform, false);
+            closeButton.layer = 5;
+
+            RectTransform closeRect = closeButton.AddComponent<RectTransform>();
+            closeRect.anchorMin = new Vector2(0.5f, 0.2f);
+            closeRect.anchorMax = new Vector2(0.5f, 0.2f);
+            closeRect.pivot = new Vector2(0.5f, 0.5f);
+            closeRect.anchoredPosition = Vector2.zero;
+            closeRect.sizeDelta = new Vector2(200, 60);
+
+            Button closeBtn = closeButton.AddComponent<Button>();
+            Image closeBtnImage = closeButton.AddComponent<Image>();
+            closeBtnImage.color = new Color(0.2f, 0.5f, 0.9f, 1f);
+            closeBtnImage.sprite = CreateButtonSprite();
+
+            ColorBlock colors = closeBtn.colors;
+            colors.normalColor = new Color(0.2f, 0.5f, 0.9f, 1f);
+            colors.highlightedColor = new Color(0.3f, 0.65f, 1f, 1f);
+            colors.pressedColor = new Color(0.15f, 0.4f, 0.75f, 1f);
+            closeBtn.colors = colors;
+
+            closeBtn.onClick.AddListener(() => Destroy(popup));
+
+            GameObject closeTxt = new GameObject("Text");
+            closeTxt.transform.SetParent(closeButton.transform, false);
+            closeTxt.layer = 5;
+
+            RectTransform closeTxtRect = closeTxt.AddComponent<RectTransform>();
+            closeTxtRect.anchorMin = Vector2.zero;
+            closeTxtRect.anchorMax = Vector2.one;
+            closeTxtRect.sizeDelta = Vector2.zero;
+
+            TextMeshProUGUI closeText = closeTxt.AddComponent<TextMeshProUGUI>();
+            closeText.text = "OK";
+            closeText.fontSize = 28;
+            closeText.fontStyle = FontStyles.Bold;
+            closeText.alignment = TextAlignmentOptions.Center;
+            closeText.color = Color.white;
         }
 
         private void LoadScene(string sceneName)
