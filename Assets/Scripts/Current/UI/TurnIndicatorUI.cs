@@ -22,6 +22,7 @@ namespace CardGame.UI
         
         private RectTransform rectTransform;
         private Image image;
+        private TMPro.TextMeshProUGUI textIndicator;
         private Vector2 startPosition;
         private float hoverOffset;
         private bool isActive = false;
@@ -30,10 +31,15 @@ namespace CardGame.UI
         {
             rectTransform = GetComponent<RectTransform>();
             image = GetComponent<Image>();
+            textIndicator = GetComponent<TMPro.TextMeshProUGUI>();
             startPosition = rectTransform.anchoredPosition;
             
-            // Create a diamond/square texture
-            CreateDiamondTexture();
+            // If we have a text indicator, use that instead of creating a texture
+            if (textIndicator == null)
+            {
+                // Create a diamond/square texture (fallback)
+                CreateDiamondTexture();
+            }
             
             // Start inactive
             SetActive(false);
@@ -55,8 +61,14 @@ namespace CardGame.UI
         {
             isActive = active;
             
-            // Don't disable the GameObject, just make it invisible and stop animating
-            if (image != null)
+            // Control text indicator if present
+            if (textIndicator != null)
+            {
+                textIndicator.color = active ? activeColor : new Color(activeColor.r, activeColor.g, activeColor.b, 0f);
+                textIndicator.enabled = active;
+            }
+            // Fallback to image
+            else if (image != null)
             {
                 image.color = active ? activeColor : inactiveColor;
                 image.enabled = active; // Enable/disable rendering

@@ -332,9 +332,17 @@ namespace CardGame.UI
                 }
             }
             
-            // Add Image component
+            // Add TextMeshPro component instead of Image for better visibility
+            TMPro.TextMeshProUGUI textIndicator = indicatorUI.AddComponent<TMPro.TextMeshProUGUI>();
+            textIndicator.text = "▼"; // Down-pointing triangle (inverted pyramid)
+            textIndicator.fontSize = 48;
+            textIndicator.color = new Color(1f, 0.8f, 0f, 1f); // Gold color
+            textIndicator.alignment = TMPro.TextAlignmentOptions.Center;
+            textIndicator.fontStyle = TMPro.FontStyles.Bold;
+            
+            // Add Image component for the TurnIndicatorUI script to control
             UnityEngine.UI.Image image = indicatorUI.AddComponent<UnityEngine.UI.Image>();
-            image.color = new Color(1f, 0.8f, 0f, 1f); // Gold color
+            image.color = new Color(0, 0, 0, 0); // Transparent - we're using text instead
             
             // Add the UI indicator component
             TurnIndicatorUI indicatorScript = indicatorUI.AddComponent<TurnIndicatorUI>();
