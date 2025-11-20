@@ -189,6 +189,34 @@ namespace CardGame.UI
         /// </summary>
         private void UpdateTurnIndicators()
         {
+            // Find and control 3D turn indicators
+            TurnIndicator3D p1Indicator3D = GameObject.Find("TurnIndicator_3D")?.GetComponent<TurnIndicator3D>();
+            TurnIndicator3D p2Indicator3D = GameObject.Find("TurnIndicator_3D (1)")?.GetComponent<TurnIndicator3D>();
+            
+            // If we can't find by those names, search for all TurnIndicator3D components
+            if (p1Indicator3D == null || p2Indicator3D == null)
+            {
+                TurnIndicator3D[] allIndicators = FindObjectsOfType<TurnIndicator3D>();
+                if (allIndicators.Length >= 2)
+                {
+                    // Assume first is P1, second is P2 based on creation order
+                    p1Indicator3D = allIndicators[0];
+                    p2Indicator3D = allIndicators[1];
+                }
+            }
+            
+            // Update 3D indicators
+            if (p1Indicator3D != null)
+            {
+                p1Indicator3D.SetActive(isPlayer1Turn);
+            }
+            
+            if (p2Indicator3D != null)
+            {
+                p2Indicator3D.SetActive(!isPlayer1Turn);
+            }
+            
+            // Also update 2D indicators for fallback (if they exist)
             if (p1TurnIndicator != null)
             {
                 p1TurnIndicator.color = isPlayer1Turn ? activeTurnColor : inactiveTurnColor;
@@ -199,7 +227,7 @@ namespace CardGame.UI
                 p2TurnIndicator.color = isPlayer1Turn ? inactiveTurnColor : activeTurnColor;
             }
             
-            // Optionally update player label styling
+            // Update player label styling
             if (p1PlayerLabel != null)
             {
                 p1PlayerLabel.fontStyle = isPlayer1Turn ? TMPro.FontStyles.Bold : TMPro.FontStyles.Normal;

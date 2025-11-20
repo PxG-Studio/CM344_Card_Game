@@ -288,56 +288,66 @@ namespace CardGame.UI
         }
         
         /// <summary>
-        /// Find or create a turn indicator Image component.
+        /// Find or create a 3D turn indicator (inverted pyramid) that hovers above the panel.
+        /// Returns an Image component for compatibility with HUDManager, but creates a 3D object.
         /// </summary>
         private UnityEngine.UI.Image FindOrCreateTurnIndicator(Transform parent, string name, bool isPlayer1)
         {
-            Transform existing = parent.Find(name);
-            if (existing != null)
+            // Check if 3D indicator already exists
+            Transform existing3D = GameObject.Find($"{name}_3D")?.transform;
+            if (existing3D != null && existing3D.GetComponent<TurnIndicator3D>() != null)
             {
-                UnityEngine.UI.Image existingImage = existing.GetComponent<UnityEngine.UI.Image>();
-                if (existingImage != null)
+                // Return a dummy Image component for compatibility
+                Transform dummyTransform = parent.Find(name);
+                if (dummyTransform != null)
                 {
-                    return existingImage;
+                    return dummyTransform.GetComponent<UnityEngine.UI.Image>();
                 }
             }
             
-            // Create new turn indicator
-            GameObject indicator = new GameObject(name);
-            indicator.layer = 5; // UI layer
+            // Create 3D inverted pyramid indicator in world space
+            GameObject indicator3D = new GameObject($"{name}_3D");
+            indicator3D.layer = 0; // Default layer (not UI)
             
-            // Add RectTransform
-            RectTransform rectTransform = indicator.AddComponent<RectTransform>();
-            
-            if (isPlayer1)
+            // Position above the panel in world space
+            // We'll position it relative to the canvas/panel
+            Canvas canvas = parent.GetComponentInParent<Canvas>();
+            if (canvas != null)
             {
-                // Player 1: Top-right corner of panel
-                indicator.transform.SetParent(parent, false);
-                rectTransform.anchorMin = new Vector2(1, 1);
-                rectTransform.anchorMax = new Vector2(1, 1);
-                rectTransform.pivot = new Vector2(1, 1);
-                rectTransform.anchoredPosition = new Vector2(-5, -5);
-                rectTransform.sizeDelta = new Vector2(15, 15);
-            }
-            else
-            {
-                // Player 2: Left side of PlayerLabel (original position)
-                Transform playerLabel = parent.Find("PlayerLabel");
-                Transform indicatorParent = playerLabel != null ? playerLabel : parent;
-                indicator.transform.SetParent(indicatorParent, false);
-                rectTransform.anchorMin = new Vector2(0, 0.5f);
-                rectTransform.anchorMax = new Vector2(0, 0.5f);
-                rectTransform.pivot = new Vector2(0, 0.5f);
-                rectTransform.anchoredPosition = new Vector2(-5, 0);
-                rectTransform.sizeDelta = new Vector2(8, 20);
+                // Position in world space above the HUD
+                if (isPlayer1)
+                {
+                    // Player 1: Above top-right area
+                    indicator3D.transform.position = new Vector3(7f, 5f, 0f);
+                }
+                else
+                {
+                    // Player 2: Above top-left area
+                    indicator3D.transform.position = new Vector3(-7f, 5f, 0f);
+                }
             }
             
-            // Add Image component
-            UnityEngine.UI.Image image = indicator.AddComponent<UnityEngine.UI.Image>();
-            image.color = new Color(0.3f, 0.3f, 0.3f, 0.3f); // Default inactive color
+            // Scale the pyramid
+            indicator3D.transform.localScale = Vector3.one * 0.5f;
             
-            string position = isPlayer1 ? "top-right corner" : "left of PlayerLabel";
-            Debug.Log($"HUDSetup: Created turn indicator '{name}' at {position}");
+            // Add the 3D indicator component
+            TurnIndicator3D indicator3DScript = indicator3D.AddComponent<TurnIndicator3D>();
+            indicator3DScript.SetActive(false); // Start inactive
+            
+            // Create a dummy UI element for compatibility with HUDManager
+            GameObject dummyUI = new GameObject(name);
+            dummyUI.layer = 5; // UI layer
+            dummyUI.transform.SetParent(parent, false);
+            
+            RectTransform rectTransform = dummyUI.AddComponent<RectTransform>();
+            rectTransform.sizeDelta = new Vector2(1, 1); // Tiny invisible element
+            rectTransform.anchoredPosition = Vector2.zero;
+            
+            UnityEngine.UI.Image image = dummyUI.AddComponent<UnityEngine.UI.Image>();
+            image.color = new Color(0, 0, 0, 0); // Invisible
+            
+            string position = isPlayer1 ? "above Player 1 panel" : "above Player 2 panel";
+            Debug.Log($"HUDSetup: Created 3D turn indicator '{name}' {position}");
             return image;
         }
         
