@@ -171,10 +171,11 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                         CheckCardBattles(cardMover, card);
                     }
                     
-                    // End player turn after card is placed
-                    if (GameManager.Instance != null)
+                    // Switch turns after card is placed
+                    HUDManager hudManager = FindObjectOfType<HUDManager>();
+                    if (hudManager != null)
                     {
-                        GameManager.Instance.EndPlayerTurn();
+                        hudManager.NextTurn();
                     }
                 }
                 else
@@ -487,11 +488,11 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                         CheckCardBattlesOpp(cardMoverOpp, card);
                     }
                     
-                    // End enemy turn after card is placed (will switch back to player turn)
-                    if (GameManager.Instance != null)
+                    // Switch turns after card is placed
+                    HUDManager hudManager = FindObjectOfType<HUDManager>();
+                    if (hudManager != null)
                     {
-                        // GameManager will handle the turn transition
-                        // EndEnemyTurn is called automatically after a delay in GameManager
+                        hudManager.NextTurn();
                     }
                 }
                 else
