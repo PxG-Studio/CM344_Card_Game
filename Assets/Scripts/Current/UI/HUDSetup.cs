@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using CardGame.Managers;
+using CardGame.Visuals;
 
 namespace CardGame.UI
 {
@@ -48,9 +49,10 @@ namespace CardGame.UI
                 Debug.Log("HUDSetup: Added HUDManager component to HUDOverlayCanvas");
             }
             
-            // Ensure game managers exist
+            // Ensure supporting managers & board visuals exist
             EnsureGameManagers();
             EnsureFateFlowController();
+            SetupBoardBackdrop();
             
             // Find and wire up all the text labels using reflection
             WireUpHUDReferences(hudManager, hudCanvas.transform);
@@ -335,6 +337,7 @@ namespace CardGame.UI
             textIndicator.color = new Color(1f, 0.8f, 0f, 1f); // Gold color
             textIndicator.alignment = TMPro.TextAlignmentOptions.Center;
             textIndicator.fontStyle = TMPro.FontStyles.Bold;
+            textIndicator.raycastTarget = false;
             
             // Add the UI indicator component
             TurnIndicatorUI indicatorScript = indicatorUI.AddComponent<TurnIndicatorUI>();
@@ -575,6 +578,30 @@ namespace CardGame.UI
             return btnObj;
         }
         
+        /// <summary>
+        /// Ensures the gameplay board has a stylised backdrop for visual depth.
+        /// </summary>
+        private void SetupBoardBackdrop()
+        {
+            GameObject dropAreas = GameObject.Find("Drop Areas");
+            if (dropAreas == null)
+            {
+                Debug.LogWarning("HUDSetup: Could not find 'Drop Areas' to generate board backdrop.");
+                return;
+            }
+
+            ProceduralBoardBackdrop existing = dropAreas.GetComponentInChildren<ProceduralBoardBackdrop>(true);
+            if (existing != null)
+            {
+                existing.RefreshNow();
+                return;
+            }
+
+            GameObject backdrop = new GameObject("ProceduralBoardBackdrop");
+            backdrop.transform.SetParent(dropAreas.transform, false);
+            ProceduralBoardBackdrop generator = backdrop.AddComponent<ProceduralBoardBackdrop>();
+            generator.RefreshNow();
+        }
     }
 }
 

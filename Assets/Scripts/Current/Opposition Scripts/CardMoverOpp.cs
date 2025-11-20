@@ -177,20 +177,7 @@ public class CardMoverOpp : MonoBehaviour
             ReturnToStartPosition();
             return;
         }
-        // Try to find card reference again in case it wasn't set at Start
-        if (card == null)
-        {
-            FindCardReference();
-        }
-        
-        col.enabled = false;
-        Collider2D hitCollider = Physics2D.OverlapPoint(transform.position);
-        col.enabled = true;
-        if (hitCollider != null && hitCollider.TryGetComponent(out ICardDropArea cardDropArea))
-        {
-            cardDropArea.OnCardDropOpp(this);
-        }
-        else
+        if (!AttemptDrop(bypassTurnCheck: false))
         {
             ReturnToStartPosition();
         }
@@ -207,5 +194,65 @@ public class CardMoverOpp : MonoBehaviour
     {
         transform.position = startDragPosition;
         hasMovedDuringDrag = false;
+    }
+
+    public bool AutomationAttemptDrop(Vector3 worldPosition, bool bypassTurnGate = true)
+    {
+        if (isPlayed)
+        {
+            return false;
+        }
+
+        if (!bypassTurnGate && !CanInteract)
+        {
+            return false;
+        }
+
+        Vector3 previousPosition = transform.position;
+        Vector3 previousStart = startDragPosition;
+
+        transform.position = worldPosition;
+        startDragPosition = previousPosition;
+        bool result = AttemptDrop(bypassTurnGate);
+
+        if (!result)
+        {
+            transform.position = previousPosition;
+            startDragPosition = previousStart;
+        }
+
+        return result;
+    }
+
+    private bool AttemptDrop(bool bypassTurnCheck)
+    {
+        if (!bypassTurnCheck && !CanInteract)
+        {
+            return false;
+        }
+
+        EnsureCardReference();
+
+        col.enabled = false;
+        Collider2D hitCollider = Physics2D.OverlapPoint(transform.position);
+        col.enabled = true;
+        if (hitCollider != null && hitCollider.TryGetComponent(out ICardDropArea cardDropArea))
+        {
+            cardDropArea.OnCardDropOpp(this);
+            hasMovedDuringDrag = false;
+            isDragging = false;
+            startDragPosition = transform.position;
+            return true;
+        }
+
+        return false;
+    }
+
+    private void EnsureCardReference()
+    {
+        if (card == null)
+        {
+            FindCardReference();
+        }
     }
 }
