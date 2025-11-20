@@ -189,42 +189,15 @@ namespace CardGame.UI
         /// </summary>
         private void UpdateTurnIndicators()
         {
-            // Find and control UI turn indicators
-            TurnIndicatorUI p1IndicatorUI = GameObject.Find("TurnIndicator_UI")?.GetComponent<TurnIndicatorUI>();
-            TurnIndicatorUI p2IndicatorUI = GameObject.Find("TurnIndicator_UI (1)")?.GetComponent<TurnIndicatorUI>();
-            
-            // If we can't find by those names, search for all TurnIndicatorUI components
-            if (p1IndicatorUI == null || p2IndicatorUI == null)
-            {
-                TurnIndicatorUI[] allIndicators = FindObjectsOfType<TurnIndicatorUI>();
-                if (allIndicators.Length >= 2)
-                {
-                    // Assume first is P1, second is P2 based on creation order
-                    p1IndicatorUI = allIndicators[0];
-                    p2IndicatorUI = allIndicators[1];
-                }
-            }
-            
-            // Update UI indicators
-            if (p1IndicatorUI != null)
-            {
-                p1IndicatorUI.SetActive(isPlayer1Turn);
-            }
-            
-            if (p2IndicatorUI != null)
-            {
-                p2IndicatorUI.SetActive(!isPlayer1Turn);
-            }
-            
-            // Also update 2D indicators for fallback (if they exist)
+            // Update turn indicators (wired up by HUDSetup)
             if (p1TurnIndicator != null)
             {
-                p1TurnIndicator.color = isPlayer1Turn ? activeTurnColor : inactiveTurnColor;
+                p1TurnIndicator.SetActive(isPlayer1Turn);
             }
             
             if (p2TurnIndicator != null)
             {
-                p2TurnIndicator.color = isPlayer1Turn ? inactiveTurnColor : activeTurnColor;
+                p2TurnIndicator.SetActive(!isPlayer1Turn);
             }
             
             // Update player label styling
