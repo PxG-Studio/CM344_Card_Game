@@ -11,6 +11,26 @@ namespace CardGame.UI
     [DefaultExecutionOrder(-50)]
     public class MainMenuSetup : MonoBehaviour
     {
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void AutoSetup()
+        {
+            // Only run in MainMenu scene
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private static void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            if (scene.name == "MainMenu")
+            {
+                // Check if setup already exists
+                if (FindObjectOfType<MainMenuSetup>() == null)
+                {
+                    GameObject setupObj = new GameObject("MainMenuSetup");
+                    setupObj.AddComponent<MainMenuSetup>();
+                }
+            }
+        }
+
         private void Awake()
         {
             SetupMainMenu();
