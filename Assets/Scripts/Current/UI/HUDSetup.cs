@@ -288,84 +288,60 @@ namespace CardGame.UI
         }
         
         /// <summary>
-        /// Find or create a 3D turn indicator (inverted pyramid) that hovers above the panel.
-        /// Returns an Image component for compatibility with HUDManager, but creates a 3D object.
+        /// Find or create a rotating diamond UI indicator that hovers above the panel.
         /// </summary>
         private UnityEngine.UI.Image FindOrCreateTurnIndicator(Transform parent, string name, bool isPlayer1)
         {
-            // Check if 3D indicator already exists
-            Transform existing3D = GameObject.Find($"{name}_3D")?.transform;
-            if (existing3D != null && existing3D.GetComponent<TurnIndicator3D>() != null)
+            // Check if indicator already exists
+            Transform existing = GameObject.Find($"{name}_UI")?.transform;
+            if (existing != null && existing.GetComponent<TurnIndicatorUI>() != null)
             {
-                // Return a dummy Image component for compatibility
-                Transform dummyTransform = parent.Find(name);
-                if (dummyTransform != null)
-                {
-                    return dummyTransform.GetComponent<UnityEngine.UI.Image>();
-                }
+                return existing.GetComponent<UnityEngine.UI.Image>();
             }
             
-            // Create 3D inverted pyramid indicator as a child of the HUD canvas
-            GameObject indicator3D = new GameObject($"{name}_3D");
-            indicator3D.layer = 5; // UI layer so it renders on top
+            // Create UI diamond indicator as a child of the HUD canvas
+            GameObject indicatorUI = new GameObject($"{name}_UI");
+            indicatorUI.layer = 5; // UI layer
             
             // Get the canvas root
             Canvas canvas = parent.GetComponentInParent<Canvas>();
             if (canvas != null)
             {
-                indicator3D.transform.SetParent(canvas.transform, false);
+                indicatorUI.transform.SetParent(canvas.transform, false);
                 
                 // Add RectTransform for UI positioning
-                RectTransform rect3D = indicator3D.AddComponent<RectTransform>();
+                RectTransform rectUI = indicatorUI.AddComponent<RectTransform>();
                 
                 if (isPlayer1)
                 {
                     // Player 1: Above top-right corner
-                    rect3D.anchorMin = new Vector2(1, 1);
-                    rect3D.anchorMax = new Vector2(1, 1);
-                    rect3D.pivot = new Vector2(0.5f, 0.5f);
-                    rect3D.anchoredPosition = new Vector2(-100, -80); // Offset from top-right
-                    rect3D.sizeDelta = new Vector2(50, 50);
+                    rectUI.anchorMin = new Vector2(1, 1);
+                    rectUI.anchorMax = new Vector2(1, 1);
+                    rectUI.pivot = new Vector2(0.5f, 0.5f);
+                    rectUI.anchoredPosition = new Vector2(-100, -80); // Offset from top-right
+                    rectUI.sizeDelta = new Vector2(40, 40); // Size of the diamond
                 }
                 else
                 {
                     // Player 2: Above top-left corner
-                    rect3D.anchorMin = new Vector2(0, 1);
-                    rect3D.anchorMax = new Vector2(0, 1);
-                    rect3D.pivot = new Vector2(0.5f, 0.5f);
-                    rect3D.anchoredPosition = new Vector2(100, -80); // Offset from top-left
-                    rect3D.sizeDelta = new Vector2(50, 50);
+                    rectUI.anchorMin = new Vector2(0, 1);
+                    rectUI.anchorMax = new Vector2(0, 1);
+                    rectUI.pivot = new Vector2(0.5f, 0.5f);
+                    rectUI.anchoredPosition = new Vector2(100, -80); // Offset from top-left
+                    rectUI.sizeDelta = new Vector2(40, 40); // Size of the diamond
                 }
-                
-                // Move it slightly forward in Z to ensure visibility
-                Vector3 localPos = indicator3D.transform.localPosition;
-                indicator3D.transform.localPosition = new Vector3(localPos.x, localPos.y, -10f);
             }
             
-            // Scale the pyramid
-            indicator3D.transform.localScale = Vector3.one * 30f; // Larger scale for UI space
+            // Add Image component
+            UnityEngine.UI.Image image = indicatorUI.AddComponent<UnityEngine.UI.Image>();
+            image.color = new Color(1f, 0.8f, 0f, 1f); // Gold color
             
-            // Add CanvasRenderer for UI rendering
-            indicator3D.AddComponent<CanvasRenderer>();
-            
-            // Add the 3D indicator component
-            TurnIndicator3D indicator3DScript = indicator3D.AddComponent<TurnIndicator3D>();
-            indicator3DScript.SetActive(false); // Start inactive
-            
-            // Create a dummy UI element for compatibility with HUDManager
-            GameObject dummyUI = new GameObject(name);
-            dummyUI.layer = 5; // UI layer
-            dummyUI.transform.SetParent(parent, false);
-            
-            RectTransform rectTransform = dummyUI.AddComponent<RectTransform>();
-            rectTransform.sizeDelta = new Vector2(1, 1); // Tiny invisible element
-            rectTransform.anchoredPosition = Vector2.zero;
-            
-            UnityEngine.UI.Image image = dummyUI.AddComponent<UnityEngine.UI.Image>();
-            image.color = new Color(0, 0, 0, 0); // Invisible
+            // Add the UI indicator component
+            TurnIndicatorUI indicatorScript = indicatorUI.AddComponent<TurnIndicatorUI>();
+            indicatorScript.SetActive(false); // Start inactive
             
             string position = isPlayer1 ? "above Player 1 panel" : "above Player 2 panel";
-            Debug.Log($"HUDSetup: Created 3D turn indicator '{name}' {position}");
+            Debug.Log($"HUDSetup: Created UI turn indicator '{name}' {position}");
             return image;
         }
         

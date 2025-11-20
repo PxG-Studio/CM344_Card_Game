@@ -189,31 +189,31 @@ namespace CardGame.UI
         /// </summary>
         private void UpdateTurnIndicators()
         {
-            // Find and control 3D turn indicators
-            TurnIndicator3D p1Indicator3D = GameObject.Find("TurnIndicator_3D")?.GetComponent<TurnIndicator3D>();
-            TurnIndicator3D p2Indicator3D = GameObject.Find("TurnIndicator_3D (1)")?.GetComponent<TurnIndicator3D>();
+            // Find and control UI turn indicators
+            TurnIndicatorUI p1IndicatorUI = GameObject.Find("TurnIndicator_UI")?.GetComponent<TurnIndicatorUI>();
+            TurnIndicatorUI p2IndicatorUI = GameObject.Find("TurnIndicator_UI (1)")?.GetComponent<TurnIndicatorUI>();
             
-            // If we can't find by those names, search for all TurnIndicator3D components
-            if (p1Indicator3D == null || p2Indicator3D == null)
+            // If we can't find by those names, search for all TurnIndicatorUI components
+            if (p1IndicatorUI == null || p2IndicatorUI == null)
             {
-                TurnIndicator3D[] allIndicators = FindObjectsOfType<TurnIndicator3D>();
+                TurnIndicatorUI[] allIndicators = FindObjectsOfType<TurnIndicatorUI>();
                 if (allIndicators.Length >= 2)
                 {
                     // Assume first is P1, second is P2 based on creation order
-                    p1Indicator3D = allIndicators[0];
-                    p2Indicator3D = allIndicators[1];
+                    p1IndicatorUI = allIndicators[0];
+                    p2IndicatorUI = allIndicators[1];
                 }
             }
             
-            // Update 3D indicators
-            if (p1Indicator3D != null)
+            // Update UI indicators
+            if (p1IndicatorUI != null)
             {
-                p1Indicator3D.SetActive(isPlayer1Turn);
+                p1IndicatorUI.SetActive(isPlayer1Turn);
             }
             
-            if (p2Indicator3D != null)
+            if (p2IndicatorUI != null)
             {
-                p2Indicator3D.SetActive(!isPlayer1Turn);
+                p2IndicatorUI.SetActive(!isPlayer1Turn);
             }
             
             // Also update 2D indicators for fallback (if they exist)
