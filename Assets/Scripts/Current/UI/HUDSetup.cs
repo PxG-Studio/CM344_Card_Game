@@ -314,20 +314,20 @@ namespace CardGame.UI
                 
                 if (isPlayer1)
                 {
-                    // Player 1: Directly on top of P1 panel
-                    rectUI.anchorMin = new Vector2(1, 1);
-                    rectUI.anchorMax = new Vector2(1, 1);
+                    // Player 1: Directly on top of P1 panel (120px left of center)
+                    rectUI.anchorMin = new Vector2(0.5f, 1);
+                    rectUI.anchorMax = new Vector2(0.5f, 1);
                     rectUI.pivot = new Vector2(0.5f, 1f); // Pivot at top center
-                    rectUI.anchoredPosition = new Vector2(-100, -10); // On top of Player 1 panel
+                    rectUI.anchoredPosition = new Vector2(-120, -10); // Match P1 panel X position
                     rectUI.sizeDelta = new Vector2(40, 40); // Size
                 }
                 else
                 {
-                    // Player 2: Directly on top of P2 panel
-                    rectUI.anchorMin = new Vector2(0, 1);
-                    rectUI.anchorMax = new Vector2(0, 1);
+                    // Player 2: Directly on top of P2 panel (120px right of center)
+                    rectUI.anchorMin = new Vector2(0.5f, 1);
+                    rectUI.anchorMax = new Vector2(0.5f, 1);
                     rectUI.pivot = new Vector2(0.5f, 1f); // Pivot at top center
-                    rectUI.anchoredPosition = new Vector2(100, -10); // On top of Player 2 panel
+                    rectUI.anchoredPosition = new Vector2(120, -10); // Match P2 panel X position
                     rectUI.sizeDelta = new Vector2(40, 40); // Size
                 }
             }
