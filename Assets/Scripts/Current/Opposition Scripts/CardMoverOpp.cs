@@ -105,10 +105,10 @@ public class CardMoverOpp : MonoBehaviour
         }
         
         // If still not found, only log in Editor (not during play)
+        #if UNITY_EDITOR
         if (card == null)
         {
             // Only log once per GameObject and only in development builds
-            #if UNITY_EDITOR
             if (!hasLoggedWarning)
             {
                 // Suppress warning if this is a prefab instance that will be initialized later
@@ -118,13 +118,14 @@ public class CardMoverOpp : MonoBehaviour
                 }
                 hasLoggedWarning = true;
             }
-            #endif
         }
+        #endif
     }
     
     #if UNITY_EDITOR
     private bool hasLoggedWarning = false;
     #endif
+    
     private void OnMouseDown()
     {
         // Don't allow dragging if card has been played
