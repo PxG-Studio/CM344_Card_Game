@@ -38,6 +38,9 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
     [Header("Settings")]
     [SerializeField] private bool playCardOnDrop = true;
     [SerializeField] private bool snapCardToPosition = true;
+    [SerializeField] private Vector3 cardScaleOnBoard = Vector3.one; // Leave at (1,1,1) to auto-match drop area size
+    [SerializeField, Range(0.5f, 1.2f)] private float cardScaleFillPercent = 0.9f;
+    [SerializeField] private SpriteRenderer tileSpriteRenderer;
     [SerializeField] private float adjacentCardDistance = 3f; // Distance to consider cards adjacent (increased from 2f)
     [SerializeField] private bool enableCardBattles = true; // Enable stat comparison and card flipping
     [SerializeField] private bool debugBattles = true; // Log battle detection for debugging
@@ -62,6 +65,11 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
     
     private void Start()
     {
+        if (tileSpriteRenderer == null)
+        {
+            tileSpriteRenderer = GetComponent<SpriteRenderer>();
+        }
+        
         // Auto-find NewDeckManager if not assigned
         if (deckManager == null)
         {
@@ -111,6 +119,62 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
     }
     
     /// <summary>
+    /// Applies scaling so a card visually fills the tile. If cardScaleOnBoard is left at Vector3.one, it derives the size from the drop area scale.
+    /// </summary>
+    private void ApplyCardScale(Transform cardTransform)
+    {
+        if (cardTransform == null) return;
+        
+        if (cardScaleOnBoard != Vector3.one)
+        {
+            cardTransform.localScale = cardScaleOnBoard;
+            if (debugBattles)
+            {
+                Debug.Log($"CardDropArea1: Applied explicit scale override {cardScaleOnBoard} to {cardTransform.name}");
+            }
+            return;
+        }
+        
+        bool scaledViaRenderers = false;
+        if (tileSpriteRenderer != null)
+        {
+            SpriteRenderer cardSprite = cardTransform.GetComponentInChildren<SpriteRenderer>();
+            if (cardSprite != null)
+            {
+                float tileSize = Mathf.Min(tileSpriteRenderer.bounds.size.x, tileSpriteRenderer.bounds.size.y);
+                float cardSize = Mathf.Max(cardSprite.bounds.size.x, cardSprite.bounds.size.y);
+                if (tileSize > 0f && cardSize > 0.0001f)
+                {
+                    float targetWorldSize = tileSize * cardScaleFillPercent;
+                    float scaleMultiplier = targetWorldSize / cardSize;
+                    Vector3 localScale = cardTransform.localScale;
+                    float newZ = Mathf.Approximately(localScale.z, 0f) ? 1f : localScale.z;
+                    Vector3 newScale = new Vector3(localScale.x * scaleMultiplier, localScale.y * scaleMultiplier, newZ);
+                    cardTransform.localScale = newScale;
+                    scaledViaRenderers = true;
+                    if (debugBattles)
+                    {
+                        Debug.Log($"CardDropArea1: Scaled {cardTransform.name} via renderer bounds. Tile size: {tileSize:F2}, Card size: {cardSize:F2}, Multiplier: {scaleMultiplier:F2}, Final scale: {newScale}");
+                    }
+                }
+            }
+        }
+        
+        if (!scaledViaRenderers)
+        {
+            float tileScale = Mathf.Min(transform.lossyScale.x, transform.lossyScale.y);
+            float finalScale = tileScale * cardScaleFillPercent;
+            float currentZ = Mathf.Approximately(cardTransform.localScale.z, 0f) ? 1f : cardTransform.localScale.z;
+            Vector3 fallbackScale = new Vector3(finalScale, finalScale, currentZ);
+            cardTransform.localScale = fallbackScale;
+            if (debugBattles)
+            {
+                Debug.Log($"CardDropArea1: Applied fallback scale {fallbackScale} to {cardTransform.name} (tile lossy scale {transform.lossyScale})");
+            }
+        }
+    }
+    
+    /// <summary>
     /// Clears the tracking of cards played this turn
     /// </summary>
     private void ClearTurnTracking()
@@ -129,6 +193,9 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         {
             cardMover.transform.position = transform.position;
         }
+        
+        // Scale card to match board tile size
+        ApplyCardScale(cardMover.transform);
         
         // Play the card through DeckManager
         if (playCardOnDrop && deckManager != null)
@@ -446,6 +513,9 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         {
             cardMoverOpp.transform.position = transform.position;
         }
+        
+        // Scale card to match board tile size
+        ApplyCardScale(cardMoverOpp.transform);
         
         // Play the card through DeckManager
         if (playCardOnDrop && deckManagerOpp != null)
