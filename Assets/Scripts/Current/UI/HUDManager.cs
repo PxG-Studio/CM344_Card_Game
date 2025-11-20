@@ -200,13 +200,13 @@ namespace CardGame.UI
                 {
                     if (isPlayer1Turn)
                     {
-                        // Position above P1 panel (left side)
-                        indicatorRect.anchoredPosition = new Vector2(80, -80); // P1 panel top-right (simplified)
+                        // Position above P1 panel - match HUDSetup positioning
+                        indicatorRect.anchoredPosition = new Vector2(-120 + 200, -80); // P1 panel top-right: 80px from center
                     }
                     else
                     {
-                        // Position above P2 panel (right side)
-                        indicatorRect.anchoredPosition = new Vector2(320, -80); // P2 panel top-right (simplified)
+                        // Position above P2 panel - match HUDSetup positioning
+                        indicatorRect.anchoredPosition = new Vector2(120 + 200, -80); // P2 panel top-right: 320px from center
                     }
                 }
             }
