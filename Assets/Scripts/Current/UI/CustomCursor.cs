@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 
 namespace CardGame.UI
 {
@@ -16,23 +18,30 @@ namespace CardGame.UI
         [Header("Animation Settings")]
         [SerializeField] private bool enableRotation = true;
         [SerializeField] private float rotationSpeed = 120f; // Degrees per second (matches turn indicator)
-        [SerializeField] private float updateInterval = 0.05f; // Update cursor texture every X seconds
+        [SerializeField] private float updateInterval = 0.05f; // Update cursor texture every X seconds (legacy cursor path)
         [SerializeField] private bool reverseRotation = false; // Match turn indicator rotation direction
         
         [Header("Size Settings")]
         [SerializeField] private float cursorScale = 0.3f; // Scale factor for cursor size (0.3 = 30% size, smaller for cursor)
         
         [Header("Color Settings")]
-        [SerializeField] private bool tintGreen = true; // Tint cursor green
+        [SerializeField] private bool tintGreen = false; // Tint cursor green
         [SerializeField] private Color greenTint = new Color(0f, 1f, 0f, 1f); // Bright green
         
-        [Header("Pointer Shape")]
+        [Header("Pointer Shape (Legacy Cursor.SetCursor path)")]
         [SerializeField] private bool useGeneratedTriangle = true; // If true, generates a simple 2D triangle (recommended - works reliably)
         [SerializeField] private int triangleSize = 32; // Size of the generated triangle cursor (32x32 pixels)
-        
-        // Legacy fields (kept for backward compatibility, but useGeneratedTriangle is recommended)
         [SerializeField] private bool usePointerShape = false; // Legacy: uses triangle from diamond sprite (less reliable)
         [SerializeField] private bool autoDetectBestShape = false; // Legacy: auto-detect shape
+        
+        [Header("UI Cursor Visual (Matches Turn Indicator)")]
+        [SerializeField] private bool useUICursorVisual = true;
+        [SerializeField] private float uiCursorSize = 48f;
+        [SerializeField] private float uiHoverHeight = 10f;
+        [SerializeField] private float uiHoverSpeed = 2f;
+        [SerializeField] private Color uiCursorColor = new Color(1f, 0.8f, 0f, 1f); // Gold to match turn indicator
+        [SerializeField] private TMP_FontAsset uiCursorFont;
+        [SerializeField] private string uiCursorGlyph = "▼";
         
         [Header("Auto-Find Settings")]
         [SerializeField] private bool autoFindCursorSprite = true;
@@ -52,10 +61,26 @@ namespace CardGame.UI
         private Sprite cachedTriangleSprite = null; // Cache the triangle sprite to avoid recreating it every frame
         private Sprite cachedSourceSprite = null; // Track which source sprite was used for the cached triangle
         
+        private Canvas cursorCanvas;
+        private RectTransform uiCursorRect;
+        private RectTransform uiCursorVisualRect;
+        private TextMeshProUGUI uiCursorText;
+        private float uiHoverTimer = 0f;
+        
         private void Start()
         {
             // CRITICAL: Ensure this GameObject can NEVER interfere with mouse input
             EnsureZeroInteractionCapability();
+            
+            if (useUICursorVisual)
+            {
+                Cursor.visible = false;
+                Cursor.lockState = CursorLockMode.Confined;
+            }
+            else
+            {
+                Cursor.visible = true;
+            }
             
             // Small delay to ensure HUDSetup has finished setting the sprite via reflection
             StartCoroutine(DelayedCursorSetup());
@@ -127,6 +152,12 @@ namespace CardGame.UI
             // Wait one frame to ensure HUDSetup has finished
             yield return null;
             
+            if (useUICursorVisual)
+            {
+                CreateUICursorVisual();
+                yield break;
+            }
+            
             // Auto-find cursor sprite if enabled and not assigned
             // Note: If sprite was set via reflection (by HUDSetup), it will already be assigned
             if (autoFindCursorSprite && cursorSprite == null)
@@ -147,8 +178,99 @@ namespace CardGame.UI
             }
         }
         
+        private void CreateUICursorVisual()
+        {
+            if (cursorCanvas == null)
+            {
+                GameObject canvasGO = new GameObject("CustomCursorCanvas");
+                cursorCanvas = canvasGO.AddComponent<Canvas>();
+                cursorCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                cursorCanvas.sortingOrder = short.MaxValue;
+                CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920, 1080);
+                canvasGO.AddComponent<GraphicRaycaster>();
+                DontDestroyOnLoad(canvasGO);
+            }
+            
+            GameObject cursorGO = new GameObject("CustomCursorVisual");
+            cursorGO.transform.SetParent(cursorCanvas.transform, false);
+            uiCursorRect = cursorGO.AddComponent<RectTransform>();
+            uiCursorRect.sizeDelta = new Vector2(uiCursorSize, uiCursorSize);
+            
+            GameObject visualGO = new GameObject("Visual");
+            visualGO.transform.SetParent(uiCursorRect, false);
+            uiCursorVisualRect = visualGO.AddComponent<RectTransform>();
+            uiCursorVisualRect.sizeDelta = uiCursorRect.sizeDelta;
+            uiCursorVisualRect.anchorMin = new Vector2(0.5f, 0.5f);
+            uiCursorVisualRect.anchorMax = new Vector2(0.5f, 0.5f);
+            uiCursorVisualRect.pivot = new Vector2(0.5f, 0.5f);
+            
+            uiCursorText = visualGO.AddComponent<TextMeshProUGUI>();
+            uiCursorText.text = string.IsNullOrEmpty(uiCursorGlyph) ? "▼" : uiCursorGlyph;
+            uiCursorText.fontSize = uiCursorSize;
+            if (uiCursorFont != null)
+            {
+                uiCursorText.font = uiCursorFont;
+            }
+            uiCursorText.color = tintGreen ? greenTint : uiCursorColor;
+            uiCursorText.alignment = TextAlignmentOptions.Center;
+            uiCursorText.fontStyle = FontStyles.Bold;
+            uiCursorText.enableWordWrapping = false;
+            uiCursorText.raycastTarget = false;
+            
+            // Slightly tilt to match turn indicator orientation
+            uiCursorRect.localEulerAngles = Vector3.zero;
+        }
+        
+        private void LateUpdate()
+        {
+            if (!useUICursorVisual)
+            {
+                Cursor.visible = true;
+                return;
+            }
+            
+            if (uiCursorRect == null)
+            {
+                CreateUICursorVisual();
+                Cursor.visible = true; // keep OS cursor visible until UI cursor exists
+                Cursor.lockState = CursorLockMode.None;
+                return;
+            }
+            
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Confined;
+            
+            Vector2 mousePosition = Input.mousePosition;
+            uiCursorRect.position = mousePosition;
+            
+            uiHoverTimer += Time.deltaTime * uiHoverSpeed;
+            float hoverOffset = Mathf.Sin(uiHoverTimer) * uiHoverHeight;
+            if (uiCursorVisualRect != null)
+            {
+                uiCursorVisualRect.anchoredPosition = new Vector2(0f, hoverOffset);
+            }
+            
+            // Diagonal/side spin: rotate around Y while oscillating X tilt
+            // Diagonal/side spin: rotate around Y while oscillating X tilt
+            if (enableRotation && uiCursorVisualRect != null)
+            {
+                float rotationDelta = rotationSpeed * Time.deltaTime * (reverseRotation ? -1f : 1f);
+                currentRotation += rotationDelta;
+                float tiltX = Mathf.Sin(Time.time * 2f) * 15f;
+                uiCursorVisualRect.localEulerAngles = new Vector3(tiltX, currentRotation, 0f);
+            }
+        }
+        
+        private void OnDestroy()
+        {
+            ResetCursor();
+        }
+        
         private void Update()
         {
+            if (useUICursorVisual) return;
             // Update cursor texture with rotation if enabled
             if (enableRotation && cursorSprite != null && Time.time - lastUpdateTime >= updateInterval)
             {
@@ -235,10 +357,19 @@ namespace CardGame.UI
         /// </summary>
         public void SetCustomCursor()
         {
+            if (useUICursorVisual)
+            {
+                Debug.Log("CustomCursor: UI cursor visual active, skipping Cursor.SetCursor.");
+                return;
+            }
             if (cursorSprite == null)
             {
-                Debug.LogWarning("CustomCursor: No cursor sprite assigned!");
-                return;
+                cursorSprite = GenerateFallbackCursorSprite();
+                if (cursorSprite == null)
+                {
+                    Debug.LogWarning("CustomCursor: No cursor sprite available. Using system cursor.");
+                    return;
+                }
             }
             
             // Calculate hot spot if not set
@@ -277,6 +408,7 @@ namespace CardGame.UI
         /// </summary>
         private void UpdateCursorTexture()
         {
+            if (useUICursorVisual) return;
             Sprite spriteToUse = null;
             
             // Use generated triangle if enabled (recommended - works reliably)
@@ -319,12 +451,17 @@ namespace CardGame.UI
             
             if (spriteToUse == null)
             {
-                Debug.LogWarning("CustomCursor: No sprite available for cursor!");
-                return;
+                spriteToUse = GenerateFallbackCursorSprite();
+                if (spriteToUse == null)
+                {
+                    Debug.LogWarning("CustomCursor: No sprite available for cursor!");
+                    return;
+                }
             }
             
             // Convert sprite to texture with optional rotation
-            cursorTexture = SpriteToTexture2D(spriteToUse, enableRotation ? currentRotation : 0f);
+            float rotationValue = enableRotation ? currentRotation : 0f;
+            cursorTexture = SpriteToTexture2D(spriteToUse, rotationValue);
             
             // Calculate hot spot (accounting for rotation and scaling)
             Vector2 finalHotSpot = hotSpot;
@@ -369,7 +506,7 @@ namespace CardGame.UI
             int center = size / 2;
             int radius = size / 2 - 2;
             
-            Color diamondColor = tintGreen ? greenTint : Color.white;
+            Color diamondColor = tintGreen ? greenTint : new Color(1f, 0.8f, 0f, 1f);
             
             for (int y = 0; y < size; y++)
             {
@@ -400,6 +537,15 @@ namespace CardGame.UI
             );
             
             return diamondSprite;
+        }
+
+        /// <summary>
+        /// Generates a fallback cursor sprite (diamond) when no sprite is provided.
+        /// </summary>
+        private Sprite GenerateFallbackCursorSprite()
+        {
+            Sprite fallback = GenerateSimpleTriangle();
+            return fallback;
         }
         
         /// <summary>
@@ -603,7 +749,6 @@ namespace CardGame.UI
             }
             else
             {
-                // Apply rotation
                 Color[] rotatedPixels = RotatePixels(processedPixels, width, height, rotationDegrees);
                 readableTexture.SetPixels(rotatedPixels);
             }
@@ -823,6 +968,7 @@ namespace CardGame.UI
             
             return rotated;
         }
+
         
         /// <summary>
         /// Switch between pointer (triangle) and diamond cursor (for testing).
@@ -849,11 +995,34 @@ namespace CardGame.UI
         /// </summary>
         public void ResetCursor()
         {
+            if (useUICursorVisual)
+            {
+                Cursor.visible = true;
+                Cursor.lockState = CursorLockMode.None;
+                if (uiCursorRect != null)
+                {
+                    Destroy(uiCursorRect.gameObject);
+                    uiCursorRect = null;
+                    uiCursorText = null;
+                    uiCursorVisualRect = null;
+                }
+                if (cursorCanvas != null)
+                {
+                    Destroy(cursorCanvas.gameObject);
+                    cursorCanvas = null;
+                }
+            }
             Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
             if (cursorTexture != null)
             {
                 Destroy(cursorTexture);
                 cursorTexture = null;
+            }
+            if (cachedTriangleSprite != null)
+            {
+                Destroy(cachedTriangleSprite);
+                cachedTriangleSprite = null;
+                cachedSourceSprite = null;
             }
         }
         
@@ -909,21 +1078,6 @@ namespace CardGame.UI
             foreach (Transform child in obj.transform)
             {
                 SetLayerRecursive(child.gameObject, layer);
-            }
-        }
-        
-        private void OnDestroy()
-        {
-            // Clean up texture
-            if (cursorTexture != null)
-            {
-                Destroy(cursorTexture);
-            }
-            
-            // Clean up cached triangle sprite
-            if (cachedTriangleSprite != null)
-            {
-                Destroy(cachedTriangleSprite);
             }
         }
         

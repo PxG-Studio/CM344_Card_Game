@@ -431,156 +431,70 @@ namespace CardGame.UI
                 }
             }
             
-            // Create cursor manager if cursor GameObject found
+            int ignoreRaycastLayer = LayerMask.NameToLayer("Ignore Raycast");
+            
+            // Always reset cursor manager for a clean state
+            GameObject existingManager = GameObject.Find("CursorManager");
+            if (existingManager != null)
+            {
+                Destroy(existingManager);
+            }
+            
+            GameObject cursorManager = new GameObject("CursorManager");
+            cursorManager.transform.SetParent(null);
+            DontDestroyOnLoad(cursorManager);
+            if (ignoreRaycastLayer >= 0)
+            {
+                cursorManager.layer = ignoreRaycastLayer;
+            }
+            
+            // Clean up any old generated cursor sprites that might still be in the scene
+            GameObject strayCursorSprite = GameObject.Find("GeneratedCursorSprite");
+            if (strayCursorSprite != null)
+            {
+                Destroy(strayCursorSprite);
+            }
+            
+            CustomCursor customCursor = cursorManager.AddComponent<CustomCursor>();
+            var cursorType = typeof(CustomCursor);
+            
+            // Configure cursor UI visual to match turn indicator
+            SetPrivateField(customCursor, cursorType, "useUICursorVisual", true);
+            SetPrivateField(customCursor, cursorType, "uiCursorGlyph", "▲");
+            SetPrivateField(customCursor, cursorType, "uiCursorSize", 48f);
+            SetPrivateField(customCursor, cursorType, "uiCursorColor", new Color(1f, 0.8f, 0f, 1f));
+            SetPrivateField(customCursor, cursorType, "tintGreen", false);
+            
             if (cursorGameObject != null)
             {
-                // ============================================
-                // COMPREHENSIVE INPUT INTERFERENCE PREVENTION
-                // ============================================
-                // Edge Case 1: Multiple cursor GameObjects - disable all of them
-                GameObject[] allCursorObjects = FindObjectsOfType<GameObject>();
-                foreach (GameObject obj in allCursorObjects)
-                {
-                    if (obj.name.Contains("Deck Slot") || obj.name.Contains("CustomCursor") || 
-                        obj.name.Contains("GameCursor") || obj.name.Contains("Cursor") ||
-                        obj.name.Contains("Pointer") || obj.name.Contains("InteractivePointer"))
-                    {
-                        DisableAllInputComponents(obj, "multiple cursor objects found");
-                    }
-                }
-                
-                // Edge Case 2: Disable ALL colliders (including child colliders)
-                Collider2D[] allColliders2D = cursorGameObject.GetComponentsInChildren<Collider2D>(true);
-                foreach (Collider2D col in allColliders2D)
-                {
-                    col.enabled = false;
-                }
-                
-                Collider[] allColliders3D = cursorGameObject.GetComponentsInChildren<Collider>(true);
-                foreach (Collider col in allColliders3D)
-                {
-                    col.enabled = false;
-                }
-                
-                // Edge Case 3: Disable all renderers (prevents any visual interference)
-                Renderer[] allRenderers = cursorGameObject.GetComponentsInChildren<Renderer>(true);
-                foreach (Renderer rend in allRenderers)
-                {
-                    rend.enabled = false;
-                }
-                
-                // Edge Case 4: Disable all UI components that could block raycasts
-                UnityEngine.UI.Graphic[] allGraphics = cursorGameObject.GetComponentsInChildren<UnityEngine.UI.Graphic>(true);
-                foreach (var graphic in allGraphics)
-                {
-                    if (graphic is UnityEngine.UI.Image img)
-                    {
-                        img.raycastTarget = false;
-                    }
-                    else if (graphic is UnityEngine.UI.Text txt)
-                    {
-                        txt.raycastTarget = false;
-                    }
-                    else if (graphic is UnityEngine.UI.RawImage rawImg)
-                    {
-                        rawImg.raycastTarget = false;
-                    }
-                }
-                
-                // Edge Case 5: Disable all CanvasGroups (could block interaction)
-                CanvasGroup[] allCanvasGroups = cursorGameObject.GetComponentsInChildren<CanvasGroup>(true);
-                foreach (CanvasGroup cg in allCanvasGroups)
-                {
-                    cg.blocksRaycasts = false;
-                    cg.interactable = false;
-                    cg.ignoreParentGroups = true;
-                }
-                
-                // Edge Case 6: Disable all MonoBehaviour scripts that might handle input
-                MonoBehaviour[] allBehaviours = cursorGameObject.GetComponentsInChildren<MonoBehaviour>(true);
-                foreach (MonoBehaviour mb in allBehaviours)
-                {
-                    // Skip CustomCursor script itself if it somehow got attached
-                    if (mb is CustomCursor) continue;
-                    
-                    // Disable any input-related scripts
-                    if (mb.GetType().Name.Contains("Input") || 
-                        mb.GetType().Name.Contains("Mouse") ||
-                        mb.GetType().Name.Contains("Pointer") ||
-                        mb.GetType().Name.Contains("Click"))
-                    {
-                        mb.enabled = false;
-                    }
-                }
-                
-                // Move to a layer that doesn't receive raycasts (including all children)
-                int ignoreRaycastLayer = LayerMask.NameToLayer("Ignore Raycast");
+                // Disable anything that could interfere
+                DisableAllInputComponents(cursorGameObject, "setting up custom cursor");
+                DisableInputScripts(cursorGameObject);
                 if (ignoreRaycastLayer >= 0)
                 {
                     SetLayerRecursive(cursorGameObject, ignoreRaycastLayer);
                 }
                 
-                // Get the sprite BEFORE deactivating (GameObject.Find won't find inactive objects)
                 Sprite cursorSprite = ExtractSpriteFromGameObject(cursorGameObject);
-                
                 if (cursorSprite == null)
                 {
-                    Debug.LogWarning("HUDSetup: Cursor GameObject found but no sprite found. Skipping custom cursor setup.");
-                    // Still deactivate the object to prevent interference
-                    cursorGameObject.SetActive(false);
-                    return;
+                    Debug.LogWarning("HUDSetup: Cursor GameObject found but no sprite found. Using fallback cursor sprite.");
+                    SetPrivateField(customCursor, cursorType, "cursorSprite", CreateFallbackCursorSprite());
                 }
-                
-                // Edge Case 7: Check for existing CursorManager and clean it up
-                GameObject existingManager = GameObject.Find("CursorManager");
-                if (existingManager != null)
+                else
                 {
-                    Debug.LogWarning("HUDSetup: Found existing CursorManager, destroying it to prevent conflicts");
-                    Destroy(existingManager);
+                    SetPrivateField(customCursor, cursorType, "cursorSprite", cursorSprite);
                 }
                 
-                // Create a manager GameObject for the cursor script with ZERO interaction capability
-                GameObject cursorManager = new GameObject("CursorManager");
-                cursorManager.transform.SetParent(null); // Root level
-                DontDestroyOnLoad(cursorManager); // Persist across scenes
-                
-                // CRITICAL: Ensure CursorManager itself has no colliders or renderers
-                // (This should already be the case for a new GameObject, but guard against edge cases)
-                if (cursorManager.GetComponent<Collider>() != null)
-                {
-                    Destroy(cursorManager.GetComponent<Collider>());
-                }
-                if (cursorManager.GetComponent<Collider2D>() != null)
-                {
-                    Destroy(cursorManager.GetComponent<Collider2D>());
-                }
-                if (cursorManager.GetComponent<Renderer>() != null)
-                {
-                    Destroy(cursorManager.GetComponent<Renderer>());
-                }
-                
-                // Move CursorManager to Ignore Raycast layer
-                if (ignoreRaycastLayer >= 0)
-                {
-                    cursorManager.layer = ignoreRaycastLayer;
-                }
-                
-                CustomCursor customCursor = cursorManager.AddComponent<CustomCursor>();
-                
-                // Manually set the sprite using reflection (since GameObject will be inactive)
-                var cursorType = typeof(CustomCursor);
-                SetPrivateField(customCursor, cursorType, "cursorSprite", cursorSprite);
-                
-                // CRITICAL: Deactivate the cursor GameObject entirely so it can't intercept any input
                 cursorGameObject.SetActive(false);
                 Debug.Log("HUDSetup: Deactivated cursor GameObject to prevent all input interference");
-                
-                Debug.Log("HUDSetup: Created CustomCursor component with sprite (fully isolated from input system)");
             }
             else
             {
-                Debug.LogWarning("HUDSetup: Could not find cursor GameObject. Custom cursor will not be set up.");
+                Debug.Log("HUDSetup: No cursor GameObject found. Using fallback cursor sprite.");
+                SetPrivateField(customCursor, cursorType, "cursorSprite", CreateFallbackCursorSprite());
             }
+            Debug.Log("HUDSetup: Created CustomCursor component (fully isolated from input system)");
         }
         
         /// <summary>
@@ -664,7 +578,32 @@ namespace CardGame.UI
                 Debug.Log($"HUDSetup: Disabled all input components on '{obj.name}' ({reason})");
             }
         }
-        
+
+        /// <summary>
+        /// Disables common input scripts (CardMover, NewCardUI, etc.) on the cursor source.
+        /// </summary>
+        private void DisableInputScripts(GameObject obj)
+        {
+            if (obj == null) return;
+            
+            MonoBehaviour[] behaviours = obj.GetComponentsInChildren<MonoBehaviour>(true);
+            foreach (var behaviour in behaviours)
+            {
+                if (behaviour is CustomCursor) continue;
+                
+                string typeName = behaviour.GetType().Name;
+                if (typeName.Contains("Input") ||
+                    typeName.Contains("Mouse") ||
+                    typeName.Contains("Pointer") ||
+                    typeName.Contains("Click") ||
+                    typeName.Contains("CardMover") ||
+                    typeName.Contains("NewCardUI"))
+                {
+                    behaviour.enabled = false;
+                }
+            }
+        }
+
         /// <summary>
         /// Sets the layer recursively on a GameObject and all its children.
         /// </summary>
@@ -676,6 +615,40 @@ namespace CardGame.UI
             {
                 SetLayerRecursive(child.gameObject, layer);
             }
+        }
+
+        /// <summary>
+        /// Creates a fallback triangle cursor sprite (pointer) if no sprite is available.
+        /// </summary>
+        private Sprite CreateFallbackCursorSprite()
+        {
+            int size = 64;
+            Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            Color[] pixels = new Color[size * size];
+            for (int i = 0; i < pixels.Length; i++) pixels[i] = Color.clear;
+
+            Color color = new Color(1f, 0.8f, 0f, 1f);
+            int center = size / 2;
+
+            for (int y = 0; y < size; y++)
+            {
+            float normalizedY = (float)y / (size - 1); // 0 at top, 1 at bottom
+                int halfWidth = Mathf.RoundToInt(normalizedY * center);
+                for (int x = 0; x < size; x++)
+                {
+                    if (Mathf.Abs(x - center) <= halfWidth)
+                    {
+                        pixels[y * size + x] = color;
+                    }
+                }
+            }
+
+            texture.SetPixels(pixels);
+            texture.Apply();
+            texture.filterMode = FilterMode.Bilinear;
+
+            // Pivot at bottom center so hotspot aligns with the upward point
+            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0f), 100f);
         }
         
         /// <summary>
