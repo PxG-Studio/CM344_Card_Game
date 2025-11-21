@@ -327,7 +327,7 @@ namespace CardGame.UI
             rectUI.anchorMin = new Vector2(0.5f, 1f);
             rectUI.anchorMax = new Vector2(0.5f, 1f);
             rectUI.pivot = new Vector2(0.5f, 0f); // Sit just above the top edge
-            rectUI.anchoredPosition = new Vector2(0f, 10f);
+            rectUI.anchoredPosition = new Vector2(0f, 20f); // Raised one unit higher (was 10f, now 20f)
             rectUI.sizeDelta = new Vector2(30f, 30f);
 
             // Prevent panel layout group from moving this indicator
