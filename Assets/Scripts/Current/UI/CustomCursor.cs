@@ -39,10 +39,13 @@ namespace CardGame.UI
         [SerializeField] private float uiCursorSize = 48f;
         [SerializeField] private float uiHoverHeight = 10f;
         [SerializeField] private float uiHoverSpeed = 2f;
+        [SerializeField, Range(0.3f, 0.9f)] private float uiVisualCenterOffset = 0.55f;
+        [SerializeField] [Range(-90f, 90f)] private float uiTiltXAxis = 0f;
+        [SerializeField] [Range(-90f, 90f)] private float uiTiltZAxis = -25f;
         [SerializeField] private Color uiCursorColor = new Color(1f, 0.8f, 0f, 1f); // Gold to match turn indicator
         [SerializeField] private TMP_FontAsset uiCursorFont;
         [SerializeField] private string uiCursorGlyph = "▼";
-        
+
         [Header("Auto-Find Settings")]
         [SerializeField] private bool autoFindCursorSprite = true;
         [SerializeField] private string[] cursorGameObjectNames = { 
@@ -63,9 +66,12 @@ namespace CardGame.UI
         
         private Canvas cursorCanvas;
         private RectTransform uiCursorRect;
+        private RectTransform uiCursorVisualRoot;
         private RectTransform uiCursorVisualRect;
         private TextMeshProUGUI uiCursorText;
         private float uiHoverTimer = 0f;
+        private float uiVisualBaseOffset = 0f;
+        private bool uiVisualOffsetDirty = true;
         
         private void Start()
         {
@@ -193,18 +199,32 @@ namespace CardGame.UI
                 DontDestroyOnLoad(canvasGO);
             }
             
+            DestroyExistingUICursorVisual();
+            
             GameObject cursorGO = new GameObject("CustomCursorVisual");
             cursorGO.transform.SetParent(cursorCanvas.transform, false);
             uiCursorRect = cursorGO.AddComponent<RectTransform>();
             uiCursorRect.sizeDelta = new Vector2(uiCursorSize, uiCursorSize);
+            uiCursorRect.anchorMin = new Vector2(0.5f, 0.5f);
+            uiCursorRect.anchorMax = new Vector2(0.5f, 0.5f);
+            uiCursorRect.pivot = new Vector2(0.5f, 0f); // bottom-center so hot spot aligns with tip
+            
+            GameObject rootGO = new GameObject("VisualRoot");
+            rootGO.transform.SetParent(uiCursorRect, false);
+            uiCursorVisualRoot = rootGO.AddComponent<RectTransform>();
+            uiCursorVisualRoot.sizeDelta = uiCursorRect.sizeDelta;
+            uiCursorVisualRoot.anchorMin = new Vector2(0.5f, 0f);
+            uiCursorVisualRoot.anchorMax = new Vector2(0.5f, 0f);
+            uiCursorVisualRoot.pivot = new Vector2(0.5f, 0f);
+            uiCursorVisualRoot.anchoredPosition = Vector2.zero;
             
             GameObject visualGO = new GameObject("Visual");
-            visualGO.transform.SetParent(uiCursorRect, false);
+            visualGO.transform.SetParent(uiCursorVisualRoot, false);
             uiCursorVisualRect = visualGO.AddComponent<RectTransform>();
             uiCursorVisualRect.sizeDelta = uiCursorRect.sizeDelta;
-            uiCursorVisualRect.anchorMin = new Vector2(0.5f, 0.5f);
-            uiCursorVisualRect.anchorMax = new Vector2(0.5f, 0.5f);
-            uiCursorVisualRect.pivot = new Vector2(0.5f, 0.5f);
+            uiCursorVisualRect.anchorMin = new Vector2(0.5f, 0f);
+            uiCursorVisualRect.anchorMax = new Vector2(0.5f, 0f);
+            uiCursorVisualRect.pivot = new Vector2(0.5f, 0.5f); // center pivot for perfect spin
             
             uiCursorText = visualGO.AddComponent<TextMeshProUGUI>();
             uiCursorText.text = string.IsNullOrEmpty(uiCursorGlyph) ? "▼" : uiCursorGlyph;
@@ -221,6 +241,28 @@ namespace CardGame.UI
             
             // Slightly tilt to match turn indicator orientation
             uiCursorRect.localEulerAngles = Vector3.zero;
+            uiVisualOffsetDirty = true;
+        }
+
+        private void DestroyExistingUICursorVisual()
+        {
+            if (uiCursorRect != null)
+            {
+                Destroy(uiCursorRect.gameObject);
+                uiCursorRect = null;
+                uiCursorVisualRoot = null;
+                uiCursorVisualRect = null;
+                uiCursorText = null;
+            }
+
+            if (cursorCanvas != null)
+            {
+                Transform existing = cursorCanvas.transform.Find("CustomCursorVisual");
+                if (existing != null && existing != (uiCursorRect != null ? uiCursorRect.transform : null))
+                {
+                    Destroy(existing.gameObject);
+                }
+            }
         }
         
         private void LateUpdate()
@@ -243,23 +285,26 @@ namespace CardGame.UI
             Cursor.lockState = CursorLockMode.Confined;
             
             Vector2 mousePosition = Input.mousePosition;
-            uiCursorRect.position = mousePosition;
+            uiCursorRect.position = mousePosition; // tip stays glued to mouse
             
             uiHoverTimer += Time.deltaTime * uiHoverSpeed;
+            if (uiVisualOffsetDirty)
+            {
+                UpdateVisualBaseOffset();
+            }
+
             float hoverOffset = Mathf.Sin(uiHoverTimer) * uiHoverHeight;
             if (uiCursorVisualRect != null)
             {
-                uiCursorVisualRect.anchoredPosition = new Vector2(0f, hoverOffset);
+                uiCursorVisualRect.anchoredPosition = new Vector2(0f, uiVisualBaseOffset + hoverOffset);
             }
             
-            // Diagonal/side spin: rotate around Y while oscillating X tilt
-            // Diagonal/side spin: rotate around Y while oscillating X tilt
+            // Turn-indicator style spin with adjustable lean angles
             if (enableRotation && uiCursorVisualRect != null)
             {
                 float rotationDelta = rotationSpeed * Time.deltaTime * (reverseRotation ? -1f : 1f);
                 currentRotation += rotationDelta;
-                float tiltX = Mathf.Sin(Time.time * 2f) * 15f;
-                uiCursorVisualRect.localEulerAngles = new Vector3(tiltX, currentRotation, 0f);
+                uiCursorVisualRect.localEulerAngles = new Vector3(uiTiltXAxis, currentRotation, uiTiltZAxis);
             }
         }
         
@@ -291,8 +336,8 @@ namespace CardGame.UI
                     currentRotation += 360f;
                 }
                 
-                UpdateCursorTexture();
-                lastUpdateTime = Time.time;
+            UpdateCursorTexture();
+            lastUpdateTime = Time.time;
             }
         }
         
@@ -351,6 +396,41 @@ namespace CardGame.UI
             
             Debug.LogWarning("CustomCursor: Could not auto-find cursor sprite. Please assign manually in Inspector.");
         }
+
+        private void UpdateVisualBaseOffset()
+        {
+            if (uiCursorVisualRoot == null)
+            {
+                uiVisualBaseOffset = 0f;
+                return;
+            }
+
+            float glyphHeight = uiCursorRect != null ? uiCursorRect.sizeDelta.y : uiCursorSize;
+            if (uiCursorText != null)
+            {
+                // Force layout update to get accurate bounds
+                uiCursorText.ForceMeshUpdate();
+                var renderedSize = uiCursorText.GetRenderedValues(false);
+                if (renderedSize.y > 0.01f)
+                {
+                    glyphHeight = renderedSize.y;
+                }
+            }
+
+            uiVisualBaseOffset = glyphHeight * uiVisualCenterOffset;
+            if (uiCursorVisualRect != null)
+            {
+                uiCursorVisualRect.anchoredPosition = new Vector2(0f, uiVisualBaseOffset);
+            }
+            uiVisualOffsetDirty = false;
+        }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            uiVisualOffsetDirty = true;
+        }
+#endif
         
         /// <summary>
         /// Sets the custom cursor from the sprite.

@@ -488,6 +488,10 @@ namespace CardGame.UI
                 
                 cursorGameObject.SetActive(false);
                 Debug.Log("HUDSetup: Deactivated cursor GameObject to prevent all input interference");
+                
+                // Permanently remove the scene copy so it never renders on the board again
+                Destroy(cursorGameObject);
+                Debug.Log("HUDSetup: Destroyed source cursor GameObject after extracting its sprite");
             }
             else
             {

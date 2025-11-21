@@ -19,6 +19,7 @@ namespace CardGame.Editor
             EditorApplication.delayCall += () =>
             {
                 RemoveMissingScriptsFromCardBackVisual(true);
+                FixMissingScriptsInScene(true);
             };
         }
         
@@ -59,13 +60,19 @@ namespace CardGame.Editor
             GUILayout.Label("Note: After fixing, Unity will automatically reconnect prefab instances.", EditorStyles.wordWrappedMiniLabel);
         }
 
-        private void FixMissingScriptsInScene()
+        private static void FixMissingScriptsInScene(bool silent = false)
         {
             int fixedCount = 0;
             GameObject[] allObjects = FindObjectsOfType<GameObject>(true);
             
             foreach (GameObject obj in allObjects)
             {
+                // Skip assets and immutable objects (package contents, prefabs in Project)
+                if (obj == null || EditorUtility.IsPersistent(obj))
+                {
+                    continue;
+                }
+                
                 // Check for missing scripts using SerializedObject
                 SerializedObject so = new SerializedObject(obj);
                 SerializedProperty prop = so.FindProperty("m_Component");
@@ -75,14 +82,21 @@ namespace CardGame.Editor
                     // Work backwards to avoid index issues when deleting
                     for (int i = prop.arraySize - 1; i >= 0; i--)
                     {
-                        SerializedProperty element = prop.GetArrayElementAtIndex(i);
-                        SerializedProperty component = element.FindPropertyRelative("component");
-                        
-                        if (component != null && component.objectReferenceValue == null)
+                        try
                         {
-                            // Found a missing component reference - remove it
-                            prop.DeleteArrayElementAtIndex(i);
-                            fixedCount++;
+                            SerializedProperty element = prop.GetArrayElementAtIndex(i);
+                            SerializedProperty component = element.FindPropertyRelative("component");
+                            
+                            if (component != null && component.objectReferenceValue == null)
+                            {
+                                // Found a missing component reference - remove it
+                                prop.DeleteArrayElementAtIndex(i);
+                                fixedCount++;
+                            }
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogWarning($"FixMissingScriptsInScene: could not remove missing script from {obj.name} ({ex.Message})");
                         }
                     }
                     
@@ -93,6 +107,8 @@ namespace CardGame.Editor
                     }
                 }
             }
+            
+            if (silent) return;
             
             if (fixedCount > 0)
             {
@@ -106,7 +122,7 @@ namespace CardGame.Editor
             }
         }
 
-        private void FixNewCardPrefabInstances()
+        private static void FixNewCardPrefabInstances()
         {
             int fixedCount = 0;
             int checkedCount = 0;

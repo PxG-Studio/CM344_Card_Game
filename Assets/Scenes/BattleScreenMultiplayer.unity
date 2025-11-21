@@ -155,7 +155,7 @@ Transform:
   m_GameObject: {fileID: 97315585}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.500000, y: 0.500000, z: 0.000000}
+  m_LocalPosition: {x: 1.5, y: 0.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -274,12 +274,16 @@ MonoBehaviour:
   deckManagerOpp: {fileID: 1385537902}
   playCardOnDrop: 1
   snapCardToPosition: 1
+  cardScaleOnBoard: {x: 1, y: 1, z: 1}
+  cardScaleFillPercent: 0.9
+  tileSpriteRenderer: {fileID: 0}
   adjacentCardDistance: 3
   enableCardBattles: 1
   debugBattles: 1
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+  occupyingCard: {fileID: 0}
 --- !u!1 &206158748
 GameObject:
   m_ObjectHideFlags: 0
@@ -363,7 +367,7 @@ Transform:
   m_GameObject: {fileID: 239306688}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.500000, y: 1.500000, z: 0.000000}
+  m_LocalPosition: {x: -0.5, y: 1.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -482,12 +486,16 @@ MonoBehaviour:
   deckManagerOpp: {fileID: 1385537902}
   playCardOnDrop: 1
   snapCardToPosition: 1
+  cardScaleOnBoard: {x: 1, y: 1, z: 1}
+  cardScaleFillPercent: 0.9
+  tileSpriteRenderer: {fileID: 0}
   adjacentCardDistance: 3
   enableCardBattles: 1
   debugBattles: 1
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+  occupyingCard: {fileID: 0}
 --- !u!1 &274249420
 GameObject:
   m_ObjectHideFlags: 0
@@ -566,7 +574,7 @@ Transform:
   m_GameObject: {fileID: 324700446}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.500000, y: -1.500000, z: 0.000000}
+  m_LocalPosition: {x: 0.5, y: -1.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -685,12 +693,16 @@ MonoBehaviour:
   deckManagerOpp: {fileID: 1385537902}
   playCardOnDrop: 1
   snapCardToPosition: 1
+  cardScaleOnBoard: {x: 1, y: 1, z: 1}
+  cardScaleFillPercent: 0.9
+  tileSpriteRenderer: {fileID: 0}
   adjacentCardDistance: 3
   enableCardBattles: 1
   debugBattles: 1
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+  occupyingCard: {fileID: 0}
 --- !u!1 &420414238
 GameObject:
   m_ObjectHideFlags: 0
@@ -909,7 +921,7 @@ MonoBehaviour:
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 483286826}
+  m_TargetGraphic: {fileID: 0}
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
@@ -925,24 +937,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28bd80bdb760e4f42a8c48bd4185f9c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
 --- !u!222 &483286827
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1026,7 +1020,7 @@ Transform:
   m_GameObject: {fileID: 681139109}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -1.500000, y: -0.500000, z: 0.000000}
+  m_LocalPosition: {x: -1.5, y: -0.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -1145,12 +1139,16 @@ MonoBehaviour:
   deckManagerOpp: {fileID: 1385537902}
   playCardOnDrop: 1
   snapCardToPosition: 1
+  cardScaleOnBoard: {x: 1, y: 1, z: 1}
+  cardScaleFillPercent: 0.9
+  tileSpriteRenderer: {fileID: 0}
   adjacentCardDistance: 3
   enableCardBattles: 1
   debugBattles: 1
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+  occupyingCard: {fileID: 0}
 --- !u!1 &753096042
 GameObject:
   m_ObjectHideFlags: 0
@@ -1369,7 +1367,7 @@ MonoBehaviour:
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 847046318}
+  m_TargetGraphic: {fileID: 0}
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
@@ -1385,24 +1383,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28bd80bdb760e4f42a8c48bd4185f9c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
 --- !u!222 &847046319
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1439,7 +1419,7 @@ Transform:
   m_GameObject: {fileID: 894701328}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -1.500000, y: 1.500000, z: 0.000000}
+  m_LocalPosition: {x: -1.5, y: 1.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -1461,12 +1441,16 @@ MonoBehaviour:
   deckManagerOpp: {fileID: 1385537902}
   playCardOnDrop: 1
   snapCardToPosition: 1
+  cardScaleOnBoard: {x: 1, y: 1, z: 1}
+  cardScaleFillPercent: 0.9
+  tileSpriteRenderer: {fileID: 0}
   adjacentCardDistance: 3
   enableCardBattles: 1
   debugBattles: 1
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+  occupyingCard: {fileID: 0}
 --- !u!212 &894701331
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -1592,7 +1576,7 @@ Transform:
   m_GameObject: {fileID: 898833786}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.500000, y: -0.500000, z: 0.000000}
+  m_LocalPosition: {x: 1.5, y: -0.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -1711,12 +1695,16 @@ MonoBehaviour:
   deckManagerOpp: {fileID: 1385537902}
   playCardOnDrop: 1
   snapCardToPosition: 1
+  cardScaleOnBoard: {x: 1, y: 1, z: 1}
+  cardScaleFillPercent: 0.9
+  tileSpriteRenderer: {fileID: 0}
   adjacentCardDistance: 3
   enableCardBattles: 1
   debugBattles: 1
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+  occupyingCard: {fileID: 0}
 --- !u!1 &901897645
 GameObject:
   m_ObjectHideFlags: 0
@@ -1745,7 +1733,7 @@ Transform:
   m_GameObject: {fileID: 901897645}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -1.500000, y: 0.500000, z: 0.000000}
+  m_LocalPosition: {x: -1.5, y: 0.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -1864,12 +1852,16 @@ MonoBehaviour:
   deckManagerOpp: {fileID: 1385537902}
   playCardOnDrop: 1
   snapCardToPosition: 1
+  cardScaleOnBoard: {x: 1, y: 1, z: 1}
+  cardScaleFillPercent: 0.9
+  tileSpriteRenderer: {fileID: 0}
   adjacentCardDistance: 3
   enableCardBattles: 1
   debugBattles: 1
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+  occupyingCard: {fileID: 0}
 --- !u!1 &942276215
 GameObject:
   m_ObjectHideFlags: 0
@@ -1953,7 +1945,11 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1090217949}
+  - {fileID: 1121923569}
+  - {fileID: 1157545467}
+  - {fileID: 1707136832}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -2548,6 +2544,7 @@ PrefabInstance:
     m_RemovedComponents:
     - {fileID: 396230099388163290, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
     - {fileID: 4139798117971288157, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
+    - {fileID: 3748502334135818584, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
@@ -2754,7 +2751,7 @@ Transform:
   m_GameObject: {fileID: 1122864529}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.500000, y: -1.500000, z: 0.000000}
+  m_LocalPosition: {x: -0.5, y: -1.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -2873,12 +2870,16 @@ MonoBehaviour:
   deckManagerOpp: {fileID: 1385537902}
   playCardOnDrop: 1
   snapCardToPosition: 1
+  cardScaleOnBoard: {x: 1, y: 1, z: 1}
+  cardScaleFillPercent: 0.9
+  tileSpriteRenderer: {fileID: 0}
   adjacentCardDistance: 3
   enableCardBattles: 1
   debugBattles: 1
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+  occupyingCard: {fileID: 0}
 --- !u!1 &1154396175
 GameObject:
   m_ObjectHideFlags: 0
@@ -2907,7 +2908,7 @@ Transform:
   m_GameObject: {fileID: 1154396175}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.500000, y: 0.500000, z: 0.000000}
+  m_LocalPosition: {x: 0.5, y: 0.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -3026,12 +3027,16 @@ MonoBehaviour:
   deckManagerOpp: {fileID: 1385537902}
   playCardOnDrop: 1
   snapCardToPosition: 1
+  cardScaleOnBoard: {x: 1, y: 1, z: 1}
+  cardScaleFillPercent: 0.9
+  tileSpriteRenderer: {fileID: 0}
   adjacentCardDistance: 3
   enableCardBattles: 1
   debugBattles: 1
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+  occupyingCard: {fileID: 0}
 --- !u!1 &1157545466
 GameObject:
   m_ObjectHideFlags: 0
@@ -3081,24 +3086,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28bd80bdb760e4f42a8c48bd4185f9c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 0.1, g: 0.1, b: 0.1, a: 0.6}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 0}
-  m_Type: 0
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
 --- !u!222 &1157545469
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -3258,7 +3245,7 @@ Transform:
   m_GameObject: {fileID: 1266835302}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.500000, y: -1.500000, z: 0.000000}
+  m_LocalPosition: {x: 1.5, y: -1.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -3377,12 +3364,16 @@ MonoBehaviour:
   deckManagerOpp: {fileID: 1385537902}
   playCardOnDrop: 1
   snapCardToPosition: 1
+  cardScaleOnBoard: {x: 1, y: 1, z: 1}
+  cardScaleFillPercent: 0.9
+  tileSpriteRenderer: {fileID: 0}
   adjacentCardDistance: 3
   enableCardBattles: 1
   debugBattles: 1
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+  occupyingCard: {fileID: 0}
 --- !u!1 &1368973714
 GameObject:
   m_ObjectHideFlags: 0
@@ -3659,7 +3650,7 @@ Transform:
   m_GameObject: {fileID: 1463266551}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.500000, y: 1.500000, z: 0.000000}
+  m_LocalPosition: {x: 1.5, y: 1.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -3778,12 +3769,16 @@ MonoBehaviour:
   deckManagerOpp: {fileID: 1385537902}
   playCardOnDrop: 1
   snapCardToPosition: 1
+  cardScaleOnBoard: {x: 1, y: 1, z: 1}
+  cardScaleFillPercent: 0.9
+  tileSpriteRenderer: {fileID: 0}
   adjacentCardDistance: 3
   enableCardBattles: 1
   debugBattles: 1
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+  occupyingCard: {fileID: 0}
 --- !u!1 &1466429591
 GameObject:
   m_ObjectHideFlags: 0
@@ -3812,7 +3807,7 @@ Transform:
   m_GameObject: {fileID: 1466429591}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.500000, y: 0.500000, z: 0.000000}
+  m_LocalPosition: {x: -0.5, y: 0.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -3931,12 +3926,16 @@ MonoBehaviour:
   deckManagerOpp: {fileID: 1385537902}
   playCardOnDrop: 1
   snapCardToPosition: 1
+  cardScaleOnBoard: {x: 1, y: 1, z: 1}
+  cardScaleFillPercent: 0.9
+  tileSpriteRenderer: {fileID: 0}
   adjacentCardDistance: 3
   enableCardBattles: 1
   debugBattles: 1
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+  occupyingCard: {fileID: 0}
 --- !u!1 &1500798024
 GameObject:
   m_ObjectHideFlags: 0
@@ -4296,7 +4295,7 @@ Transform:
   m_GameObject: {fileID: 1550445171}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.500000, y: -0.500000, z: 0.000000}
+  m_LocalPosition: {x: -0.5, y: -0.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -4415,12 +4414,16 @@ MonoBehaviour:
   deckManagerOpp: {fileID: 1385537902}
   playCardOnDrop: 1
   snapCardToPosition: 1
+  cardScaleOnBoard: {x: 1, y: 1, z: 1}
+  cardScaleFillPercent: 0.9
+  tileSpriteRenderer: {fileID: 0}
   adjacentCardDistance: 3
   enableCardBattles: 1
   debugBattles: 1
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+  occupyingCard: {fileID: 0}
 --- !u!1 &1579892155
 GameObject:
   m_ObjectHideFlags: 0
@@ -4841,24 +4844,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28bd80bdb760e4f42a8c48bd4185f9c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 0.1, g: 0.1, b: 0.1, a: 0.7}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 0}
-  m_Type: 0
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
 --- !u!222 &1707136835
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -4895,7 +4880,7 @@ Transform:
   m_GameObject: {fileID: 1716003030}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.500000, y: 1.500000, z: 0.000000}
+  m_LocalPosition: {x: 0.5, y: 1.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -5014,12 +4999,16 @@ MonoBehaviour:
   deckManagerOpp: {fileID: 1385537902}
   playCardOnDrop: 1
   snapCardToPosition: 1
+  cardScaleOnBoard: {x: 1, y: 1, z: 1}
+  cardScaleFillPercent: 0.9
+  tileSpriteRenderer: {fileID: 0}
   adjacentCardDistance: 3
   enableCardBattles: 1
   debugBattles: 1
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+  occupyingCard: {fileID: 0}
 --- !u!1 &1774526114 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2756439749987025949, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
@@ -5258,7 +5247,7 @@ Transform:
   m_GameObject: {fileID: 1815283445}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -1.500000, y: -1.500000, z: 0.000000}
+  m_LocalPosition: {x: -1.5, y: -1.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -5377,12 +5366,16 @@ MonoBehaviour:
   deckManagerOpp: {fileID: 1385537902}
   playCardOnDrop: 1
   snapCardToPosition: 1
+  cardScaleOnBoard: {x: 1, y: 1, z: 1}
+  cardScaleFillPercent: 0.9
+  tileSpriteRenderer: {fileID: 0}
   adjacentCardDistance: 3
   enableCardBattles: 1
   debugBattles: 1
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+  occupyingCard: {fileID: 0}
 --- !u!1 &1863011533
 GameObject:
   m_ObjectHideFlags: 0
@@ -5545,7 +5538,7 @@ Transform:
   m_GameObject: {fileID: 1917214895}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.500000, y: -0.500000, z: 0.000000}
+  m_LocalPosition: {x: 0.5, y: -0.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -5664,12 +5657,16 @@ MonoBehaviour:
   deckManagerOpp: {fileID: 1385537902}
   playCardOnDrop: 1
   snapCardToPosition: 1
+  cardScaleOnBoard: {x: 1, y: 1, z: 1}
+  cardScaleFillPercent: 0.9
+  tileSpriteRenderer: {fileID: 0}
   adjacentCardDistance: 3
   enableCardBattles: 1
   debugBattles: 1
   useRippleEffect: 1
   rippleDelayPerUnit: 0.15
   rippleBaseDelay: 0.1
+  occupyingCard: {fileID: 0}
 --- !u!1 &1983296019
 GameObject:
   m_ObjectHideFlags: 0
@@ -6183,6 +6180,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 4139798117971288157, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
+    - {fileID: 3748502334135818584, guid: 59fbb584ef819fa48b00e5bd55aba169, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
