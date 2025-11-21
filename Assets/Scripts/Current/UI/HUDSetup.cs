@@ -64,12 +64,16 @@ namespace CardGame.UI
                 turnController = hudCanvas.AddComponent<TurnController>();
             }
 
-            GameObject endTurnButtonObj = CreateHUDButton(hudCanvas.transform, "EndTurnButton", "End Turn");
-            Button endTurnButton = endTurnButtonObj.GetComponent<Button>();
-            TextMeshProUGUI endTurnLabel = endTurnButtonObj.GetComponentInChildren<TextMeshProUGUI>();
+            // End Turn button creation disabled
+            // GameObject endTurnButtonObj = CreateHUDButton(hudCanvas.transform, "EndTurnButton", "End Turn");
+            // Button endTurnButton = endTurnButtonObj.GetComponent<Button>();
+            // TextMeshProUGUI endTurnLabel = endTurnButtonObj.GetComponentInChildren<TextMeshProUGUI>();
+            // 
+            // SetPrivateField(turnController, typeof(TurnController), "endTurnButton", endTurnButton);
+            // SetPrivateField(turnController, typeof(TurnController), "endTurnLabel", endTurnLabel);
             
-            SetPrivateField(turnController, typeof(TurnController), "endTurnButton", endTurnButton);
-            SetPrivateField(turnController, typeof(TurnController), "endTurnLabel", endTurnLabel);
+            // Setup custom cursor
+            SetupCustomCursor();
             
             Debug.Log("HUDSetup: HUD successfully configured!");
         }
@@ -194,7 +198,7 @@ namespace CardGame.UI
             TMP_Text p2PlayerLabel = p2Panel.Find("PlayerLabel")?.GetComponent<TMP_Text>();
             TMP_Text tilesRemainingLabel = hudRoot.Find("TilesRemainingLabel")?.GetComponent<TMP_Text>();
             
-            // Find or create turn indicators
+            // Create turn indicators above each panel (like develop-5)
             TurnIndicatorUI p1TurnIndicator = FindOrCreateTurnIndicator(p1Panel, "TurnIndicator", true);
             TurnIndicatorUI p2TurnIndicator = FindOrCreateTurnIndicator(p2Panel, "TurnIndicator", false);
             
@@ -325,6 +329,10 @@ namespace CardGame.UI
             rectUI.pivot = new Vector2(0.5f, 0f); // Sit just above the top edge
             rectUI.anchoredPosition = new Vector2(0f, 10f);
             rectUI.sizeDelta = new Vector2(30f, 30f);
+
+            // Prevent panel layout group from moving this indicator
+            UnityEngine.UI.LayoutElement layoutElement = indicatorUI.AddComponent<UnityEngine.UI.LayoutElement>();
+            layoutElement.ignoreLayout = true;
             
             // Add TextMeshPro component for the triangle indicator
             TMPro.TextMeshProUGUI textIndicator = indicatorUI.AddComponent<TMPro.TextMeshProUGUI>();
@@ -333,6 +341,7 @@ namespace CardGame.UI
             textIndicator.color = new Color(1f, 0.8f, 0f, 1f); // Gold color
             textIndicator.alignment = TMPro.TextAlignmentOptions.Center;
             textIndicator.fontStyle = TMPro.FontStyles.Bold;
+            textIndicator.raycastTarget = false;
             
             // Add the UI indicator component
             TurnIndicatorUI indicatorScript = indicatorUI.AddComponent<TurnIndicatorUI>();
@@ -341,6 +350,332 @@ namespace CardGame.UI
             string position = isPlayer1 ? "above Player 1 panel" : "above Player 2 panel";
             Debug.Log($"HUDSetup: Created UI triangle indicator '{name}_UI' {position}");
             return indicatorScript;
+        }
+        
+        /// <summary>
+        /// Find or create a single moving turn indicator that travels between P1 and P2 panels.
+        /// </summary>
+        private TurnIndicatorMoving FindOrCreateMovingTurnIndicator(Transform hudRoot, Transform p1Panel, Transform p2Panel)
+        {
+            // Check if moving indicator already exists
+            TurnIndicatorMoving existing = hudRoot.GetComponentInChildren<TurnIndicatorMoving>();
+            if (existing != null)
+            {
+                // Update panel references
+                existing.SetPanels(p1Panel.GetComponent<RectTransform>(), p2Panel.GetComponent<RectTransform>());
+                return existing;
+            }
+            
+            // Create moving indicator as a child of HUD root
+            GameObject movingIndicatorObj = new GameObject("MovingTurnIndicator");
+            movingIndicatorObj.layer = 5; // UI layer
+            movingIndicatorObj.transform.SetParent(hudRoot, false);
+            
+            // Add RectTransform - positioned above panels like in develop-5
+            RectTransform rectTransform = movingIndicatorObj.AddComponent<RectTransform>();
+            rectTransform.anchorMin = new Vector2(0.5f, 1f); // Top center anchor
+            rectTransform.anchorMax = new Vector2(0.5f, 1f);
+            rectTransform.pivot = new Vector2(0.5f, 0f); // Pivot at bottom (sits above panels)
+            rectTransform.sizeDelta = new Vector2(40f, 40f);
+            // Start position: above P1 panel (will be updated by SetPanels)
+            // P1 panel is at -120 from center, so indicator starts there
+            rectTransform.anchoredPosition = new Vector2(-120f, 10f); // Above P1 panel, 10px offset
+            
+            // Add TextMeshPro component for the triangle indicator
+            TMPro.TextMeshProUGUI textIndicator = movingIndicatorObj.AddComponent<TMPro.TextMeshProUGUI>();
+            textIndicator.text = "▼"; // Down-pointing triangle (inverted pyramid)
+            textIndicator.fontSize = 48;
+            textIndicator.color = new Color(1f, 0.8f, 0f, 1f); // Gold color
+            textIndicator.alignment = TMPro.TextAlignmentOptions.Center;
+            textIndicator.fontStyle = TMPro.FontStyles.Bold;
+            
+            // Add the moving indicator component
+            TurnIndicatorMoving movingIndicator = movingIndicatorObj.AddComponent<TurnIndicatorMoving>();
+            
+            // Set panel references
+            movingIndicator.SetPanels(p1Panel.GetComponent<RectTransform>(), p2Panel.GetComponent<RectTransform>());
+            
+            Debug.Log("HUDSetup: Created moving turn indicator with figure-eight pattern");
+            return movingIndicator;
+        }
+        
+        /// <summary>
+        /// Setup custom cursor from Deck Slot or other cursor GameObject.
+        /// </summary>
+        private void SetupCustomCursor()
+        {
+            // Check if CustomCursor already exists
+            CustomCursor existingCursor = FindObjectOfType<CustomCursor>();
+            if (existingCursor != null)
+            {
+                Debug.Log("HUDSetup: CustomCursor already exists in scene");
+                return;
+            }
+            
+            // Try to find the cursor GameObject (Deck Slot or renamed version)
+            GameObject cursorGameObject = null;
+            string[] possibleNames = { "CustomCursor", "GameCursor", "Cursor", "Pointer", "InteractivePointer", "UICursor", "Deck Slot" };
+            
+            foreach (string name in possibleNames)
+            {
+                cursorGameObject = GameObject.Find(name);
+                if (cursorGameObject != null)
+                {
+                    // Rename to CustomCursor if it's still "Deck Slot"
+                    if (cursorGameObject.name == "Deck Slot")
+                    {
+                        cursorGameObject.name = "CustomCursor";
+                        Debug.Log("HUDSetup: Renamed 'Deck Slot' to 'CustomCursor'");
+                    }
+                    break;
+                }
+            }
+            
+            // Create cursor manager if cursor GameObject found
+            if (cursorGameObject != null)
+            {
+                // ============================================
+                // COMPREHENSIVE INPUT INTERFERENCE PREVENTION
+                // ============================================
+                // Edge Case 1: Multiple cursor GameObjects - disable all of them
+                GameObject[] allCursorObjects = FindObjectsOfType<GameObject>();
+                foreach (GameObject obj in allCursorObjects)
+                {
+                    if (obj.name.Contains("Deck Slot") || obj.name.Contains("CustomCursor") || 
+                        obj.name.Contains("GameCursor") || obj.name.Contains("Cursor") ||
+                        obj.name.Contains("Pointer") || obj.name.Contains("InteractivePointer"))
+                    {
+                        DisableAllInputComponents(obj, "multiple cursor objects found");
+                    }
+                }
+                
+                // Edge Case 2: Disable ALL colliders (including child colliders)
+                Collider2D[] allColliders2D = cursorGameObject.GetComponentsInChildren<Collider2D>(true);
+                foreach (Collider2D col in allColliders2D)
+                {
+                    col.enabled = false;
+                }
+                
+                Collider[] allColliders3D = cursorGameObject.GetComponentsInChildren<Collider>(true);
+                foreach (Collider col in allColliders3D)
+                {
+                    col.enabled = false;
+                }
+                
+                // Edge Case 3: Disable all renderers (prevents any visual interference)
+                Renderer[] allRenderers = cursorGameObject.GetComponentsInChildren<Renderer>(true);
+                foreach (Renderer rend in allRenderers)
+                {
+                    rend.enabled = false;
+                }
+                
+                // Edge Case 4: Disable all UI components that could block raycasts
+                UnityEngine.UI.Graphic[] allGraphics = cursorGameObject.GetComponentsInChildren<UnityEngine.UI.Graphic>(true);
+                foreach (var graphic in allGraphics)
+                {
+                    if (graphic is UnityEngine.UI.Image img)
+                    {
+                        img.raycastTarget = false;
+                    }
+                    else if (graphic is UnityEngine.UI.Text txt)
+                    {
+                        txt.raycastTarget = false;
+                    }
+                    else if (graphic is UnityEngine.UI.RawImage rawImg)
+                    {
+                        rawImg.raycastTarget = false;
+                    }
+                }
+                
+                // Edge Case 5: Disable all CanvasGroups (could block interaction)
+                CanvasGroup[] allCanvasGroups = cursorGameObject.GetComponentsInChildren<CanvasGroup>(true);
+                foreach (CanvasGroup cg in allCanvasGroups)
+                {
+                    cg.blocksRaycasts = false;
+                    cg.interactable = false;
+                    cg.ignoreParentGroups = true;
+                }
+                
+                // Edge Case 6: Disable all MonoBehaviour scripts that might handle input
+                MonoBehaviour[] allBehaviours = cursorGameObject.GetComponentsInChildren<MonoBehaviour>(true);
+                foreach (MonoBehaviour mb in allBehaviours)
+                {
+                    // Skip CustomCursor script itself if it somehow got attached
+                    if (mb is CustomCursor) continue;
+                    
+                    // Disable any input-related scripts
+                    if (mb.GetType().Name.Contains("Input") || 
+                        mb.GetType().Name.Contains("Mouse") ||
+                        mb.GetType().Name.Contains("Pointer") ||
+                        mb.GetType().Name.Contains("Click"))
+                    {
+                        mb.enabled = false;
+                    }
+                }
+                
+                // Move to a layer that doesn't receive raycasts (including all children)
+                int ignoreRaycastLayer = LayerMask.NameToLayer("Ignore Raycast");
+                if (ignoreRaycastLayer >= 0)
+                {
+                    SetLayerRecursive(cursorGameObject, ignoreRaycastLayer);
+                }
+                
+                // Get the sprite BEFORE deactivating (GameObject.Find won't find inactive objects)
+                Sprite cursorSprite = ExtractSpriteFromGameObject(cursorGameObject);
+                
+                if (cursorSprite == null)
+                {
+                    Debug.LogWarning("HUDSetup: Cursor GameObject found but no sprite found. Skipping custom cursor setup.");
+                    // Still deactivate the object to prevent interference
+                    cursorGameObject.SetActive(false);
+                    return;
+                }
+                
+                // Edge Case 7: Check for existing CursorManager and clean it up
+                GameObject existingManager = GameObject.Find("CursorManager");
+                if (existingManager != null)
+                {
+                    Debug.LogWarning("HUDSetup: Found existing CursorManager, destroying it to prevent conflicts");
+                    Destroy(existingManager);
+                }
+                
+                // Create a manager GameObject for the cursor script with ZERO interaction capability
+                GameObject cursorManager = new GameObject("CursorManager");
+                cursorManager.transform.SetParent(null); // Root level
+                DontDestroyOnLoad(cursorManager); // Persist across scenes
+                
+                // CRITICAL: Ensure CursorManager itself has no colliders or renderers
+                // (This should already be the case for a new GameObject, but guard against edge cases)
+                if (cursorManager.GetComponent<Collider>() != null)
+                {
+                    Destroy(cursorManager.GetComponent<Collider>());
+                }
+                if (cursorManager.GetComponent<Collider2D>() != null)
+                {
+                    Destroy(cursorManager.GetComponent<Collider2D>());
+                }
+                if (cursorManager.GetComponent<Renderer>() != null)
+                {
+                    Destroy(cursorManager.GetComponent<Renderer>());
+                }
+                
+                // Move CursorManager to Ignore Raycast layer
+                if (ignoreRaycastLayer >= 0)
+                {
+                    cursorManager.layer = ignoreRaycastLayer;
+                }
+                
+                CustomCursor customCursor = cursorManager.AddComponent<CustomCursor>();
+                
+                // Manually set the sprite using reflection (since GameObject will be inactive)
+                var cursorType = typeof(CustomCursor);
+                SetPrivateField(customCursor, cursorType, "cursorSprite", cursorSprite);
+                
+                // CRITICAL: Deactivate the cursor GameObject entirely so it can't intercept any input
+                cursorGameObject.SetActive(false);
+                Debug.Log("HUDSetup: Deactivated cursor GameObject to prevent all input interference");
+                
+                Debug.Log("HUDSetup: Created CustomCursor component with sprite (fully isolated from input system)");
+            }
+            else
+            {
+                Debug.LogWarning("HUDSetup: Could not find cursor GameObject. Custom cursor will not be set up.");
+            }
+        }
+        
+        /// <summary>
+        /// Extracts sprite from a GameObject, checking multiple sources.
+        /// </summary>
+        private Sprite ExtractSpriteFromGameObject(GameObject obj)
+        {
+            if (obj == null) return null;
+            
+            // Try SpriteRenderer first
+            SpriteRenderer sr = obj.GetComponent<SpriteRenderer>();
+            if (sr != null && sr.sprite != null)
+            {
+                return sr.sprite;
+            }
+            
+            // Try UI Image
+            UnityEngine.UI.Image img = obj.GetComponent<UnityEngine.UI.Image>();
+            if (img != null && img.sprite != null)
+            {
+                return img.sprite;
+            }
+            
+            // Try children SpriteRenderer
+            sr = obj.GetComponentInChildren<SpriteRenderer>(true);
+            if (sr != null && sr.sprite != null)
+            {
+                return sr.sprite;
+            }
+            
+            // Try children UI Image
+            img = obj.GetComponentInChildren<UnityEngine.UI.Image>(true);
+            if (img != null && img.sprite != null)
+            {
+                return img.sprite;
+            }
+            
+            return null;
+        }
+        
+        /// <summary>
+        /// Disables all input-related components on a GameObject and its children.
+        /// </summary>
+        private void DisableAllInputComponents(GameObject obj, string reason = "")
+        {
+            if (obj == null) return;
+            
+            // Disable all colliders
+            Collider2D[] colliders2D = obj.GetComponentsInChildren<Collider2D>(true);
+            foreach (var col in colliders2D) col.enabled = false;
+            
+            Collider[] colliders3D = obj.GetComponentsInChildren<Collider>(true);
+            foreach (var col in colliders3D) col.enabled = false;
+            
+            // Disable all UI raycast targets
+            UnityEngine.UI.Graphic[] graphics = obj.GetComponentsInChildren<UnityEngine.UI.Graphic>(true);
+            foreach (var graphic in graphics)
+            {
+                if (graphic is UnityEngine.UI.Image img) img.raycastTarget = false;
+                else if (graphic is UnityEngine.UI.Text txt) txt.raycastTarget = false;
+                else if (graphic is UnityEngine.UI.RawImage rawImg) rawImg.raycastTarget = false;
+            }
+            
+            // Disable all CanvasGroups
+            CanvasGroup[] canvasGroups = obj.GetComponentsInChildren<CanvasGroup>(true);
+            foreach (var cg in canvasGroups)
+            {
+                cg.blocksRaycasts = false;
+                cg.interactable = false;
+            }
+            
+            // Move to Ignore Raycast layer
+            int ignoreLayer = LayerMask.NameToLayer("Ignore Raycast");
+            if (ignoreLayer >= 0)
+            {
+                SetLayerRecursive(obj, ignoreLayer);
+            }
+            
+            if (!string.IsNullOrEmpty(reason))
+            {
+                Debug.Log($"HUDSetup: Disabled all input components on '{obj.name}' ({reason})");
+            }
+        }
+        
+        /// <summary>
+        /// Sets the layer recursively on a GameObject and all its children.
+        /// </summary>
+        private void SetLayerRecursive(GameObject obj, int layer)
+        {
+            if (obj == null) return;
+            obj.layer = layer;
+            foreach (Transform child in obj.transform)
+            {
+                SetLayerRecursive(child.gameObject, layer);
+            }
         }
         
         /// <summary>

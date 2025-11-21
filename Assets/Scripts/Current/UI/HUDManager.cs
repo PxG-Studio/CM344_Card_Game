@@ -54,6 +54,8 @@ namespace CardGame.UI
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.OnGameStateChanged += HandleGameStateChanged;
+                // Set initial state
+                HandleGameStateChanged(GameManager.Instance.CurrentState);
             }
             else
             {
@@ -111,6 +113,15 @@ namespace CardGame.UI
                     SetTurn(false);
                     break;
             }
+        }
+        
+        /// <summary>
+        /// Set which player's turn it is.
+        /// </summary>
+        public void SetTurn(bool isPlayer1)
+        {
+            isPlayer1Turn = isPlayer1;
+            UpdateTurnIndicators();
         }
         
         /// <summary>
@@ -189,7 +200,6 @@ namespace CardGame.UI
         /// </summary>
         private void UpdateTurnIndicators()
         {
-            // Activate the indicator above whichever panel is active
             if (p1TurnIndicator != null)
             {
                 p1TurnIndicator.SetActive(isPlayer1Turn);
@@ -200,7 +210,6 @@ namespace CardGame.UI
                 p2TurnIndicator.SetActive(!isPlayer1Turn);
             }
             
-            // Update player label styling
             if (p1PlayerLabel != null)
             {
                 p1PlayerLabel.fontStyle = isPlayer1Turn ? TMPro.FontStyles.Bold : TMPro.FontStyles.Normal;
@@ -210,15 +219,6 @@ namespace CardGame.UI
             {
                 p2PlayerLabel.fontStyle = isPlayer1Turn ? TMPro.FontStyles.Normal : TMPro.FontStyles.Bold;
             }
-        }
-        
-        /// <summary>
-        /// Set which player's turn it is.
-        /// </summary>
-        public void SetTurn(bool isPlayer1)
-        {
-            isPlayer1Turn = isPlayer1;
-            UpdateTurnIndicators();
         }
         
         /// <summary>
