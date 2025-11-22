@@ -281,7 +281,7 @@ GameObject:
   - component: {fileID: 396230099388163290}
   - component: {fileID: 4139798117971288157}
   m_Layer: 0
-  m_Name: NewCardPrefab
+  m_Name: NewCardPrefabOpp
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -405,7 +405,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 2756439749987025949}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 993648cb2ba5aa544a6bd06fedec5956, type: 3}
+  m_Script: {fileID: 11500000, guid: 1e1b5989fccb221429a7b71b0c12db65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!114 &4139798117971288157
@@ -1032,7 +1032,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 6123341734005201466}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 28bd80bdb760e4f42a8c48bd4185f9c0, type: 3}
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}

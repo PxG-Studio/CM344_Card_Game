@@ -35,7 +35,7 @@ namespace CardGame.UI
         
         private ScoreManager scoreManager;
         private int totalBoardTiles = 16; // 4x4 board
-        private bool isPlayer1Turn = true; // Track whose turn it is
+        private FateSide currentFate = FateSide.Player;
         
         private void Start()
         {
@@ -50,17 +50,7 @@ namespace CardGame.UI
                 Debug.LogWarning("HUDManager: ScoreManager not found in scene!");
             }
             
-            // Subscribe to GameManager state changes for turn indicators
-            if (GameManager.Instance != null)
-            {
-                GameManager.Instance.OnGameStateChanged += HandleGameStateChanged;
-                // Set initial state
-                HandleGameStateChanged(GameManager.Instance.CurrentState);
-            }
-            else
-            {
-                Debug.LogWarning("HUDManager: GameManager.Instance not found!");
-            }
+            SubscribeToFateFlow();
             
             // Auto-find deck managers if not assigned
             if (player1DeckManager == null)
@@ -93,26 +83,34 @@ namespace CardGame.UI
                 scoreManager.OnScoreUpdated -= UpdateScores;
             }
             
-            if (GameManager.Instance != null)
-            {
-                GameManager.Instance.OnGameStateChanged -= HandleGameStateChanged;
-            }
+            UnsubscribeFromFateFlow();
         }
         
-        /// <summary>
-        /// Handle game state changes to update turn indicators.
-        /// </summary>
-        private void HandleGameStateChanged(GameState newState)
+        private void SubscribeToFateFlow()
         {
-            switch (newState)
+            if (FateFlowController.Instance != null)
             {
-                case GameState.PlayerTurn:
-                    SetTurn(true);
-                    break;
-                case GameState.EnemyTurn:
-                    SetTurn(false);
-                    break;
+                currentFate = FateFlowController.Instance.CurrentFate;
+                FateFlowController.Instance.OnFateChanged += HandleFateChanged;
             }
+            else
+            {
+                Debug.LogWarning("HUDManager: FateFlowController.Instance not found!");
+            }
+        }
+
+        private void UnsubscribeFromFateFlow()
+        {
+            if (FateFlowController.Instance != null)
+            {
+                FateFlowController.Instance.OnFateChanged -= HandleFateChanged;
+            }
+        }
+
+        private void HandleFateChanged(FateSide side)
+        {
+            currentFate = side;
+            UpdateTurnIndicators();
         }
         
         /// <summary>
@@ -200,24 +198,26 @@ namespace CardGame.UI
         /// </summary>
         private void UpdateTurnIndicators()
         {
+            bool isPlayer1Active = currentFate == FateSide.Player;
+
             if (p1TurnIndicator != null)
             {
-                p1TurnIndicator.SetActive(isPlayer1Turn);
+                p1TurnIndicator.SetActive(isPlayer1Active);
             }
             
             if (p2TurnIndicator != null)
             {
-                p2TurnIndicator.SetActive(!isPlayer1Turn);
+                p2TurnIndicator.SetActive(!isPlayer1Active);
             }
             
             if (p1PlayerLabel != null)
             {
-                p1PlayerLabel.fontStyle = isPlayer1Turn ? TMPro.FontStyles.Bold : TMPro.FontStyles.Normal;
+                p1PlayerLabel.fontStyle = isPlayer1Active ? TMPro.FontStyles.Bold : TMPro.FontStyles.Normal;
             }
             
             if (p2PlayerLabel != null)
             {
-                p2PlayerLabel.fontStyle = isPlayer1Turn ? TMPro.FontStyles.Normal : TMPro.FontStyles.Bold;
+                p2PlayerLabel.fontStyle = isPlayer1Active ? TMPro.FontStyles.Normal : TMPro.FontStyles.Bold;
             }
         }
         
