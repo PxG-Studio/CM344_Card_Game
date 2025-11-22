@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 using CardGame.Managers;
 using CardGame.Visuals;
@@ -16,11 +17,37 @@ namespace CardGame.UI
         [Header("Auto-Setup Settings")]
         [SerializeField] private bool autoSetupOnAwake = true;
         
+        private static bool hasBeenSetup = false;
+        private static int setupFrame = -1;
+        
         private void Awake()
         {
+            // Prevent duplicate setup on domain reload or multiple HUDSetup instances
+            // Only setup once per session, or if this is a new frame (scene reload)
+            int currentFrame = Time.frameCount;
+            
+            if (hasBeenSetup && setupFrame == currentFrame)
+            {
+                Debug.Log("HUDSetup: Already setup this frame. Skipping duplicate setup.");
+                return;
+            }
+            
             if (autoSetupOnAwake)
             {
                 SetupHUD();
+                hasBeenSetup = true;
+                setupFrame = currentFrame;
+            }
+        }
+        
+        private void OnDestroy()
+        {
+            // Reset flag when HUDSetup is destroyed (scene unload)
+            // This allows setup to happen again if scene is reloaded
+            if (!Application.isPlaying)
+            {
+                hasBeenSetup = false;
+                setupFrame = -1;
             }
         }
         
@@ -52,6 +79,8 @@ namespace CardGame.UI
             // Ensure supporting managers & board visuals exist
             EnsureGameManagers();
             EnsureFateFlowController();
+            EnsureEventSystem();
+            CleanupMissingScripts();
             SetupBoardBackdrop();
             
             // Find and wire up all the text labels using reflection
@@ -93,6 +122,67 @@ namespace CardGame.UI
                 managerObj.AddComponent<GameEndManager>();
                 Debug.Log("HUDSetup: Created GameEndManager");
             }
+        }
+        
+        /// <summary>
+        /// Ensure EventSystem exists for UI interactions (drag and drop).
+        /// </summary>
+        private void EnsureEventSystem()
+        {
+            if (EventSystem.current == null)
+            {
+                GameObject eventSystemObj = GameObject.Find("EventSystem");
+                if (eventSystemObj == null)
+                {
+                    eventSystemObj = new GameObject("EventSystem");
+                    eventSystemObj.AddComponent<EventSystem>();
+                    eventSystemObj.AddComponent<StandaloneInputModule>();
+                    Debug.Log("HUDSetup: Created EventSystem for UI interactions");
+                }
+                else if (eventSystemObj.GetComponent<EventSystem>() == null)
+                {
+                    eventSystemObj.AddComponent<EventSystem>();
+                    if (eventSystemObj.GetComponent<StandaloneInputModule>() == null)
+                    {
+                        eventSystemObj.AddComponent<StandaloneInputModule>();
+                    }
+                    Debug.Log("HUDSetup: Added EventSystem components to existing GameObject");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// [CardFront] Clean up missing script references on CardBackVisual GameObjects in scene.
+        /// Note: Prefab assets should be cleaned using Editor tools (CardPrefabValidator or CleanupMissingScripts).
+        /// </summary>
+        private void CleanupMissingScripts()
+        {
+            #if UNITY_EDITOR
+            if (!Application.isPlaying) return; // Only clean scene instances at runtime
+            
+            int fixedCount = 0;
+            
+            // [CardFront] Cluster approach: Clean scene instances only
+            // Prefab assets must be cleaned in Editor before runtime
+            GameObject[] allObjects = FindObjectsOfType<GameObject>(true);
+            
+            foreach (GameObject obj in allObjects)
+            {
+                if (obj != null && obj.name == "CardBackVisual")
+                {
+                    int removedCount = UnityEditor.GameObjectUtility.RemoveMonoBehavioursWithMissingScript(obj);
+                    if (removedCount > 0)
+                    {
+                        fixedCount += removedCount;
+                    }
+                }
+            }
+            
+            if (fixedCount > 0)
+            {
+                Debug.Log($"[HUDSetup] Cleaned up {fixedCount} missing script reference(s) from CardBackVisual scene instances");
+            }
+            #endif
         }
         
         private void EnsureFateFlowController()

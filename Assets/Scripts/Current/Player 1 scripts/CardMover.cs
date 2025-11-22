@@ -47,6 +47,16 @@ public class CardMover : MonoBehaviour
         col = GetComponent<Collider2D>();
         startDragPosition = transform.position;
         
+        // [CardFront] Diagnostic: Log if collider is missing
+        if (col == null)
+        {
+            Debug.LogWarning($"[CardMover] No Collider2D found on '{gameObject.name}'. OnMouseDown() will not work. Add a Collider2D (BoxCollider2D recommended) for drag functionality.");
+        }
+        else
+        {
+            Debug.Log($"[CardMover] Found Collider2D '{col.name}' on '{gameObject.name}'. Drag functionality should work.");
+        }
+        
         // Try to find card reference automatically if not set
         if (card == null)
         {
@@ -117,11 +127,12 @@ public class CardMover : MonoBehaviour
             }
         }
         
-        // If still not found, only log in Editor (not during play)
+        // If still not found, only log in Editor (not during play) and only for scene instances (not prefabs)
         #if UNITY_EDITOR
-        if (card == null && !gameObject.name.Contains("Prefab"))
+        if (card == null && !gameObject.name.Contains("Prefab") && !Application.isPlaying)
         {
-            // Suppress warning if this is a prefab instance that will be initialized later
+            // Only warn in Editor when not playing - during play, cards may be initialized later
+            // Suppress warning for prefabs and during runtime initialization
             Debug.LogWarning($"CardMover on {gameObject.name}: Could not find NewCard reference. Card will not be playable until reference is set. You can assign it manually in Inspector or ensure NewCardUI component exists.");
         }
         #endif
@@ -131,9 +142,30 @@ public class CardMover : MonoBehaviour
     
     private void OnMouseDown()
     {
-        // Don't allow dragging if card has been played or it's not the player's turn
-        if (isPlayed || !CanInteract) return;
+        // [CardFront] Diagnostic logging
+        Debug.Log($"[CardMover] OnMouseDown CALLED for '{gameObject.name}'. isPlayed: {isPlayed}, CanInteract: {CanInteract}, collider: {(col != null ? col.name : "null")}");
         
+        // Don't allow dragging if card has been played or it's not the player's turn
+        if (isPlayed)
+        {
+            Debug.LogWarning($"[CardMover] Cannot drag '{gameObject.name}' - card has been played.");
+            return;
+        }
+        
+        if (!CanInteract)
+        {
+            Debug.LogWarning($"[CardMover] Cannot drag '{gameObject.name}' - not player's turn. CurrentFate: {(FateFlowController.Instance != null ? FateFlowController.Instance.CurrentFate.ToString() : "null")}");
+            return;
+        }
+        
+        // [CardFront] Check if collider exists - OnMouseDown requires Collider2D
+        if (col == null)
+        {
+            Debug.LogError($"[CardMover] OnMouseDown called but no Collider2D found on '{gameObject.name}'. OnMouseDown requires a Collider2D component!");
+            return;
+        }
+        
+        Debug.Log($"[CardMover] Starting drag for '{gameObject.name}'");
         isDragging = true;
         hasMovedDuringDrag = false;
         startDragPosition = transform.position;
@@ -228,21 +260,154 @@ public class CardMover : MonoBehaviour
     {
         if (!bypassTurnCheck && !CanInteract)
         {
+            Debug.Log($"[CardMover] AttemptDrop: Cannot interact for '{gameObject.name}' - bypassTurnCheck: {bypassTurnCheck}");
             return false;
         }
 
         EnsureCardReference();
 
-        col.enabled = false;
-        Collider2D hitCollider = Physics2D.OverlapPoint(transform.position);
-        col.enabled = true;
-        if (hitCollider != null && hitCollider.TryGetComponent(out ICardDropArea cardDropArea))
+        // [CardFront] Diagnostic: Log the drop attempt position
+        Debug.Log($"[CardMover] AttemptDrop: Checking drop at position {transform.position} for '{gameObject.name}'");
+
+        // [CardFront] CRITICAL: Disable ALL colliders on this card (including children) to prevent self-detection
+        // Collect all colliders on this GameObject and its children
+        Collider2D[] allCardColliders = GetComponentsInChildren<Collider2D>(true);
+        bool[] originalEnabledStates = new bool[allCardColliders.Length];
+        for (int i = 0; i < allCardColliders.Length; i++)
         {
-            cardDropArea.OnCardDrop(this);
-            hasMovedDuringDrag = false;
-            isDragging = false;
-            startDragPosition = transform.position;
-            return true;
+            originalEnabledStates[i] = allCardColliders[i].enabled;
+            allCardColliders[i].enabled = false;
+        }
+        
+        // [CardFront] Use ContactFilter2D to exclude this card's layer or use custom filtering
+        ContactFilter2D filter = new ContactFilter2D();
+        filter.NoFilter(); // We'll manually filter results instead
+        
+        // [CardFront] Try multiple detection methods with increasing radius
+        Collider2D hitCollider = null;
+        List<Collider2D> results = new List<Collider2D>();
+        
+        // Try point cast first
+        Physics2D.OverlapPoint(transform.position, filter, results);
+        foreach (Collider2D result in results)
+        {
+            // Skip if it's part of this card
+            if (result.transform == transform || result.transform.IsChildOf(transform) || result.transform == transform.parent)
+            {
+                continue;
+            }
+            hitCollider = result;
+            break;
+        }
+        results.Clear();
+        
+        // [CardFront] Fallback: Try small radius circle cast if point fails
+        float searchRadius = 0.1f;
+        if (hitCollider == null)
+        {
+            Physics2D.OverlapCircle(transform.position, searchRadius, filter, results);
+            foreach (Collider2D result in results)
+            {
+                if (result.transform == transform || result.transform.IsChildOf(transform) || result.transform == transform.parent)
+                {
+                    continue;
+                }
+                hitCollider = result;
+                break;
+            }
+            results.Clear();
+        }
+        
+        // [CardFront] Fallback: Try larger radius if still not found
+        if (hitCollider == null)
+        {
+            searchRadius = 1.0f;
+            Physics2D.OverlapCircle(transform.position, searchRadius, filter, results);
+            foreach (Collider2D result in results)
+            {
+                if (result.transform == transform || result.transform.IsChildOf(transform) || result.transform == transform.parent)
+                {
+                    continue;
+                }
+                hitCollider = result;
+                break;
+            }
+            results.Clear();
+        }
+        
+        // [CardFront] Fallback: Try even larger radius (for board tiles that might be spaced apart)
+        if (hitCollider == null)
+        {
+            searchRadius = 2.0f;
+            Physics2D.OverlapCircle(transform.position, searchRadius, filter, results);
+            foreach (Collider2D result in results)
+            {
+                if (result.transform == transform || result.transform.IsChildOf(transform) || result.transform == transform.parent)
+                {
+                    continue;
+                }
+                hitCollider = result;
+                float distance = Vector3.Distance(transform.position, hitCollider.transform.position);
+                Debug.Log($"[CardMover] AttemptDrop: Found drop area '{hitCollider.name}' at distance {distance:F2} using large radius search");
+                break;
+            }
+            results.Clear();
+        }
+        
+        // [CardFront] Re-enable all card colliders
+        for (int i = 0; i < allCardColliders.Length; i++)
+        {
+            allCardColliders[i].enabled = originalEnabledStates[i];
+        }
+        
+        if (hitCollider != null)
+        {
+            Debug.Log($"[CardMover] AttemptDrop: Found collider '{hitCollider.name}' at position {hitCollider.transform.position} (NOT self)");
+            
+            ICardDropArea cardDropArea = hitCollider.GetComponent<ICardDropArea>();
+            if (cardDropArea == null)
+            {
+                cardDropArea = hitCollider.GetComponentInParent<ICardDropArea>();
+            }
+            if (cardDropArea == null)
+            {
+                cardDropArea = hitCollider.GetComponentInChildren<ICardDropArea>();
+            }
+            
+            if (cardDropArea != null)
+            {
+                Debug.Log($"[CardMover] AttemptDrop: Successfully found ICardDropArea on '{hitCollider.name}'. Calling OnCardDrop...");
+                cardDropArea.OnCardDrop(this);
+                hasMovedDuringDrag = false;
+                isDragging = false;
+                startDragPosition = transform.position;
+                return true;
+            }
+            else
+            {
+                Debug.LogWarning($"[CardMover] AttemptDrop: Found collider '{hitCollider.name}' but it does NOT have ICardDropArea component! Card cannot be dropped here.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[CardMover] AttemptDrop: No collider found at position {transform.position}. CardDropArea1 objects may be missing Collider2D components or in different layer/physics space.");
+            
+            // [CardFront] Diagnostic: Find all CardDropArea1 objects and log their positions
+            CardDropArea1[] allDropAreas = FindObjectsOfType<CardDropArea1>(true);
+            if (allDropAreas.Length > 0)
+            {
+                Debug.Log($"[CardMover] AttemptDrop: Found {allDropAreas.Length} CardDropArea1 object(s) in scene:");
+                foreach (CardDropArea1 dropArea in allDropAreas)
+                {
+                    Collider2D dropCol = dropArea.GetComponent<Collider2D>();
+                    float distance = Vector3.Distance(transform.position, dropArea.transform.position);
+                    Debug.Log($"[CardMover] AttemptDrop:   - '{dropArea.gameObject.name}' at {dropArea.transform.position}, distance: {distance:F2}, has Collider2D: {dropCol != null}");
+                }
+            }
+            else
+            {
+                Debug.LogError("[CardMover] AttemptDrop: No CardDropArea1 objects found in scene! Cards cannot be placed on board.");
+            }
         }
 
         return false;
@@ -252,7 +417,21 @@ public class CardMover : MonoBehaviour
     {
         if (card == null)
         {
+            Debug.Log($"[CardMover] EnsureCardReference: Card is null for '{gameObject.name}'. Attempting to find via FindCardReference()...");
             FindCardReference();
+            
+            if (card != null)
+            {
+                Debug.Log($"[CardMover] EnsureCardReference: Successfully found card '{card.Data.cardName}' for '{gameObject.name}'");
+            }
+            else
+            {
+                Debug.LogWarning($"[CardMover] EnsureCardReference: Could not find card reference for '{gameObject.name}'. Card may not be placeable.");
+            }
+        }
+        else
+        {
+            Debug.Log($"[CardMover] EnsureCardReference: Card reference already set to '{card.Data.cardName}' for '{gameObject.name}'");
         }
     }
 }

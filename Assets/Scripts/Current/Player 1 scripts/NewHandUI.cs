@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using CardGame.Core;
 using CardGame.Managers;
+using CardGame.Factories;
 
 namespace CardGame.UI
 {
@@ -22,6 +23,90 @@ namespace CardGame.UI
         
         private List<NewCardUI> cardUIList = new List<NewCardUI>();
         private NewDeckManager deckManager;
+        
+        /// <summary>
+        /// [CardFront] Hub property: Exposes deck manager for Hub connections
+        /// </summary>
+        public NewDeckManager DeckManager => deckManager;
+        
+        /// <summary>
+        /// Gets the card associated with a specific card UI instance.
+        /// </summary>
+        public NewCard GetCardForUI(NewCardUI cardUI)
+        {
+            if (cardUI == null) return null;
+            
+            // First try: check if it's in the list and has a card
+            if (cardUIList.Contains(cardUI))
+            {
+                if (cardUI.Card != null)
+                {
+                    return cardUI.Card;
+                }
+            }
+            
+            // Second try: find by GameObject reference (in case card field is null)
+            int index = -1;
+            for (int i = 0; i < cardUIList.Count; i++)
+            {
+                var ui = cardUIList[i];
+                if (ui != null && ui.gameObject == cardUI.gameObject)
+                {
+                    if (ui.Card != null)
+                    {
+                        return ui.Card;
+                    }
+                    // Store index for fallback
+                    index = i;
+                    break;
+                }
+            }
+            
+            // Third try: match by index with deck manager hand (if card field is null)
+            if (index >= 0 && deckManager != null && deckManager.Hand != null && index < deckManager.Hand.Count)
+            {
+                NewCard handCard = deckManager.Hand[index];
+                if (handCard != null)
+                {
+                    Debug.Log($"GetCardForUI: Found card by index matching: {handCard.Data?.cardName}");
+                    return handCard;
+                }
+            }
+            
+            return null;
+        }
+        
+        /// <summary>
+        /// Gets the card count in the hand UI.
+        /// </summary>
+        public int GetCardCount()
+        {
+            return cardUIList.Count;
+        }
+        
+        /// <summary>
+        /// Gets the card at a specific index in the hand UI list.
+        /// </summary>
+        public NewCard GetCardForUIByIndex(int index)
+        {
+            if (index >= 0 && index < cardUIList.Count)
+            {
+                var cardUI = cardUIList[index];
+                if (cardUI != null)
+                {
+                    if (cardUI.Card != null)
+                    {
+                        return cardUI.Card;
+                    }
+                    // Try to get from deck manager by index
+                    if (deckManager != null && deckManager.Hand != null && index < deckManager.Hand.Count)
+                    {
+                        return deckManager.Hand[index];
+                    }
+                }
+            }
+            return null;
+        }
         
         private void Start()
         {
@@ -62,27 +147,58 @@ namespace CardGame.UI
         
         public void AddCardToHand(NewCard card)
         {
-            if (cardPrefab == null || cardContainer == null)
+            if (card == null)
             {
-                Debug.LogError("NewCardPrefab or CardContainer not assigned!");
+                Debug.LogError("NewHandUI.AddCardToHand: Cannot add null card to hand!");
                 return;
             }
             
-            NewCardUI cardUI = Instantiate(cardPrefab, cardContainer);
-            
-            // Set staggered reveal delay BEFORE Initialize() call (critical timing fix)
-            if (cardUI.autoFlipOnReveal)
+            if (cardPrefab == null)
             {
-                int cardIndex = cardUIList.Count;
-                cardUI.revealDelay = cardIndex * 0.1f; // 0s, 0.1s, 0.2s, etc.
+                Debug.LogError("NewHandUI.AddCardToHand: CardPrefab is not assigned!");
+                return;
             }
             
-            // Now initialize (will use the revealDelay we just set)
-            cardUI.Initialize(card);
+            if (cardContainer == null)
+            {
+                Debug.LogError("NewHandUI.AddCardToHand: CardContainer is not assigned!");
+                return;
+            }
+            
+            // Calculate reveal delay BEFORE creating card (for staggered flip animations)
+            float revealDelay = 0f;
+            if (cardUIList.Count > 0 && cardPrefab.autoFlipOnReveal)
+            {
+                revealDelay = cardUIList.Count * 0.1f; // 0s, 0.1s, 0.2s, etc.
+            }
+            
+            // CRITICAL: Use CardFactory to ensure Initialize() is called BEFORE Start()
+            NewCardUI cardUI = CardFactory.CreateCardUI(card, cardPrefab, cardContainer, revealDelay);
+            
+            if (cardUI == null)
+            {
+                Debug.LogError($"NewHandUI.AddCardToHand: Failed to create card UI for '{card.Data?.cardName ?? "UNKNOWN"}'");
+                return;
+            }
+            
+            // Verify card is bound (should always be true if CardFactory worked)
+            if (cardUI.Card == null)
+            {
+                Debug.LogError($"NewHandUI.AddCardToHand: Card UI was created but card is null for '{card.Data?.cardName ?? "UNKNOWN"}'. This should never happen with CardFactory.");
+                Destroy(cardUI.gameObject);
+                return;
+            }
+            
+            // Subscribe to card played event
             cardUI.OnCardPlayed += HandleCardUIPlayed;
             
+            // Add to list
             cardUIList.Add(cardUI);
-            ArrangeCards(); // This still works - no conflicts!
+            
+            // Arrange cards in hand
+            ArrangeCards();
+            
+            Debug.Log($"NewHandUI.AddCardToHand: Successfully added card '{card.Data.cardName}' to hand. Total cards: {cardUIList.Count}");
         }
         
         private void HandleCardUIPlayed(NewCardUI cardUI)

@@ -118,7 +118,7 @@ namespace CardGame.UI
         /// </summary>
         public void SetTurn(bool isPlayer1)
         {
-            isPlayer1Turn = isPlayer1;
+            currentFate = isPlayer1 ? FateSide.Player : FateSide.Opponent;
             UpdateTurnIndicators();
         }
         

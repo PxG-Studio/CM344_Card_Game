@@ -75,6 +75,61 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
     
     private void Start()
     {
+        // [CardFront] CRITICAL: Ensure Collider2D exists for Physics2D.OverlapPoint detection
+        Collider2D existingCollider = GetComponent<Collider2D>();
+        if (existingCollider == null)
+        {
+            existingCollider = GetComponentInChildren<Collider2D>();
+        }
+        
+        if (existingCollider == null)
+        {
+            // No Collider2D found - add one automatically
+            // Try to use SpriteRenderer bounds to size the collider
+            if (tileSpriteRenderer == null)
+            {
+                tileSpriteRenderer = GetComponent<SpriteRenderer>();
+            }
+            
+            if (tileSpriteRenderer != null && tileSpriteRenderer.sprite != null)
+            {
+                // Use BoxCollider2D to match sprite bounds
+                BoxCollider2D boxCollider = gameObject.AddComponent<BoxCollider2D>();
+                boxCollider.size = tileSpriteRenderer.bounds.size;
+                boxCollider.isTrigger = true; // Allow physics detection but not collision blocking
+                Debug.Log($"[CardDropArea1] Auto-added BoxCollider2D to '{gameObject.name}' (size: {boxCollider.size}, isTrigger: true)");
+            }
+            else
+            {
+                // Fallback: add a default sized collider
+                BoxCollider2D boxCollider = gameObject.AddComponent<BoxCollider2D>();
+                boxCollider.size = new Vector2(1f, 1f); // Default 1x1 unit size
+                boxCollider.isTrigger = true;
+                Debug.LogWarning($"[CardDropArea1] Auto-added default BoxCollider2D to '{gameObject.name}' (no SpriteRenderer found for sizing). Size manually in Inspector if needed.");
+            }
+        }
+        else
+        {
+            // Collider exists - ensure it's enabled and set as trigger if needed
+            if (!existingCollider.enabled)
+            {
+                existingCollider.enabled = true;
+                Debug.Log($"[CardDropArea1] Enabled existing Collider2D on '{gameObject.name}'");
+            }
+            
+            // Ensure it's a trigger (doesn't block physics, but can be detected)
+            if (existingCollider is BoxCollider2D boxCol)
+            {
+                boxCol.isTrigger = true;
+            }
+            else if (existingCollider is CircleCollider2D circleCol)
+            {
+                circleCol.isTrigger = true;
+            }
+            
+            Debug.Log($"[CardDropArea1] Verified Collider2D on '{gameObject.name}': {existingCollider.GetType().Name}, enabled: {existingCollider.enabled}, isTrigger: {existingCollider.isTrigger}");
+        }
+        
         if (tileSpriteRenderer == null)
         {
             tileSpriteRenderer = GetComponent<SpriteRenderer>();
@@ -180,21 +235,27 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         }
     }
     
+    // [CardFront] Static tracking to prevent duplicate logs when multiple CardDropArea1 instances exist
+    private static FateSide lastClearedFate = (FateSide)(-1); // Invalid initial value
+    
     /// <summary>
     /// Clears the tracking of cards played this turn
     /// </summary>
-    private void ClearTurnTracking()
+    private void ClearTurnTracking(FateSide currentFate)
     {
         cardsPlayedThisTurn.Clear();
-        if (debugBattles)
+        
+        // [CardFront] Only log once per fate change, not once per CardDropArea1 instance
+        if (debugBattles && lastClearedFate != currentFate)
         {
-            Debug.Log("Turn tracking cleared - new cards can now be captured");
+            lastClearedFate = currentFate;
+            Debug.Log($"[CardDropArea1] Turn tracking cleared for {currentFate} - new cards can now be captured");
         }
     }
     
     private void HandleFateWindowShift(FateSide side)
     {
-        ClearTurnTracking();
+        ClearTurnTracking(side);
     }
     
     public void OnCardDrop(CardMover cardMover)
@@ -236,14 +297,32 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         {
             NewCard card = cardMover.Card;
             
+            // [CardFront] Ensure card reference is set before attempting placement (same logic as Flame Witch)
             if (card == null)
             {
+                Debug.Log($"[CardDropArea1] Card reference is null for '{cardMover.gameObject.name}'. Attempting to find via FindCardReference()...");
                 cardMover.SendMessage("FindCardReference", SendMessageOptions.DontRequireReceiver);
                 card = cardMover.Card;
             }
             
+            // [CardFront] Additional fallback: Try to get card from NewCardUI component if CardMover still doesn't have it
+            if (card == null)
+            {
+                NewCardUI cardUI = cardMover.GetComponent<NewCardUI>();
+                if (cardUI == null) cardUI = cardMover.GetComponentInChildren<NewCardUI>();
+                if (cardUI == null) cardUI = cardMover.GetComponentInParent<NewCardUI>();
+                
+                if (cardUI != null && cardUI.Card != null)
+                {
+                    card = cardUI.Card;
+                    cardMover.SetCard(card); // Sync it to CardMover for future use
+                    Debug.Log($"[CardDropArea1] Found card '{card.Data.cardName}' via NewCardUI for '{cardMover.gameObject.name}'. Synced to CardMover.");
+                }
+            }
+            
             if (card != null && deckManager.Hand.Contains(card))
             {
+                Debug.Log($"[CardDropArea1] Playing card '{card.Data.cardName}' from hand. CardMover: '{cardMover.gameObject.name}'");
                 deckManager.PlayCard(card);
                 Debug.Log($"Card {card.Data.cardName} played from drop area and placed on board");
                 
@@ -261,9 +340,14 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                 GameManager.Instance?.NotifyCardPlaced(this, card);
                 FateFlowController.Instance?.AdvanceFateFlow();
             }
-            else
+            else if (card == null)
             {
-                Debug.LogWarning("CardDropArea1: Card reference missing or not found in hand.");
+                Debug.LogError($"[CardDropArea1] Card reference is still null for '{cardMover.gameObject.name}' after all fallback attempts. Cannot play card. Ensure SyncCardReferenceToMovers() was called in NewCardUI.Initialize().");
+                cardMover.ReturnToStartPosition();
+            }
+            else if (!deckManager.Hand.Contains(card))
+            {
+                Debug.LogWarning($"[CardDropArea1] Card '{card.Data.cardName}' is not in hand for '{cardMover.gameObject.name}'. Hand contains {deckManager.Hand.Count} cards. Card may have already been played.");
                 cardMover.ReturnToStartPosition();
             }
         }

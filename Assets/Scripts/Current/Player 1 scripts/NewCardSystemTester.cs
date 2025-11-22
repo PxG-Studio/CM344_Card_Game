@@ -112,9 +112,11 @@ namespace CardGame.Testing
             Debug.Log("Hand and board cleared!");
         }
         
-        // Debug GUI (only in editor)
+        // [CardFront] Debug GUI - Editor-only, disabled in builds
+        #if UNITY_EDITOR
         private void OnGUI()
         {
+            // [CardFront] Only show in Editor Play Mode, never in builds
             if (!showDebugButtons || !Application.isPlaying) return;
             
             GUILayout.BeginArea(new Rect(10, 10, 200, 300));
@@ -155,6 +157,7 @@ namespace CardGame.Testing
             
             GUILayout.EndArea();
         }
+        #endif
     }
 }
 

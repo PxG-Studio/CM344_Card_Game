@@ -280,6 +280,7 @@ GameObject:
   - component: {fileID: 3150673925289756411}
   - component: {fileID: 396230099388163290}
   - component: {fileID: 4139798117971288157}
+  - component: {fileID: 6760621901215579953}
   m_Layer: 0
   m_Name: NewCardPrefab
   m_TagString: Untagged
@@ -317,6 +318,94 @@ RectTransform:
   m_AnchoredPosition: {x: -5.2040033, y: 3.2491183}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &3150673925289756411
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2756439749987025949}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6bd27be675c43da4685bc9e1a49657c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cardBackground: {fileID: 2507132504498512175}
+  artwork: {fileID: 7398150677083262397}
+  cardNameText: {fileID: 7528081087265750492}
+  descriptionText: {fileID: 5831208963704740993}
+  topStatText: {fileID: 2383589665244829882}
+  rightStatText: {fileID: 7617877352775409201}
+  downStatText: {fileID: 2342332303940123261}
+  leftStatText: {fileID: 7855375448868582952}
+  cardTypeText: {fileID: 8764232736705520442}
+  cardTypeIcon: {fileID: 0}
+  flipAnimation: {fileID: 4139798117971288157}
+  frontContainer: {fileID: 8331869115627169107}
+  backContainer: {fileID: 3395844615914960357}
+  backSpriteRenderer: {fileID: 0}
+  backImage: {fileID: 0}
+  defaultCardBackSprite: {fileID: 0}
+  startFaceDown: 1
+  autoFlipOnReveal: 1
+  revealDelay: 0.2
+  allowClickToFlip: 0
+  allowDrag: 1
+  playerCapturedColor: {r: 1, g: 0.65, b: 0, a: 1}
+  opponentCapturedColor: {r: 0, g: 0.8, b: 0, a: 1}
+--- !u!114 &396230099388163290
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2756439749987025949}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 993648cb2ba5aa544a6bd06fedec5956, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dragThreshold: 0.1
+  ownerSide: 0
+--- !u!114 &4139798117971288157
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2756439749987025949}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3839bb5ae4b66ee42abe1d464c2561eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  flipDuration: 0.5
+  flipEasing:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  frontContainer: {fileID: 8331869115627169107}
+  backContainer: {fileID: 3395844615914960357}
 --- !u!61 &6760621901215579953
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -362,91 +451,6 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 2.5, y: 2.5}
   m_EdgeRadius: 0
---- !u!114 &3150673925289756411
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2756439749987025949}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6bd27be675c43da4685bc9e1a49657c8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cardBackground: {fileID: 2507132504498512175}
-  artwork: {fileID: 7398150677083262397}
-  cardNameText: {fileID: 7528081087265750492}
-  descriptionText: {fileID: 5831208963704740993}
-  topStatText: {fileID: 2383589665244829882}
-  rightStatText: {fileID: 7617877352775409201}
-  downStatText: {fileID: 2342332303940123261}
-  leftStatText: {fileID: 7855375448868582952}
-  cardTypeText: {fileID: 8764232736705520442}
-  cardTypeIcon: {fileID: 0}
-  flipAnimation: {fileID: 4139798117971288157}
-  frontContainer: {fileID: 8331869115627169107}
-  backContainer: {fileID: 3395844615914960357}
-  backSpriteRenderer: {fileID: 0}
-  backImage: {fileID: 3748502334135818584}
-  defaultCardBackSprite: {fileID: 0}
-  startFaceDown: 1
-  autoFlipOnReveal: 1
-  revealDelay: 0.2
-  allowClickToFlip: 0
-  playerCapturedColor: {r: 1, g: 0.65, b: 0, a: 1}
-  opponentCapturedColor: {r: 0, g: 0.8, b: 0, a: 1}
---- !u!114 &396230099388163290
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2756439749987025949}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 993648cb2ba5aa544a6bd06fedec5956, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &4139798117971288157
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2756439749987025949}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3839bb5ae4b66ee42abe1d464c2561eb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  flipDuration: 0.5
-  flipEasing:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  frontContainer: {fileID: 8331869115627169107}
-  backContainer: {fileID: 3395844615914960357}
 --- !u!1 &2858590882816795532
 GameObject:
   m_ObjectHideFlags: 0
@@ -988,7 +992,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1299687922137438124}
   - component: {fileID: 8283711089994057398}
-  - component: {fileID: 3748502334135818584}
   m_Layer: 0
   m_Name: CardBackVisual
   m_TagString: Untagged
@@ -1023,36 +1026,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6123341734005201466}
   m_CullTransparentMesh: 1
---- !u!114 &3748502334135818584
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6123341734005201466}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 28bd80bdb760e4f42a8c48bd4185f9c0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 0.3, g: 0.3, b: 0.3, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 0}
-  m_Type: 0
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &6561163825872179895
 GameObject:
   m_ObjectHideFlags: 0
