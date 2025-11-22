@@ -276,6 +276,7 @@ namespace CardGame.UI
             }
             
             card = cardData;
+            SyncCardReferenceToMovers();
             
             // Assign card back sprite (with fallback)
             AssignCardBackSprite();
@@ -500,6 +501,37 @@ namespace CardGame.UI
         public void RefreshVisuals()
         {
             UpdateVisuals();
+        }
+
+        /// <summary>
+        /// Push the resolved NewCard reference to any CardMover components so they stop logging warnings.
+        /// </summary>
+        private void SyncCardReferenceToMovers()
+        {
+            if (card == null) return;
+            
+            // Player mover on this GameObject (if present)
+            if (TryGetComponent<CardMover>(out var mover))
+            {
+                mover.SetCard(card);
+            }
+            
+            // Opponent mover on this GameObject (if present)
+            if (TryGetComponent<CardMoverOpp>(out var moverOpp))
+            {
+                moverOpp.SetCard(card);
+            }
+            
+            // Some prefabs nest CardMover/CardMoverOpp on children, so update them too
+            foreach (var childMover in GetComponentsInChildren<CardMover>(true))
+            {
+                childMover.SetCard(card);
+            }
+            
+            foreach (var childMoverOpp in GetComponentsInChildren<CardMoverOpp>(true))
+            {
+                childMoverOpp.SetCard(card);
+            }
         }
 
         /// <summary>
