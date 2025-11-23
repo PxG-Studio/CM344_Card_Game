@@ -33,11 +33,21 @@ namespace CardGame.Managers
             Instance = this;
             DontDestroyOnLoad(gameObject);
 
-            CurrentFate = startingSide;
+            // Don't set starting side here - wait for coin toss result
+            // Coin toss will call SetFate() to determine starting player
+            CurrentFate = startingSide; // Default value, will be overridden by coin toss
         }
 
         private void Start()
         {
+            // Only invoke if coin toss hasn't been performed yet
+            // If coin toss has been performed, it will set the fate and invoke the event
+            if (CoinTossManager.Instance != null && CoinTossManager.Instance.IsComplete)
+            {
+                // Coin toss already performed, use its result
+                CurrentFate = CoinTossManager.Instance.GetStartingPlayer();
+            }
+            
             OnFateChanged?.Invoke(CurrentFate);
         }
 

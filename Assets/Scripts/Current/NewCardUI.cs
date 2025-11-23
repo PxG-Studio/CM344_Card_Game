@@ -81,6 +81,26 @@ namespace CardGame.UI
                 canvasGroup = gameObject.AddComponent<CanvasGroup>();
             }
             
+            // [CardFront] CRITICAL: Disable prefab assets from receiving raycasts
+            // Prefab assets (non-clones) should NEVER be interactable
+            // BUT: Board cards are valid cloned cards that have been renamed (no "(Clone)" suffix)
+            // So we need to check if this is actually a prefab asset vs a renamed board card
+            bool isPrefabAsset = !gameObject.name.Contains("(Clone)") && 
+                                 (gameObject.name == "NewCardPrefab" || gameObject.name == "NewCardPrefabOpp");
+            
+            if (isPrefabAsset)
+            {
+                canvasGroup.blocksRaycasts = false;
+                canvasGroup.interactable = false;
+                Debug.LogWarning($"[NewCardUI] Awake: Disabled raycasting for prefab asset '{gameObject.name}' (InstanceID: {GetInstanceID()}). Prefab assets should not be in the scene and cannot be dragged. If you see this message, please remove the prefab asset from the scene hierarchy.");
+                return; // Early return - prefab assets shouldn't be in the scene anyway
+            }
+            
+            // [CardFront] CRITICAL: Ensure cloned cards (hand cards) and renamed board cards have interactivity enabled
+            // Cloned cards should always be interactive unless explicitly disabled
+            canvasGroup.interactable = true;
+            canvasGroup.blocksRaycasts = true;
+            
             // Diagnostic: Check if EventSystem exists (only warn once, HUDSetup should create it)
             if (EventSystem.current == null)
             {
@@ -384,7 +404,16 @@ namespace CardGame.UI
             // Only if flip animation is set up
             if (autoFlipOnReveal && flipAnimation != null && flipAnimation.IsSetupValid())
             {
-                StartCoroutine(DelayedFlip());
+                // [CardFront] CRITICAL: Only start coroutine if GameObject is active
+                // Coroutines cannot start on inactive GameObjects
+                if (gameObject.activeInHierarchy)
+                {
+                    StartCoroutine(DelayedFlip());
+                }
+                else
+                {
+                    Debug.LogWarning($"[NewCardUI] Cannot start DelayedFlip coroutine - GameObject '{gameObject.name}' is inactive. This may indicate the card was instantiated inactive or parent is inactive.");
+                }
             }
         }
         
@@ -461,6 +490,36 @@ namespace CardGame.UI
         
         private void Start()
         {
+            // [CardFront] CRITICAL: Disable prefab assets from receiving raycasts (runtime check)
+            // Prefab assets (non-clones) should NEVER be interactable - disable them immediately
+            // BUT: Board cards are valid cloned cards that have been renamed (no "(Clone)" suffix)
+            // So we need to check if this is actually a prefab asset vs a renamed board card
+            bool isPrefabAsset = !gameObject.name.Contains("(Clone)") && 
+                                 (gameObject.name == "NewCardPrefab" || gameObject.name == "NewCardPrefabOpp");
+            
+            if (isPrefabAsset)
+            {
+                CanvasGroup cg = GetComponent<CanvasGroup>();
+                if (cg == null)
+                {
+                    cg = gameObject.AddComponent<CanvasGroup>();
+                }
+                cg.blocksRaycasts = false;
+                cg.interactable = false;
+                gameObject.SetActive(false); // Disable the entire GameObject
+                
+                Debug.LogWarning($"[NewCardUI] Start: DISABLED prefab asset '{gameObject.name}' (InstanceID: {GetInstanceID()}). Prefab assets should NOT be in the scene hierarchy. They should only be used as references for instantiation. This GameObject has been disabled to prevent it from intercepting drag events.");
+                return; // Early return - prefab assets shouldn't be processed
+            }
+            
+            // [CardFront] CRITICAL: Ensure cloned cards (hand cards) and renamed board cards have interactivity enabled
+            // Cloned cards and board cards should always be interactive unless explicitly disabled
+            if (canvasGroup != null)
+            {
+                canvasGroup.interactable = true;
+                canvasGroup.blocksRaycasts = true;
+            }
+            
             // Verify card is set after initialization
             if (card == null)
             {
@@ -703,6 +762,35 @@ namespace CardGame.UI
             Debug.Log($"[NewCardUI] OnBeginDrag CALLED for '{gameObject.name}'. allowDrag: {allowDrag}, card bound: {card != null}, Card property: {Card != null}, IsPlayerCard: {IsPlayerCard()}, IsOpponentCard: {IsOpponentCard()}");
             
             // Prevent dragging prefab assets (not instantiated in scene)
+            // [CardFront] CRITICAL: Cards are renamed from "NewCardPrefab(Clone)" to card names in Initialize()
+            // So we can't check for "(Clone)" in the name. Instead, check if it's an actual prefab asset.
+            // Valid cloned cards have been renamed to their card names (e.g., "Earth Historian")
+            // Prefab assets have the exact names "NewCardPrefab" or "NewCardPrefabOpp" (without Clone)
+            bool isPrefabAsset = (gameObject.name == "NewCardPrefab" || gameObject.name == "NewCardPrefabOpp");
+            
+            if (isPrefabAsset)
+            {
+                // [CardFront] Disable this GameObject's raycasting to prevent future drag attempts
+                CanvasGroup cg = GetComponent<CanvasGroup>();
+                if (cg == null)
+                {
+                    cg = gameObject.AddComponent<CanvasGroup>();
+                }
+                cg.blocksRaycasts = false;
+                cg.interactable = false;
+                
+                Debug.LogWarning($"[NewCardUI] BLOCKED: Cannot drag '{gameObject.name}' (InstanceID: {GetInstanceID()}) - this is a prefab asset, not a cloned card instance. Prefab assets cannot be dragged. Only instantiated cards can be dragged. Disabled raycasting for this GameObject. If you see this message, please remove the prefab asset from the scene hierarchy.");
+                return;
+            }
+            
+            // [CardFront] Additional check: If card is null or not initialized, this might be a prefab asset
+            // Valid cloned cards should have their card reference set by Initialize() before drag can occur
+            if (card == null)
+            {
+                Debug.LogWarning($"[NewCardUI] Cannot drag '{gameObject.name}' - card reference is null. This may be an uninitialized prefab asset.");
+                return;
+            }
+            
             #if UNITY_EDITOR
             if (UnityEditor.PrefabUtility.IsPartOfPrefabAsset(gameObject))
             {
@@ -724,13 +812,56 @@ namespace CardGame.UI
                 return;
             }
             
-           // CRITICAL: Opponent cards should NEVER be draggable by player
-           // Check if this is an opponent card and block dragging immediately
+           // CRITICAL: Opponent cards should only be draggable during opponent's turn
+           // Check if this is an opponent card and verify it's the opponent's turn
            bool isOpponentCard = IsOpponentCard();
            if (isOpponentCard)
            {
-               // [CardFront] This is expected behavior - use Debug.Log instead of LogWarning to reduce spam
-               Debug.Log($"[NewCardUI] Opponent card '{gameObject.name}' drag blocked (expected behavior).");
+               // [CardFront] Allow opponent cards to drag when it's the opponent's turn
+               // Check if it's currently the opponent's turn using FateFlowController
+               bool canOpponentAct = CardGame.Managers.FateFlowController.Instance != null && 
+                                     CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.Opponent);
+               
+               if (!canOpponentAct)
+               {
+                   // [CardFront] Block opponent cards when it's NOT the opponent's turn (expected behavior)
+                   Debug.Log($"[NewCardUI] Opponent card '{gameObject.name}' drag blocked - not opponent's turn (expected behavior).");
+                   return;
+               }
+               else
+               {
+                   // [CardFront] Allow opponent cards to drag when it IS the opponent's turn
+                   Debug.Log($"[NewCardUI] Opponent card '{gameObject.name}' drag allowed - opponent's turn.");
+                   // Continue with drag initialization below
+               }
+           }
+           
+           // [CardFront] Check if card is still in hand before allowing drag
+           // Cards already on board should not be draggable
+           bool isCardInHand = false;
+           
+           if (IsPlayerCard())
+           {
+               CardGame.UI.NewHandUI handUI = GetComponentInParent<CardGame.UI.NewHandUI>();
+               if (handUI != null)
+               {
+                   NewCard handCard = handUI.GetCardForUI(this);
+                   isCardInHand = (handCard != null && handCard == card);
+               }
+           }
+           else if (IsOpponentCard())
+           {
+               CardGame.UI.NewHandOppUI handOppUI = GetComponentInParent<CardGame.UI.NewHandOppUI>();
+               if (handOppUI != null)
+               {
+                   NewCard handCard = handOppUI.GetCardForUI(this);
+                   isCardInHand = (handCard != null && handCard == card);
+               }
+           }
+           
+           if (!isCardInHand)
+           {
+               Debug.LogWarning($"[NewCardUI] Cannot drag '{gameObject.name}' - card is not in hand (already on board or removed).");
                return;
            }
             
@@ -803,6 +934,39 @@ namespace CardGame.UI
                             }
                         }
                     }
+                    
+                    // Strategy 4: Try to find card by matching with all instantiated cards in HandUI/HandOppUI lists
+                    // This is a fallback when the card reference is lost but the card is still in hand
+                    if (card == null)
+                    {
+                        // Try to find NewHandOppUI and match by GameObject instance
+                        NewHandOppUI sceneHandOppUI = FindObjectOfType<NewHandOppUI>();
+                        if (sceneHandOppUI != null)
+                        {
+                            // Use the Hub's GetCardForUI method which has multiple fallback strategies
+                            NewCard foundCard = sceneHandOppUI.GetCardForUI(this);
+                            if (foundCard != null)
+                            {
+                                card = foundCard;
+                                Debug.Log($"[NewCardUI] Recovered card via HandOppUI Hub's GetCardForUI: {card.Data.cardName}");
+                            }
+                        }
+                        
+                        // Also try NewHandUI for player cards
+                        if (card == null)
+                        {
+                            NewHandUI sceneHandUI = FindObjectOfType<NewHandUI>();
+                            if (sceneHandUI != null)
+                            {
+                                NewCard foundCard = sceneHandUI.GetCardForUI(this);
+                                if (foundCard != null)
+                                {
+                                    card = foundCard;
+                                    Debug.Log($"[NewCardUI] Recovered card via HandUI Hub's GetCardForUI: {card.Data.cardName}");
+                                }
+                            }
+                        }
+                    }
                 }
             }
             
@@ -810,19 +974,33 @@ namespace CardGame.UI
             // If card is still null, card reference was lost - this should never happen with CardFactory
             if (card == null || card.Data == null)
             {
+                // [CardFront] Additional check: If this is NOT a clone (i.e., it's the prefab asset or uninitialized instance), block it
+                if (!gameObject.name.Contains("(Clone)"))
+                {
+                    Debug.LogWarning($"[NewCardUI] Cannot drag '{gameObject.name}' - this appears to be a prefab asset or uninitialized instance. Only instantiated cards (clones) can be dragged. Please ensure you're dragging a card from the hand, not a prefab asset in the scene.");
+                    return;
+                }
+                
                 Debug.LogError($"[NewCardUI] CRITICAL: Card reference lost. GameObject: {gameObject.name}, InstanceID: {GetInstanceID()}. Cannot start drag.");
                 Debug.LogError($"[NewCardUI] This indicates Initialize() was not called or card field was cleared. Check CardFactory.");
+                Debug.LogError($"[NewCardUI] Recovery strategies failed. Parent: {(transform.parent != null ? transform.parent.name : "null")}, IsOpponentCard: {isOpponentCard}, HasHandOppUI: {(GetComponentInParent<NewHandOppUI>() != null ? "Yes" : "No")}");
                 return;
             }
             
             // [CardFront] Turn System Rules: Only active side can move cards
             // Check turn state via Hub (FateFlowController)
+            // Allow player cards on player's turn, opponent cards on opponent's turn
             if (CardGame.Managers.FateFlowController.Instance != null)
             {
-                bool canAct = CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.Player);
+                // Determine which side this card belongs to
+                CardGame.Managers.FateSide cardSide = isOpponentCard ? 
+                    CardGame.Managers.FateSide.Opponent : 
+                    CardGame.Managers.FateSide.Player;
+                
+                bool canAct = CardGame.Managers.FateFlowController.Instance.CanAct(cardSide);
                 if (!canAct)
                 {
-                    Debug.LogWarning($"[NewCardUI] Cannot drag - not player's turn. Current fate: {CardGame.Managers.FateFlowController.Instance.CurrentFate}");
+                    Debug.LogWarning($"[NewCardUI] Cannot drag - not {cardSide}'s turn. Current fate: {CardGame.Managers.FateFlowController.Instance.CurrentFate}");
                     return; // Turn system blocks drag
                 }
             }
@@ -866,12 +1044,25 @@ namespace CardGame.UI
             // [CardFront] OnEndDrag: Validate drag state
             if (!isDragging)
             {
-                // [CardFront] Suppress warnings for opponent cards - OnEndDrag is called even when drag was blocked
-                // This is expected behavior for opponent cards that were correctly prevented from dragging
-                if (IsOpponentCard())
+                // [CardFront] Check if opponent card drag was blocked because it's not their turn
+                // If it's the opponent's turn, we should allow dragging - check turn state
+                bool isOpponentCard = IsOpponentCard();
+                if (isOpponentCard)
                 {
-                    // Silently ignore - opponent cards are expected to have isDragging = false
-                    return;
+                    // Check if it's actually the opponent's turn - if so, we should have been dragging
+                    bool canOpponentAct = CardGame.Managers.FateFlowController.Instance != null && 
+                                         CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.Opponent);
+                    
+                    if (canOpponentAct)
+                    {
+                        // It's the opponent's turn but drag wasn't started - this is unexpected
+                        Debug.LogWarning($"[NewCardUI] OnEndDrag: Opponent card '{gameObject.name}' drag should have started but didn't. Drag may have been interrupted.");
+                    }
+                    else
+                    {
+                        // It's not the opponent's turn - silently ignore (expected behavior)
+                        return;
+                    }
                 }
                 
                 // Only warn if this is a player card that should have been dragging
@@ -924,7 +1115,17 @@ namespace CardGame.UI
             if (dropArea != null)
             {
                 Debug.Log($"[NewCardUI] OnEndDrag: Drop area found! '{dropArea.name}' at {dropArea.transform.position}. Placing card...");
-                PlaceCardOnBoard(dropArea);
+                
+                // [CardFront] Handle opponent cards differently - they use CardMoverOpp and OnCardDropOpp
+                bool isOpponentCard = IsOpponentCard();
+                if (isOpponentCard)
+                {
+                    PlaceOpponentCardOnBoard(dropArea);
+                }
+                else
+                {
+                    PlaceCardOnBoard(dropArea);
+                }
                 return;
             }
             
@@ -973,47 +1174,141 @@ namespace CardGame.UI
         
         /// <summary>
         /// [CardFront] Cluster method: Find drop area via Physics2D (local system)
+        /// Uses Canvas camera if available, otherwise falls back to closest drop area
         /// </summary>
         private CardDropArea1 FindDropAreaViaPhysics2D(PointerEventData eventData)
         {
-            if (Camera.main == null)
+            Camera worldCamera = null;
+            
+            // [CardFront] Try to get the canvas camera first (for Screen Space - Camera mode)
+            Canvas canvas = GetComponentInParent<Canvas>();
+            if (canvas != null && canvas.renderMode == RenderMode.ScreenSpaceCamera && canvas.worldCamera != null)
             {
-                Debug.LogWarning($"[NewCardUI] FindDropAreaViaPhysics2D: Camera.main is null! Cannot convert screen to world position.");
-                return null;
+                worldCamera = canvas.worldCamera;
+                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Using Canvas camera '{worldCamera.name}' for coordinate conversion.");
+            }
+            else if (Camera.main != null)
+            {
+                worldCamera = Camera.main;
+                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Using Camera.main for coordinate conversion.");
+            }
+            else
+            {
+                Debug.LogWarning($"[NewCardUI] FindDropAreaViaPhysics2D: No camera available! Cannot convert screen to world position.");
+                // Fall through to closest drop area search
             }
             
-            Vector3 screenPos = new Vector3(eventData.position.x, eventData.position.y, Camera.main.nearClipPlane);
-            Vector3 worldPos = Camera.main.ScreenToWorldPoint(screenPos);
-            worldPos.z = 0f;
+            Vector3 worldPos = Vector3.zero;
             
-            Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Screen position {screenPos}, World position {worldPos}");
-            
-            Collider2D[] hitColliders = Physics2D.OverlapPointAll(worldPos);
-            
-            Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Physics2D.OverlapPointAll found {hitColliders.Length} collider(s) at world position {worldPos}");
-            
-            foreach (Collider2D hitCollider in hitColliders)
+            if (worldCamera != null)
             {
-                if (hitCollider == null) continue;
+                Vector3 screenPos = new Vector3(eventData.position.x, eventData.position.y, worldCamera.nearClipPlane);
+                worldPos = worldCamera.ScreenToWorldPoint(screenPos);
+                worldPos.z = 0f;
                 
-                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Checking collider '{hitCollider.gameObject.name}' for CardDropArea1...");
-                CardDropArea1 dropArea = hitCollider.GetComponent<CardDropArea1>();
-                if (dropArea != null)
+                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Screen position {eventData.position}, World position {worldPos}");
+                
+                // Try point-based detection first
+                Collider2D[] hitColliders = Physics2D.OverlapPointAll(worldPos);
+                
+                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Physics2D.OverlapPointAll found {hitColliders.Length} collider(s) at world position {worldPos}");
+                
+                foreach (Collider2D hitCollider in hitColliders)
                 {
-                    Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Found CardDropArea1 '{dropArea.name}'! IsOccupied: {dropArea.IsOccupied}");
-                    if (!dropArea.IsOccupied)
+                    if (hitCollider == null) continue;
+                    
+                    Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Checking collider '{hitCollider.gameObject.name}' for CardDropArea1...");
+                    CardDropArea1 dropArea = hitCollider.GetComponent<CardDropArea1>();
+                    if (dropArea != null)
                     {
-                        Debug.Log($"[NewCardUI] Found CardDropArea1 via Physics2D: {dropArea.name}");
-                        return dropArea;
+                        Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Found CardDropArea1 '{dropArea.name}'! IsOccupied: {dropArea.IsOccupied}");
+                        if (!dropArea.IsOccupied)
+                        {
+                            Debug.Log($"[NewCardUI] Found CardDropArea1 via Physics2D: {dropArea.name}");
+                            return dropArea;
+                        }
+                        else
+                        {
+                            Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: CardDropArea1 '{dropArea.name}' is occupied. Skipping.");
+                        }
                     }
-                    else
+                }
+                
+                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Point-based detection found no drop area. Trying radius-based search...");
+                
+                // Fallback: Try radius-based detection (larger search area)
+                float searchRadius = 2f; // Search within 2 units
+                hitColliders = Physics2D.OverlapCircleAll(worldPos, searchRadius);
+                
+                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Physics2D.OverlapCircleAll found {hitColliders.Length} collider(s) within radius {searchRadius} at world position {worldPos}");
+                
+                CardDropArea1 closestDropArea = null;
+                float closestDistance = float.MaxValue;
+                
+                foreach (Collider2D hitCollider in hitColliders)
+                {
+                    if (hitCollider == null) continue;
+                    
+                    CardDropArea1 dropArea = hitCollider.GetComponent<CardDropArea1>();
+                    if (dropArea != null && !dropArea.IsOccupied)
                     {
-                        Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: CardDropArea1 '{dropArea.name}' is occupied. Skipping.");
+                        float distance = Vector3.Distance(worldPos, dropArea.transform.position);
+                        if (distance < closestDistance)
+                        {
+                            closestDistance = distance;
+                            closestDropArea = dropArea;
+                        }
                     }
+                }
+                
+                if (closestDropArea != null)
+                {
+                    Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Found closest CardDropArea1 '{closestDropArea.name}' at distance {closestDistance}");
+                    return closestDropArea;
                 }
             }
             
-            Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: No unoccupied CardDropArea1 found in Physics2D results.");
+            // Final fallback: Find closest unoccupied drop area in scene (distance-based)
+            Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Physics2D detection failed. Using scene-based closest drop area search...");
+            CardDropArea1[] allDropAreas = FindObjectsOfType<CardDropArea1>();
+            
+            if (allDropAreas.Length == 0)
+            {
+                Debug.LogWarning($"[NewCardUI] FindDropAreaViaPhysics2D: No CardDropArea1 components found in scene!");
+                return null;
+            }
+            
+            // Convert screen position to world using main camera or canvas camera
+            Vector3 mouseWorldPos = worldPos;
+            if (worldCamera == null && Camera.main != null)
+            {
+                Vector3 screenPos = new Vector3(eventData.position.x, eventData.position.y, Camera.main.nearClipPlane);
+                mouseWorldPos = Camera.main.ScreenToWorldPoint(screenPos);
+                mouseWorldPos.z = 0f;
+            }
+            
+            CardDropArea1 closest = null;
+            float minDist = float.MaxValue;
+            
+            foreach (CardDropArea1 area in allDropAreas)
+            {
+                if (area.IsOccupied) continue;
+                
+                float dist = Vector3.Distance(mouseWorldPos, area.transform.position);
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    closest = area;
+                }
+            }
+            
+            if (closest != null && minDist < 5f) // Only return if within reasonable distance (5 units)
+            {
+                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Found closest unoccupied CardDropArea1 '{closest.name}' at distance {minDist}");
+                return closest;
+            }
+            
+            Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: No unoccupied CardDropArea1 found in Physics2D results or nearby.");
             return null;
         }
         
@@ -1140,6 +1435,147 @@ namespace CardGame.UI
             Debug.Log($"[NewCardUI] PlaceCardOnBoard: Card '{card.Data.cardName}' placement complete!");
         }
         
+        /// <summary>
+        /// [CardFront] Places an opponent card on the board using CardMoverOpp
+        /// </summary>
+        private void PlaceOpponentCardOnBoard(CardDropArea1 dropArea)
+        {
+            Debug.Log($"[NewCardUI] PlaceOpponentCardOnBoard: Attempting to place opponent card on {dropArea?.name}");
+            
+            if (dropArea == null || card == null)
+            {
+                Debug.LogWarning($"PlaceOpponentCardOnBoard: dropArea or card is null. dropArea: {dropArea != null}, card: {card != null}");
+                return;
+            }
+            
+            // Check if it's the opponent's turn
+            if (CardGame.Managers.FateFlowController.Instance != null)
+            {
+                if (!CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.Opponent))
+                {
+                    Debug.LogWarning($"Cannot place opponent card - not opponent's turn. Current fate: {CardGame.Managers.FateFlowController.Instance.CurrentFate}");
+                    return;
+                }
+                else
+                {
+                    Debug.Log($"PlaceOpponentCardOnBoard: Turn check passed. Current fate: {CardGame.Managers.FateFlowController.Instance.CurrentFate}");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("PlaceOpponentCardOnBoard: FateFlowController.Instance is null - allowing placement anyway");
+            }
+            
+            // Check if drop area is occupied
+            if (dropArea.IsOccupied)
+            {
+                Debug.LogWarning($"Cannot place opponent card - drop area {dropArea.name} is occupied");
+                return;
+            }
+            
+            // [CardFront] Hub connection: Get opponent deck manager via Hub (NewHandOppUI) instead of FindObjectOfType
+            // NewHandOppUI is the Hub that manages opponent card UI instances and knows about deckManagerOpp
+            CardGame.Managers.NewDeckManagerOpp deckManagerOpp = null;
+            
+            // Use parent Hub connection to get opponent deck manager
+            CardGame.UI.NewHandOppUI handOppUI = GetComponentInParent<CardGame.UI.NewHandOppUI>();
+            if (handOppUI != null)
+            {
+                // [CardFront] Access deckManagerOpp via Hub property (clean Hub connection)
+                deckManagerOpp = handOppUI.DeckManager;
+                
+                // Validate card via Hub connection (HandOppUI knows which cards are in hand)
+                NewCard validatedCard = handOppUI.GetCardForUI(this);
+                if (validatedCard == null || validatedCard != card)
+                {
+                    Debug.LogWarning($"[NewCardUI] PlaceOpponentCardOnBoard: Card '{card.Data?.cardName}' not found in HandOppUI Hub. Cannot place.");
+                    return;
+                }
+            }
+            else
+            {
+                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: NewHandOppUI Hub not found in parent hierarchy. Cannot place opponent card.");
+                return;
+            }
+            
+            // [CardFront] Validate deckManagerOpp exists
+            if (deckManagerOpp == null)
+            {
+                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: DeckManagerOpp is null in HandOppUI Hub. Cannot place opponent card.");
+                return;
+            }
+            
+            // [CardFront] Final validation: Card must be in opponent hand (via Hub connection)
+            if (!deckManagerOpp.Hand.Contains(card))
+            {
+                Debug.LogWarning($"[NewCardUI] PlaceOpponentCardOnBoard: Card '{card.Data?.cardName}' not found in opponent hand. Hand contains {deckManagerOpp.Hand.Count} cards.");
+                return;
+            }
+            
+            Debug.Log($"[NewCardUI] PlaceOpponentCardOnBoard: All checks passed. Creating opponent board card for '{card.Data.cardName}'...");
+            
+            // [CardFront] Hub approach: Get opponent board card prefab from NewHandOppUI (Hub)
+            // NewHandOppUI has the cardPrefab reference assigned in Inspector - use that instead of Resources.Load
+            NewCardUI opponentPrefab = handOppUI.CardPrefab;
+            
+            if (opponentPrefab == null)
+            {
+                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: cardPrefab is null in NewHandOppUI Hub. Cannot create opponent board card. Please assign the prefab in the Inspector.");
+                return;
+            }
+            
+            // [CardFront] Use CardFactory Hub for board card creation (similar to player cards)
+            // CardFactory.CreateBoardCard handles proper initialization and activation
+            GameObject boardCardOpp = CardGame.Factories.CardFactory.CreateBoardCard(
+                card,
+                opponentPrefab.gameObject,
+                dropArea.transform.position
+            );
+            
+            if (boardCardOpp == null)
+            {
+                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: Failed to instantiate opponent board card.");
+                return;
+            }
+            
+            // [CardFront] Note: CardFactory.CreateBoardCard now handles:
+            // - Activation of the board card
+            // - Initialization of NewCardUI component
+            // - Setting card reference on CardMoverOpp (Player 2) or CardMover (Player 1)
+            // - Refreshing home position on the mover component
+            
+            // Get CardMoverOpp component (should already be set up by CardFactory)
+            CardMoverOpp cardMoverOpp = boardCardOpp.GetComponent<CardMoverOpp>();
+            if (cardMoverOpp == null)
+            {
+                cardMoverOpp = boardCardOpp.GetComponentInChildren<CardMoverOpp>();
+            }
+            
+            if (cardMoverOpp == null)
+            {
+                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: Opponent board card prefab missing CardMoverOpp component. Cannot drag opponent board card. Please ensure the prefab has a CardMoverOpp component.");
+                Destroy(boardCardOpp);
+                return;
+            }
+            
+            // [CardFront] Safety check: Ensure card reference is set (CardFactory should have done this)
+            if (cardMoverOpp.Card == null)
+            {
+                Debug.LogWarning("[NewCardUI] PlaceOpponentCardOnBoard: CardMoverOpp card reference is null (CardFactory should have set it). Setting it now as fallback.");
+                cardMoverOpp.SetCard(card);
+                cardMoverOpp.RefreshHomePosition();
+            }
+            
+            // [CardFront] Trigger opponent drop through CardDropArea1 (uses event channel)
+            // This will handle: playing card, placement, battles via Hub connections
+            Debug.Log($"[NewCardUI] PlaceOpponentCardOnBoard: Triggering opponent drop for card '{card.Data.cardName}' on {dropArea.name}");
+            dropArea.OnCardDropOpp(cardMoverOpp);
+            
+            // [CardFront] Remove from hand UI via event channel (cluster cleanup)
+            // NewHandOppUI will handle removal when OnCardPlayed event fires
+            Debug.Log($"[NewCardUI] PlaceOpponentCardOnBoard: Opponent card '{card.Data.cardName}' placement complete!");
+        }
+        
         public void RefreshVisuals()
         {
             UpdateVisuals();
@@ -1213,13 +1649,35 @@ namespace CardGame.UI
         /// </summary>
         private bool IsOpponentCard()
         {
-            // Check GameObject name for "Opp" marker
+            // [CardFront] CRITICAL: Check for CardMoverOpp component FIRST (most reliable for board cards)
+            // Board cards don't have "Opp" in their name (renamed to card name), so component check is essential
+            CardMoverOpp cardMoverOpp = GetComponent<CardMoverOpp>();
+            if (cardMoverOpp != null)
+            {
+                return true; // Opponent card (has CardMoverOpp)
+            }
+            
+            // Check in children (for nested components)
+            cardMoverOpp = GetComponentInChildren<CardMoverOpp>();
+            if (cardMoverOpp != null)
+            {
+                return true; // Opponent card (has CardMoverOpp in children)
+            }
+            
+            // Check in parents (for nested components)
+            cardMoverOpp = GetComponentInParent<CardMoverOpp>();
+            if (cardMoverOpp != null)
+            {
+                return true; // Opponent card (has CardMoverOpp in parent)
+            }
+            
+            // Check GameObject name for "Opp" marker (works for hand cards)
             if (gameObject.name.Contains("Opp") || gameObject.name.Contains("NewCardPrefabOpp"))
             {
                 return true;
             }
             
-            // Check parent hierarchy for opponent containers
+            // Check parent hierarchy for opponent containers (works for hand cards)
             Transform parent = transform.parent;
             while (parent != null)
             {
@@ -1231,7 +1689,7 @@ namespace CardGame.UI
             }
             
             // [CardFront] Use Hub connection instead of FindObjectOfType
-            // Check if card is in opponent hand UI via parent Hub
+            // Check if card is in opponent hand UI via parent Hub (works for hand cards)
             CardGame.UI.NewHandOppUI handOppUI = GetComponentInParent<CardGame.UI.NewHandOppUI>();
             if (handOppUI != null)
             {

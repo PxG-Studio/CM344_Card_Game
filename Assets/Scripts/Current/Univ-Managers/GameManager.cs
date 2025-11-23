@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Linq;
 using CardGame.Core;
+using CardGame.UI;
 
 namespace CardGame.Managers
 {
@@ -24,6 +25,20 @@ namespace CardGame.Managers
         public int MaxHandSize => maxHandSize;
         public int CardsDrawnPerTurn => cardsDrawnPerTurn;
         public int StartingHandSize => startingHandSize;
+
+        /// <summary>
+        /// Check if Player 2 (Opponent) can interact based on current turn state.
+        /// Uses FateFlowController to determine if it's Player 2's turn.
+        /// </summary>
+        public bool CanPlayer2Interact()
+        {
+            if (FateFlowController.Instance != null)
+            {
+                return FateFlowController.Instance.CanAct(FateSide.Opponent);
+            }
+            // Fallback: check if game state allows interaction
+            return currentState == GameState.PlayerTurn || currentState == GameState.Preparing;
+        }
         
         // Events
         public System.Action<GameState> OnGameStateChanged;
@@ -125,13 +140,191 @@ namespace CardGame.Managers
                 GameStatsTracker.Instance.ResetCurrentGameStats();
             }
             
-            // Initialization will be handled by other managers
-            Invoke(nameof(StartFirstTurn), 1f);
+            // Reset coin toss for new game (rematch)
+            if (CoinTossManager.Instance != null)
+            {
+                CoinTossManager.Instance.ResetCoinToss();
+            }
+            
+            // Reset FateFlowController to default (will be set by coin toss)
+            if (FateFlowController.Instance != null)
+            {
+                FateFlowController.Instance.SetFate(FateSide.Player); // Default, will be overridden
+            }
+            
+            // Perform coin toss and wait for result before starting game
+            StartCoroutine(PerformCoinTossAndStartGame());
+        }
+        
+        /// <summary>
+        /// Performs coin toss and starts the game after result is determined.
+        /// </summary>
+        private System.Collections.IEnumerator PerformCoinTossAndStartGame()
+        {
+            // Wait for coin toss manager to be ready
+            CoinTossManager coinTossManager = CoinTossManager.Instance;
+            if (coinTossManager == null)
+            {
+                Debug.LogWarning("[GameManager] CoinTossManager not found. Creating...");
+                GameObject coinTossObj = new GameObject("CoinTossManager");
+                coinTossObj.AddComponent<CoinTossManager>();
+                coinTossManager = CoinTossManager.Instance;
+                yield return new WaitForEndOfFrame();
+            }
+            
+            // Wait for CoinTossUI to be ready
+            // Search inactive objects too (panel starts inactive)
+            CoinTossUI coinTossUI = FindObjectOfType<CoinTossUI>(true);
+            int retryCount = 0;
+            int maxRetries = 10; // Wait up to 5 seconds (10 * 0.5s)
+            
+            while (coinTossUI == null && retryCount < maxRetries)
+            {
+                Debug.LogWarning($"[GameManager] CoinTossUI not found (attempt {retryCount + 1}/{maxRetries}). Waiting for HUDSetup to create it...");
+                yield return new WaitForSeconds(0.5f);
+                coinTossUI = FindObjectOfType<CoinTossUI>(true); // Search inactive objects too
+                retryCount++;
+            }
+            
+            if (coinTossUI == null)
+            {
+                Debug.LogError("[GameManager] CoinTossUI still not found after waiting. HUDSetup may not have created it.");
+            }
+            
+            // Trigger coin toss animation through UI
+            if (coinTossUI != null)
+            {
+                // Start the coin toss from GameManager (always active) to ensure coroutine can start
+                StartCoroutine(StartCoinTossFromManager(coinTossUI));
+                Debug.Log("[GameManager] Coin toss animation started via CoinTossUI.");
+            }
+            else
+            {
+                // Fallback: Perform coin toss without UI
+                Debug.LogWarning("[GameManager] CoinTossUI not found. Performing coin toss without animation.");
+                FateSide fallbackStartingSide = coinTossManager.PerformCoinToss();
+                if (FateFlowController.Instance != null)
+                {
+                    FateFlowController.Instance.SetFate(fallbackStartingSide);
+                }
+                StartFirstTurn();
+                yield break;
+            }
+            
+            // Wait for coin toss to complete
+            float waitTime = 0f;
+            float maxWaitTime = 10f; // Maximum wait time for coin toss
+            
+            while (!coinTossManager.IsComplete && waitTime < maxWaitTime)
+            {
+                yield return new WaitForSeconds(0.1f);
+                waitTime += 0.1f;
+            }
+            
+            if (!coinTossManager.IsComplete)
+            {
+                Debug.LogWarning("[GameManager] Coin toss did not complete in time. Using default starting player.");
+            }
+            
+            // Get coin toss result and set starting player
+            FateSide startingSide = coinTossManager.GetStartingPlayer();
+            if (FateFlowController.Instance != null)
+            {
+                FateFlowController.Instance.SetFate(startingSide);
+                Debug.Log($"[GameManager] Coin toss result: {startingSide}. Starting player set in FateFlowController.");
+            }
+            
+            // Wait for coin toss UI animation to complete (additional buffer)
+            yield return new WaitForSeconds(1f);
+        }
+        
+        /// <summary>
+        /// Starts the coin toss from GameManager (always active) to ensure coroutines can run.
+        /// </summary>
+        private System.Collections.IEnumerator StartCoinTossFromManager(CoinTossUI coinTossUI)
+        {
+            if (coinTossUI == null)
+            {
+                Debug.LogError("[GameManager] CoinTossUI is null! Cannot start coin toss.");
+                yield break;
+            }
+            
+            // StartCoinToss() activates the GameObject, but activation isn't immediate
+            // We need to wait for Unity to process the activation before starting coroutines
+            coinTossUI.StartCoinToss();
+            
+            // Wait for end of frame to ensure GameObject activation is processed
+            yield return new WaitForEndOfFrame();
+            
+            // Additional wait to ensure GameObject is fully active
+            yield return null;
+            
+            // Verify GameObject is active before starting animation
+            if (coinTossUI == null || coinTossUI.gameObject == null)
+            {
+                Debug.LogError("[GameManager] CoinTossUI or its GameObject became null after activation!");
+                yield break;
+            }
+            
+            GameObject coinTossObj = coinTossUI.gameObject;
+            bool activeSelf = coinTossObj.activeSelf;
+            bool activeInHierarchy = coinTossObj.activeInHierarchy;
+            
+            Debug.Log($"[GameManager] CoinTossUI GameObject state after activation - activeSelf: {activeSelf}, activeInHierarchy: {activeInHierarchy}, enabled: {coinTossUI.enabled}");
+            
+            // Now start the animation on the active GameObject
+            if (activeSelf && coinTossUI.enabled)
+            {
+                coinTossUI.StartCoinTossAnimation();
+                Debug.Log("[GameManager] Coin toss animation started successfully.");
+            }
+            else
+            {
+                // If still not active, try activating again and wait
+                if (!activeSelf)
+                {
+                    Debug.LogWarning("[GameManager] CoinTossUI GameObject is still inactive. Activating again and waiting...");
+                    coinTossObj.SetActive(true);
+                    yield return new WaitForEndOfFrame();
+                    yield return null;
+                    
+                    if (coinTossObj.activeSelf && coinTossUI.enabled)
+                    {
+                        coinTossUI.StartCoinTossAnimation();
+                        Debug.Log("[GameManager] Coin toss animation started after second activation.");
+                    }
+                    else
+                    {
+                        Debug.LogError($"[GameManager] Failed to activate CoinTossUI GameObject! activeSelf: {coinTossObj.activeSelf}, enabled: {coinTossUI.enabled}");
+                    }
+                }
+                else
+                {
+                    Debug.LogError($"[GameManager] CoinTossUI GameObject activation failed! activeSelf: {activeSelf}, activeInHierarchy: {activeInHierarchy}, enabled: {coinTossUI.enabled}");
+                }
+            }
         }
         
         private void StartFirstTurn()
         {
-            ChangeState(GameState.PlayerTurn);
+            // Use FateFlowController to determine starting player
+            if (FateFlowController.Instance != null)
+            {
+                FateSide startingSide = FateFlowController.Instance.CurrentFate;
+                if (startingSide == FateSide.Player)
+                {
+                    ChangeState(GameState.PlayerTurn);
+                }
+                else
+                {
+                    ChangeState(GameState.EnemyTurn);
+                }
+            }
+            else
+            {
+                // Fallback: default to Player 1
+                ChangeState(GameState.PlayerTurn);
+            }
         }
         
         private void StartPlayerTurn()
@@ -235,6 +428,19 @@ namespace CardGame.Managers
             
             // Clear hands - need to remove hand UI cards
             ClearHands();
+            
+            // Reset coin toss for rematch
+            if (CoinTossManager.Instance != null)
+            {
+                CoinTossManager.Instance.ResetCoinToss();
+            }
+            
+            // Show coin toss UI again for rematch
+            CardGame.UI.CoinTossUI coinTossUI = FindObjectOfType<CardGame.UI.CoinTossUI>(true); // Search inactive objects too
+            if (coinTossUI != null)
+            {
+                coinTossUI.Show();
+            }
             
             // Return to preparing state (will trigger normal game flow including initial card draw)
             // Note: PrepareGame() will be called by ChangeState, which will handle final reset

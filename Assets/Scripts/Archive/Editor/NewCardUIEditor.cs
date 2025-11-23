@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 using CardGame.UI;
@@ -321,4 +322,5 @@ namespace CardGame.Editor
         }
     }
 }
+#endif
 

@@ -79,6 +79,7 @@ namespace CardGame.UI
             // Ensure supporting managers & board visuals exist
             EnsureGameManagers();
             EnsureFateFlowController();
+            EnsureCoinTossManager();
             EnsureEventSystem();
             CleanupMissingScripts();
             SetupBoardBackdrop();
@@ -89,7 +90,32 @@ namespace CardGame.UI
             // Setup Game End UI
             SetupGameEndUI(hudCanvas.transform);
             
+            // Setup Coin Toss UI
+            SetupCoinTossUI(hudCanvas.transform);
+            
             Debug.Log("HUDSetup: HUD successfully configured!");
+            
+            // After successful HUD setup, automatically start the game
+            if (GameManager.Instance != null)
+            {
+                // Small delay to ensure all systems are ready
+                StartCoroutine(DelayedGameStart());
+            }
+        }
+        
+        /// <summary>
+        /// Delays game start slightly to ensure all systems are initialized.
+        /// </summary>
+        private System.Collections.IEnumerator DelayedGameStart()
+        {
+            yield return new WaitForEndOfFrame(); // Wait for end of frame so all components are registered
+            yield return new WaitForSeconds(0.5f); // Wait for all systems to initialize
+            
+            if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.Menu)
+            {
+                Debug.Log("[HUDSetup] Automatically starting game after HUD initialization.");
+                GameManager.Instance.StartGame();
+            }
         }
         
         /// <summary>
@@ -202,6 +228,17 @@ namespace CardGame.UI
                 GameObject fateObj = new GameObject("FateFlowController");
                 fateObj.AddComponent<FateFlowController>();
                 Debug.Log("HUDSetup: Created FateFlowController");
+            }
+        }
+        
+        private void EnsureCoinTossManager()
+        {
+            CoinTossManager coinTossManager = FindObjectOfType<CoinTossManager>();
+            if (coinTossManager == null)
+            {
+                GameObject coinTossObj = new GameObject("CoinTossManager");
+                coinTossObj.AddComponent<CoinTossManager>();
+                Debug.Log("HUDSetup: Created CoinTossManager");
             }
         }
         
@@ -1151,6 +1188,195 @@ namespace CardGame.UI
             textRect.anchoredPosition = Vector2.zero;
             
             return btnObj;
+        }
+        
+        /// <summary>
+        /// Setup the Coin Toss UI panel for determining starting player.
+        /// </summary>
+        private void SetupCoinTossUI(Transform hudRoot)
+        {
+            if (hudRoot == null)
+            {
+                Debug.LogError("HUDSetup: SetupCoinTossUI called with null hudRoot!");
+                return;
+            }
+            
+            // Verify parent is active (inactive parents can hide children in hierarchy)
+            if (!hudRoot.gameObject.activeInHierarchy)
+            {
+                Debug.LogWarning($"HUDSetup: HUD root '{hudRoot.name}' is inactive. Activating to ensure CoinTossPanel is visible.");
+                hudRoot.gameObject.SetActive(true);
+            }
+            
+            // Check if CoinTossUI already exists
+            CoinTossUI existingUI = hudRoot.GetComponentInChildren<CoinTossUI>(true);
+            if (existingUI != null)
+            {
+                Debug.Log($"HUDSetup: CoinTossUI already exists on '{existingUI.gameObject.name}'. Skipping creation.");
+                return;
+            }
+            
+            Debug.Log($"HUDSetup: Creating CoinTossPanel under '{hudRoot.name}' (active: {hudRoot.gameObject.activeSelf}, inHierarchy: {hudRoot.gameObject.activeInHierarchy})");
+            
+            // Create coin toss panel
+            GameObject coinTossPanel = new GameObject("CoinTossPanel");
+            coinTossPanel.transform.SetParent(hudRoot, false);
+            coinTossPanel.layer = 5; // UI layer
+            coinTossPanel.SetActive(false); // Start inactive - will be shown when coin toss starts
+            
+            // Mark as DontDestroyOnLoad to ensure it persists (if parent does)
+            // Note: This only works if parent is in DontDestroyOnLoad, but we'll ensure it exists
+            Debug.Log($"HUDSetup: Created CoinTossPanel GameObject '{coinTossPanel.name}' (InstanceID: {coinTossPanel.GetInstanceID()}) under '{hudRoot.name}'");
+            
+            RectTransform panelRect = coinTossPanel.AddComponent<RectTransform>();
+            panelRect.anchorMin = Vector2.zero;
+            panelRect.anchorMax = Vector2.one;
+            panelRect.sizeDelta = Vector2.zero;
+            panelRect.anchoredPosition = Vector2.zero;
+            
+            // Add semi-transparent background
+            UnityEngine.UI.Image bgImage = coinTossPanel.AddComponent<UnityEngine.UI.Image>();
+            bgImage.color = new Color(0f, 0f, 0f, 0.8f);
+            
+            // Create content panel (centered)
+            GameObject contentPanel = new GameObject("ContentPanel");
+            contentPanel.transform.SetParent(coinTossPanel.transform, false);
+            
+            RectTransform contentRect = contentPanel.AddComponent<RectTransform>();
+            contentRect.anchorMin = new Vector2(0.5f, 0.5f);
+            contentRect.anchorMax = new Vector2(0.5f, 0.5f);
+            contentRect.pivot = new Vector2(0.5f, 0.5f);
+            contentRect.sizeDelta = new Vector2(600, 500);
+            contentRect.anchoredPosition = Vector2.zero;
+            
+            // Add background to content panel
+            UnityEngine.UI.Image contentBg = contentPanel.AddComponent<UnityEngine.UI.Image>();
+            contentBg.color = new Color(0.15f, 0.15f, 0.2f, 0.95f);
+            
+            // Add vertical layout
+            UnityEngine.UI.VerticalLayoutGroup layout = contentPanel.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
+            layout.padding = new RectOffset(40, 40, 40, 40);
+            layout.spacing = 30;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = false;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            
+            // Create title text
+            GameObject titleTextObj = new GameObject("TitleText");
+            titleTextObj.transform.SetParent(contentPanel.transform, false);
+            TextMeshProUGUI titleText = titleTextObj.AddComponent<TextMeshProUGUI>();
+            titleText.text = "COIN TOSS";
+            titleText.fontSize = 48;
+            titleText.fontStyle = FontStyles.Bold;
+            titleText.alignment = TextAlignmentOptions.Center;
+            titleText.color = Color.white;
+            RectTransform titleRect = titleTextObj.GetComponent<RectTransform>();
+            titleRect.sizeDelta = new Vector2(0, 60);
+            
+            // Create coin image container
+            GameObject coinContainer = new GameObject("CoinContainer");
+            coinContainer.transform.SetParent(contentPanel.transform, false);
+            RectTransform coinRect = coinContainer.AddComponent<RectTransform>();
+            coinRect.sizeDelta = new Vector2(200, 200);
+            
+            // Create coin image
+            GameObject coinImageObj = new GameObject("CoinImage");
+            coinImageObj.transform.SetParent(coinContainer.transform, false);
+            RectTransform coinImageRect = coinImageObj.AddComponent<RectTransform>();
+            coinImageRect.anchorMin = new Vector2(0.5f, 0.5f);
+            coinImageRect.anchorMax = new Vector2(0.5f, 0.5f);
+            coinImageRect.pivot = new Vector2(0.5f, 0.5f);
+            coinImageRect.sizeDelta = new Vector2(180, 180);
+            coinImageRect.anchoredPosition = Vector2.zero;
+            
+            UnityEngine.UI.Image coinImage = coinImageObj.AddComponent<UnityEngine.UI.Image>();
+            coinImage.color = Color.white;
+            // Note: User should assign heads/tails sprites in Unity Editor
+            
+            // Create labels container (horizontal)
+            GameObject labelsContainer = new GameObject("LabelsContainer");
+            labelsContainer.transform.SetParent(contentPanel.transform, false);
+            RectTransform labelsRect = labelsContainer.AddComponent<RectTransform>();
+            labelsRect.sizeDelta = new Vector2(0, 50);
+            
+            UnityEngine.UI.HorizontalLayoutGroup labelsLayout = labelsContainer.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
+            labelsLayout.spacing = 100;
+            labelsLayout.childAlignment = TextAnchor.MiddleCenter;
+            labelsLayout.childControlWidth = false;
+            labelsLayout.childControlHeight = false;
+            labelsLayout.childForceExpandWidth = false;
+            labelsLayout.childForceExpandHeight = false;
+            
+            // Create Heads label
+            GameObject headsLabelObj = new GameObject("HeadsLabel");
+            headsLabelObj.transform.SetParent(labelsContainer.transform, false);
+            TextMeshProUGUI headsLabel = headsLabelObj.AddComponent<TextMeshProUGUI>();
+            headsLabel.text = "HEADS";
+            headsLabel.fontSize = 32;
+            headsLabel.fontStyle = FontStyles.Bold;
+            headsLabel.alignment = TextAlignmentOptions.Center;
+            headsLabel.color = Color.yellow;
+            RectTransform headsRect = headsLabelObj.GetComponent<RectTransform>();
+            headsRect.sizeDelta = new Vector2(100, 40);
+            
+            // Create Tails label
+            GameObject tailsLabelObj = new GameObject("TailsLabel");
+            tailsLabelObj.transform.SetParent(labelsContainer.transform, false);
+            TextMeshProUGUI tailsLabel = tailsLabelObj.AddComponent<TextMeshProUGUI>();
+            tailsLabel.text = "TAILS";
+            tailsLabel.fontSize = 32;
+            tailsLabel.fontStyle = FontStyles.Bold;
+            tailsLabel.alignment = TextAlignmentOptions.Center;
+            tailsLabel.color = Color.white;
+            RectTransform tailsRect = tailsLabelObj.GetComponent<RectTransform>();
+            tailsRect.sizeDelta = new Vector2(100, 40);
+            
+            // Create result text
+            GameObject resultTextObj = new GameObject("ResultText");
+            resultTextObj.transform.SetParent(contentPanel.transform, false);
+            TextMeshProUGUI resultText = resultTextObj.AddComponent<TextMeshProUGUI>();
+            resultText.text = "";
+            resultText.fontSize = 36;
+            resultText.fontStyle = FontStyles.Bold;
+            resultText.alignment = TextAlignmentOptions.Center;
+            resultText.color = Color.white;
+            RectTransform resultRect = resultTextObj.GetComponent<RectTransform>();
+            resultRect.sizeDelta = new Vector2(0, 80);
+            resultTextObj.SetActive(false); // Hidden until result
+            
+            // Create continue button
+            GameObject continueBtnObj = CreateButton(contentPanel.transform, "ContinueButton", "Continue");
+            continueBtnObj.SetActive(false); // Hidden until result
+            
+            // Add CoinTossUI component
+            CoinTossUI coinTossUI = coinTossPanel.AddComponent<CoinTossUI>();
+            
+            // Wire up references using reflection
+            System.Type coinTossUIType = typeof(CoinTossUI);
+            SetPrivateField(coinTossUI, coinTossUIType, "coinTossPanel", coinTossPanel);
+            SetPrivateField(coinTossUI, coinTossUIType, "resultText", resultText);
+            SetPrivateField(coinTossUI, coinTossUIType, "headsLabel", headsLabel);
+            SetPrivateField(coinTossUI, coinTossUIType, "tailsLabel", tailsLabel);
+            SetPrivateField(coinTossUI, coinTossUIType, "coinImage", coinImage);
+            SetPrivateField(coinTossUI, coinTossUIType, "continueButton", continueBtnObj.GetComponent<UnityEngine.UI.Button>());
+            
+            // Verify the panel was created and parented correctly
+            if (coinTossPanel.transform.parent != hudRoot)
+            {
+                Debug.LogError($"HUDSetup: CoinTossPanel parent mismatch! Expected '{hudRoot.name}', got '{coinTossPanel.transform.parent?.name}'");
+            }
+            
+            // Verify the GameObject exists in the scene
+            if (coinTossPanel == null || coinTossPanel.GetInstanceID() == 0)
+            {
+                Debug.LogError("HUDSetup: CoinTossPanel GameObject is invalid after creation!");
+            }
+            else
+            {
+                Debug.Log($"HUDSetup: ✓ CoinTossUI panel created successfully on '{coinTossPanel.name}' (InstanceID: {coinTossUI.GetInstanceID()}, Parent: '{coinTossPanel.transform.parent?.name}', Active: {coinTossPanel.activeSelf})");
+            }
         }
         
         /// <summary>

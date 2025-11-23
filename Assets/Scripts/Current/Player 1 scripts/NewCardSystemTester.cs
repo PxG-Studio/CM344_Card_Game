@@ -37,10 +37,64 @@ namespace CardGame.Testing
                 
                 if (autoDrawCardsOnStart)
                 {
-                    // Small delay to ensure everything is set up
-                    Invoke(nameof(DrawInitialCards), 0.1f);
+                    // Wait for coin toss to complete before drawing cards
+                    // GameManager will trigger card drawing after coin toss completes
+                    StartCoroutine(WaitForCoinTossThenDrawCards());
                 }
             }
+        }
+        
+        private System.Collections.IEnumerator WaitForCoinTossThenDrawCards()
+        {
+            // Wait for all required managers to be initialized
+            yield return new WaitUntil(() => CoinTossManager.Instance != null);
+            yield return new WaitUntil(() => GameManager.Instance != null);
+            yield return new WaitUntil(() => FindObjectOfType<HUDManager>() != null);
+            
+            // Additional frame to allow canvases to initialize
+            yield return null;
+            yield return null;
+            
+            // Get instance with null check - it may become null even after WaitUntil
+            CoinTossManager coinTossManager = CoinTossManager.Instance;
+            
+            if (coinTossManager == null)
+            {
+                Debug.LogWarning("[NewCardSystemTester] CoinTossManager not found after wait. Proceeding with card draw anyway.");
+                yield return new WaitForSeconds(0.5f);
+                DrawInitialCards();
+                yield break;
+            }
+            
+            // Wait for coin toss to complete
+            float waitTime = 0f;
+            float maxWaitTime = 15f; // Increased timeout to account for selection step
+            
+            while (waitTime < maxWaitTime)
+            {
+                // Re-check instance each iteration in case it was destroyed
+                coinTossManager = CoinTossManager.Instance;
+                
+                if (coinTossManager == null)
+                {
+                    Debug.LogWarning("[NewCardSystemTester] CoinTossManager became null during wait. Proceeding with card draw.");
+                    break;
+                }
+                
+                if (coinTossManager.IsComplete)
+                {
+                    break;
+                }
+                
+                yield return new WaitForSeconds(0.1f);
+                waitTime += 0.1f;
+            }
+            
+            // Additional delay to ensure game is ready
+            yield return new WaitForSeconds(0.5f);
+            
+            // Now draw cards
+            DrawInitialCards();
         }
         
         public void InitializeDeck()

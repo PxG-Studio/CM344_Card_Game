@@ -24,10 +24,18 @@ namespace CardGame.UI
         private List<NewCardUI> cardUIList = new List<NewCardUI>();
         private NewDeckManagerOpp deckManager;
         
+        // [CardFront] Static cache for prefab reference (fallback if serialized reference is lost)
+        private static NewCardUI staticCardPrefab;
+        
         /// <summary>
         /// [CardFront] Hub property: Exposes deck manager for Hub connections
         /// </summary>
         public NewDeckManagerOpp DeckManager => deckManager;
+        
+        /// <summary>
+        /// [CardFront] Hub property: Exposes card prefab for Hub connections
+        /// </summary>
+        public NewCardUI CardPrefab => cardPrefab;
         
         /// <summary>
         /// Gets the card associated with a specific card UI instance.
@@ -108,6 +116,30 @@ namespace CardGame.UI
             return null;
         }
         
+        private void Awake()
+        {
+            // [CardFront] Cache prefab reference in static variable as fallback
+            if (cardPrefab != null && staticCardPrefab == null)
+            {
+                staticCardPrefab = cardPrefab;
+                Debug.Log("[NewHandOppUI] Cached cardPrefab reference in static variable");
+            }
+            
+            // [CardFront] Restore prefab reference from static cache if lost
+            if (cardPrefab == null && staticCardPrefab != null)
+            {
+                cardPrefab = staticCardPrefab;
+                Debug.Log("[NewHandOppUI] Restored cardPrefab reference from static cache (reference was lost during rematch)");
+            }
+            
+            // Ensure cardContainer is assigned
+            if (cardContainer == null)
+            {
+                cardContainer = transform;
+                Debug.Log("[NewHandOppUI] Auto-assigned cardContainer to self transform");
+            }
+        }
+        
         private void Start()
         {
             deckManager = FindObjectOfType<NewDeckManagerOpp>();
@@ -155,8 +187,17 @@ namespace CardGame.UI
             
             if (cardPrefab == null)
             {
-                Debug.LogError("NewHandOppUI.AddCardToHand: CardPrefab is not assigned!");
-                return;
+                // [CardFront] Try to restore from static cache
+                if (staticCardPrefab != null)
+                {
+                    cardPrefab = staticCardPrefab;
+                    Debug.Log("[NewHandOppUI] Restored cardPrefab from static cache during AddCardToHand");
+                }
+                else
+                {
+                    Debug.LogError("[NewHandOppUI] AddCardToHand: CardPrefab is null and static cache is also null! Please ensure the prefab is assigned in the Inspector for the NewHandOppUI component.");
+                    return;
+                }
             }
             
             if (cardContainer == null)

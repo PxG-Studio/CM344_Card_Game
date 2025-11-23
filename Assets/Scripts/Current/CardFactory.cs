@@ -44,6 +44,28 @@ namespace CardGame.Factories
             // Instantiate the prefab
             NewCardUI cardUI = Object.Instantiate(prefab, parent);
             
+            // [CardFront] CRITICAL: Ensure cloned card GameObject is ACTIVE
+            // Cloned cards must be active for coroutines and interactions to work
+            // Note: Sometimes Unity instantiates inactive even if prefab is active (known Unity quirk)
+            if (!cardUI.gameObject.activeSelf)
+            {
+                cardUI.gameObject.SetActive(true);
+                // Only log in Editor mode to reduce runtime warning spam
+                #if UNITY_EDITOR
+                Debug.Log($"[CardFactory] Activated cloned card '{cardUI.gameObject.name}' (was instantiated inactive). This is normal if prefab was in scene hierarchy.");
+                #endif
+            }
+            
+            // [CardFront] CRITICAL: Ensure cloned card CanvasGroup is INTERACTIVE
+            // Cards must be interactive to receive drag events and be clickable
+            CanvasGroup cg = cardUI.GetComponent<CanvasGroup>();
+            if (cg == null)
+            {
+                cg = cardUI.gameObject.AddComponent<CanvasGroup>();
+            }
+            cg.interactable = true;
+            cg.blocksRaycasts = true;
+            
             // Set reveal delay BEFORE Initialize() if needed
             if (revealDelay > 0f && cardUI.autoFlipOnReveal)
             {
@@ -86,21 +108,51 @@ namespace CardGame.Factories
             GameObject boardCard = Object.Instantiate(prefab, position, Quaternion.identity);
             boardCard.name = card.Data.cardName;
             
-            // Get or add CardMover component
-            CardMover cardMover = boardCard.GetComponent<CardMover>();
-            if (cardMover == null)
+            // [CardFront] CRITICAL: Ensure board card is active (for visibility and interactions)
+            if (!boardCard.activeSelf)
             {
-                cardMover = boardCard.GetComponentInChildren<CardMover>();
+                boardCard.SetActive(true);
+                // Only log in Editor mode to reduce runtime warning spam
+                #if UNITY_EDITOR
+                Debug.Log($"[CardFactory] Activated board card '{boardCard.name}' (was instantiated inactive). This is normal if prefab was in scene hierarchy.");
+                #endif
             }
             
-            if (cardMover != null)
+            // [CardFront] Support both CardMover (Player 1) and CardMoverOpp (Player 2)
+            // Check for CardMoverOpp first (opponent cards), then CardMover (player cards)
+            CardMoverOpp cardMoverOpp = boardCard.GetComponent<CardMoverOpp>();
+            if (cardMoverOpp == null)
             {
-                cardMover.SetCard(card);
-                cardMover.RefreshHomePosition();
+                cardMoverOpp = boardCard.GetComponentInChildren<CardMoverOpp>();
+            }
+            
+            if (cardMoverOpp != null)
+            {
+                // Opponent card - use CardMoverOpp (Player 2)
+                cardMoverOpp.SetCard(card);
+                cardMoverOpp.RefreshHomePosition();
+                Debug.Log($"[CardFactory] Created board card '{card.Data.cardName}' with CardMoverOpp (opponent card)");
             }
             else
             {
-                Debug.LogWarning($"CardFactory.CreateBoardCard: Board card prefab '{prefab.name}' has no CardMover component. Card may not be draggable.");
+                // Player card - use CardMover (Player 1)
+                CardMover cardMover = boardCard.GetComponent<CardMover>();
+                if (cardMover == null)
+                {
+                    cardMover = boardCard.GetComponentInChildren<CardMover>();
+                }
+                
+                if (cardMover != null)
+                {
+                    cardMover.SetCard(card);
+                    cardMover.RefreshHomePosition();
+                    Debug.Log($"[CardFactory] Created board card '{card.Data.cardName}' with CardMover (player card)");
+                }
+                else
+                {
+                    // Neither component found - log warning
+                    Debug.LogWarning($"[CardFactory] Board card prefab '{prefab.name}' has neither CardMover nor CardMoverOpp component. Card may not be draggable. Please add the appropriate mover component to the prefab.");
+                }
             }
             
             // Get or add NewCardUI component for visuals
