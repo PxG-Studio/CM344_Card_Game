@@ -66,6 +66,39 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
     
     // Track if chains are in progress
     private int activeChainCount = 0;
+    
+    // [CardFront] Game statistics tracking (static to track across all instances)
+    private static int gameCardsPlayed = 0;
+    private static int gameCapturesMade = 0;
+    private static int gameLongestChain = 0;
+    private static int currentChainLength = 0;
+    
+    /// <summary>
+    /// Gets the number of cards played this game
+    /// </summary>
+    public static int GetCardsPlayed() => gameCardsPlayed;
+    
+    /// <summary>
+    /// Gets the number of captures made this game
+    /// </summary>
+    public static int GetCapturesMade() => gameCapturesMade;
+    
+    /// <summary>
+    /// Gets the longest chain capture length this game
+    /// </summary>
+    public static int GetLongestChain() => gameLongestChain;
+    
+    /// <summary>
+    /// Resets game statistics (called at start of new game)
+    /// </summary>
+    public static void ResetGameStatistics()
+    {
+        gameCardsPlayed = 0;
+        gameCapturesMade = 0;
+        gameLongestChain = 0;
+        currentChainLength = 0;
+        Debug.Log("[CardDropArea1] Game statistics reset");
+    }
 
     private bool CanCardAct(FateSide side)
     {
@@ -326,11 +359,21 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                 deckManager.PlayCard(card);
                 Debug.Log($"Card {card.Data.cardName} played from drop area and placed on board");
                 
+                // [CardFront] Track cards played for statistics
+                gameCardsPlayed++;
+                
                 cardMover.SetPlayed(true);
                 cardsPlayedThisTurn.Add(cardMover.gameObject);
                 occupyingCard = cardMover.gameObject;
                 
                 CheckBoardOccupancy();
+                
+                // [CardFront] Check if game should end (all cards played - both players have no cards left)
+                // Delay check by one frame to ensure hand removal events have fully propagated
+                if (GameEndManager.Instance != null)
+                {
+                    StartCoroutine(DelayedGameEndCheck());
+                }
                 
                 if (enableCardBattles)
                 {
@@ -651,11 +694,22 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
                 deckManagerOpp.PlayCard(card);
                 Debug.Log($"Card {card.Data.cardName} played from drop area and placed on board");
                 
+                // [CardFront] Track cards played for statistics
+                gameCardsPlayed++;
+                Debug.Log($"[CardDropArea1] Cards played count (opponent): {gameCardsPlayed}");
+                
                 cardMoverOpp.SetPlayed(true);
                 cardsPlayedThisTurn.Add(cardMoverOpp.gameObject);
                 occupyingCard = cardMoverOpp.gameObject;
                 
                 CheckBoardOccupancy();
+                
+                // [CardFront] Check if game should end (all cards played - both players have no cards left)
+                // Delay check by one frame to ensure hand removal events have fully propagated
+                if (GameEndManager.Instance != null)
+                {
+                    StartCoroutine(DelayedGameEndCheck());
+                }
                 
                 if (enableCardBattles)
                 {
@@ -981,6 +1035,13 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         flipAnim.CaptureCard(captureColor, direction);
         Debug.Log($"✅ Captured card {card.Data.cardName} with border color {captureColor} (flip direction: {direction})");
         
+        // [CardFront] Track captures for statistics (only if it's an actual capture, not initial placement)
+        if (captureColor != Color.white && captureColor != Color.clear)
+        {
+            gameCapturesMade++;
+            Debug.Log($"[CardDropArea1] Captures made count: {gameCapturesMade}");
+        }
+        
         // Notify ScoreManager of the capture
         if (scoreManager != null)
         {
@@ -1103,6 +1164,13 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         // Sort by distance from source (closest first for ripple effect)
         flipTargets.Sort((a, b) => a.distance.CompareTo(b.distance));
         
+        // [CardFront] Track chain length for statistics
+        currentChainLength = flipTargets.Count;
+        if (currentChainLength > gameLongestChain)
+        {
+            gameLongestChain = currentChainLength;
+        }
+        
         if (debugBattles)
         {
             Debug.Log($"ExecuteRippleFlips: Starting ripple effect with {flipTargets.Count} cards. Base delay: {rippleBaseDelay}s, Delay per unit: {rippleDelayPerUnit}s");
@@ -1187,15 +1255,14 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
             Debug.Log($"Board occupancy: {occupiedSpaces}/{totalSpaces} spaces filled");
         }
         
-        // Check if board is full
-        if (occupiedSpaces >= totalSpaces && totalSpaces > 0)
+        // [CardFront] Log board occupancy (for debugging) - game ends when all cards are played, not when board is full
+        if (debugBattles && occupiedSpaces >= totalSpaces && totalSpaces > 0)
         {
-            Debug.Log("Board is full! Last card has been placed.");
-            if (gameEndManager != null)
-            {
-                gameEndManager.CheckGameEnd();
-            }
+            Debug.Log($"[CardDropArea1] Board is full! Occupied: {occupiedSpaces}/{totalSpaces} (Note: Game ends when all cards are played, not when board is full)");
         }
+        
+        // [CardFront] Game end is now checked after each card is played in OnCardDrop/OnCardDropOpp
+        // Game ends when both players have no cards left (all 10 cards played), not when board is full (16/16)
     }
     
     /// <summary>
@@ -1325,6 +1392,13 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         // Sort by distance
         flipTargets.Sort((a, b) => a.distance.CompareTo(b.distance));
         
+        // [CardFront] Track chain length for statistics
+        currentChainLength = flipTargets.Count;
+        if (currentChainLength > gameLongestChain)
+        {
+            gameLongestChain = currentChainLength;
+        }
+        
         if (debugBattles)
         {
             Debug.Log($"ExecuteChainCaptureRipple: Starting chain capture ripple with {flipTargets.Count} cards");
@@ -1370,6 +1444,20 @@ public class CardDropArea1 : MonoBehaviour, ICardDropArea
         if (debugBattles)
         {
             Debug.Log($"ExecuteChainCaptureRipple: Chain capture ripple complete!");
+        }
+    }
+    
+    /// <summary>
+    /// [CardFront] Delays game end check by one frame to ensure hand removal events have fully propagated
+    /// </summary>
+    private IEnumerator DelayedGameEndCheck()
+    {
+        // Wait one frame to ensure all event handlers have finished
+        yield return null;
+        
+        if (GameEndManager.Instance != null)
+        {
+            GameEndManager.Instance.CheckGameEnd();
         }
     }
 }

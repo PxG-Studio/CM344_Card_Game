@@ -122,6 +122,15 @@ namespace CardGame.UI
                 managerObj.AddComponent<GameEndManager>();
                 Debug.Log("HUDSetup: Created GameEndManager");
             }
+            
+            // Check for GameStatsTracker
+            var gameStatsTracker = FindObjectOfType<GameStatsTracker>();
+            if (gameStatsTracker == null)
+            {
+                GameObject statsObj = new GameObject("GameStatsTracker");
+                statsObj.AddComponent<GameStatsTracker>();
+                Debug.Log("HUDSetup: Created GameStatsTracker");
+            }
         }
         
         /// <summary>
@@ -769,11 +778,13 @@ namespace CardGame.UI
             GameEndUI existingUI = hudRoot.GetComponentInChildren<GameEndUI>(true);
             if (existingUI != null)
             {
-                Debug.Log("HUDSetup: GameEndUI already exists");
+                Debug.Log("HUDSetup: GameEndUI already exists. Checking for missing UI elements...");
+                // [CardFront] Use helper method to ensure all required elements exist
+                EnsureGameEndUIElements(existingUI);
                 return;
             }
             
-            // Create Game End Panel
+            // Create new Game End Panel from scratch
             GameObject endPanel = new GameObject("GameEndPanel");
             endPanel.transform.SetParent(hudRoot, false);
             endPanel.layer = 5; // UI layer
@@ -796,7 +807,7 @@ namespace CardGame.UI
             contentRect.anchorMin = new Vector2(0.5f, 0.5f);
             contentRect.anchorMax = new Vector2(0.5f, 0.5f);
             contentRect.pivot = new Vector2(0.5f, 0.5f);
-            contentRect.sizeDelta = new Vector2(600, 400);
+            contentRect.sizeDelta = new Vector2(700, 600); // [CardFront] Larger panel for statistics
             contentRect.anchoredPosition = Vector2.zero;
             
             // Add background to content panel
@@ -819,32 +830,71 @@ namespace CardGame.UI
             
             TextMeshProUGUI winnerText = winnerTextObj.AddComponent<TextMeshProUGUI>();
             winnerText.text = "PLAYER WINS!";
-            winnerText.fontSize = 48;
+            winnerText.fontSize = 72; // [CardFront] Larger winner text for better visibility
             winnerText.fontStyle = FontStyles.Bold;
             winnerText.alignment = TextAlignmentOptions.Center;
             winnerText.color = Color.white;
             
             RectTransform winnerRect = winnerTextObj.GetComponent<RectTransform>();
-            winnerRect.sizeDelta = new Vector2(0, 80);
+            winnerRect.sizeDelta = new Vector2(0, 100);
             
-            // Create Final Score Text
+            // Create Contextual Message Text
+            GameObject contextualMsgObj = new GameObject("ContextualMessageText");
+            contextualMsgObj.transform.SetParent(contentPanel.transform, false);
+            
+            TextMeshProUGUI contextualMsgText = contextualMsgObj.AddComponent<TextMeshProUGUI>();
+            contextualMsgText.text = "Good Game!";
+            contextualMsgText.fontSize = 24;
+            contextualMsgText.alignment = TextAlignmentOptions.Center;
+            contextualMsgText.color = new Color(0.95f, 0.95f, 0.8f, 1f);
+            
+            RectTransform contextualMsgRect = contextualMsgObj.GetComponent<RectTransform>();
+            contextualMsgRect.sizeDelta = new Vector2(0, 40);
+            
+            // Create Final Score Text (with margin)
             GameObject scoreTextObj = new GameObject("FinalScoreText");
             scoreTextObj.transform.SetParent(contentPanel.transform, false);
             
             TextMeshProUGUI scoreText = scoreTextObj.AddComponent<TextMeshProUGUI>();
-            scoreText.text = "Final Score\nPlayer 1: 0  |  Player 2: 0";
+            scoreText.text = "Final Score\nPlayer 1: 0  |  Player 2: 0\nMargin: 0";
             scoreText.fontSize = 28;
             scoreText.alignment = TextAlignmentOptions.Center;
             scoreText.color = new Color(0.9f, 0.9f, 0.9f, 1f);
             
             RectTransform scoreRect = scoreTextObj.GetComponent<RectTransform>();
-            scoreRect.sizeDelta = new Vector2(0, 80);
+            scoreRect.sizeDelta = new Vector2(0, 100);
             
-            // Create Restart Button
-            GameObject restartBtnObj = CreateButton(contentPanel.transform, "RestartButton", "Play Again");
+            // Create Statistics Text
+            GameObject statisticsTextObj = new GameObject("StatisticsText");
+            statisticsTextObj.transform.SetParent(contentPanel.transform, false);
+            
+            TextMeshProUGUI statisticsText = statisticsTextObj.AddComponent<TextMeshProUGUI>();
+            statisticsText.text = "Cards Played: 0\nCaptures Made: 0\nLongest Chain: 0";
+            statisticsText.fontSize = 22;
+            statisticsText.alignment = TextAlignmentOptions.Center;
+            statisticsText.color = new Color(0.8f, 0.8f, 0.9f, 1f);
+            
+            RectTransform statisticsRect = statisticsTextObj.GetComponent<RectTransform>();
+            statisticsRect.sizeDelta = new Vector2(0, 80);
+            
+            // Create Win/Loss Record Text
+            GameObject winLossTextObj = new GameObject("WinLossRecordText");
+            winLossTextObj.transform.SetParent(contentPanel.transform, false);
+            
+            TextMeshProUGUI winLossText = winLossTextObj.AddComponent<TextMeshProUGUI>();
+            winLossText.text = "Wins: 0 | Losses: 0";
+            winLossText.fontSize = 20;
+            winLossText.alignment = TextAlignmentOptions.Center;
+            winLossText.color = new Color(0.7f, 0.7f, 0.8f, 1f);
+            
+            RectTransform winLossRect = winLossTextObj.GetComponent<RectTransform>();
+            winLossRect.sizeDelta = new Vector2(0, 40);
+            
+            // Create Rematch Button (changed from "Play Again")
+            GameObject restartBtnObj = CreateButton(contentPanel.transform, "RematchButton", "Rematch");
             
             // Create Quit Button
-            GameObject quitBtnObj = CreateButton(contentPanel.transform, "QuitButton", "Quit");
+            GameObject quitBtnObj = CreateButton(contentPanel.transform, "QuitButton", "Quit Game");
 
             // Create Persona-style Victory Cut-In overlay
             GameObject cutInObj = new GameObject("VictoryCutIn");
@@ -919,6 +969,9 @@ namespace CardGame.UI
             SetPrivateField(gameEndUI, gameEndUIType, "endGamePanel", endPanel);
             SetPrivateField(gameEndUI, gameEndUIType, "winnerText", winnerText);
             SetPrivateField(gameEndUI, gameEndUIType, "finalScoreText", scoreText);
+            SetPrivateField(gameEndUI, gameEndUIType, "statisticsText", statisticsText);
+            SetPrivateField(gameEndUI, gameEndUIType, "winLossRecordText", winLossText);
+            SetPrivateField(gameEndUI, gameEndUIType, "contextualMessageText", contextualMsgText);
             SetPrivateField(gameEndUI, gameEndUIType, "restartButton", restartBtnObj.GetComponent<UnityEngine.UI.Button>());
             SetPrivateField(gameEndUI, gameEndUIType, "quitButton", quitBtnObj.GetComponent<UnityEngine.UI.Button>());
             SetPrivateField(gameEndUI, gameEndUIType, "victoryCutIn", victoryCutIn);
@@ -933,6 +986,135 @@ namespace CardGame.UI
             SetPrivateField(victoryCutIn, cutInType, "audioSource", cutInAudioSource);
             
             Debug.Log("HUDSetup: Created GameEndUI panel");
+        }
+        
+        /// <summary>
+        /// [CardFront] Ensures an existing GameEndUI has all required UI elements
+        /// </summary>
+        private void EnsureGameEndUIElements(GameEndUI gameEndUI)
+        {
+            if (gameEndUI == null) return;
+            
+            System.Type gameEndUIType = typeof(GameEndUI);
+            
+            // Get the endGamePanel field value
+            var endPanelField = gameEndUIType.GetField("endGamePanel", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            GameObject endPanel = null;
+            
+            if (endPanelField != null)
+            {
+                endPanel = endPanelField.GetValue(gameEndUI) as GameObject;
+            }
+            
+            // If endPanel is null, use the GameEndUI GameObject itself
+            if (endPanel == null)
+            {
+                endPanel = gameEndUI.gameObject;
+                if (endPanelField != null)
+                {
+                    endPanelField.SetValue(gameEndUI, endPanel);
+                }
+            }
+            
+            // Find or create ContentPanel
+            Transform contentPanel = endPanel.transform.Find("ContentPanel");
+            if (contentPanel == null)
+            {
+                // Create content panel structure
+                GameObject contentPanelObj = new GameObject("ContentPanel");
+                contentPanelObj.transform.SetParent(endPanel.transform, false);
+                RectTransform contentRect = contentPanelObj.AddComponent<RectTransform>();
+                contentRect.anchorMin = new Vector2(0.5f, 0.5f);
+                contentRect.anchorMax = new Vector2(0.5f, 0.5f);
+                contentRect.pivot = new Vector2(0.5f, 0.5f);
+                contentRect.sizeDelta = new Vector2(700, 600);
+                contentRect.anchoredPosition = Vector2.zero;
+                
+                UnityEngine.UI.Image contentBg = contentPanelObj.AddComponent<UnityEngine.UI.Image>();
+                contentBg.color = new Color(0.1f, 0.1f, 0.15f, 0.95f);
+                
+                UnityEngine.UI.VerticalLayoutGroup layout = contentPanelObj.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
+                layout.padding = new RectOffset(40, 40, 40, 40);
+                layout.spacing = 30;
+                layout.childAlignment = TextAnchor.MiddleCenter;
+                layout.childControlWidth = true;
+                layout.childControlHeight = false;
+                layout.childForceExpandWidth = true;
+                layout.childForceExpandHeight = false;
+                
+                contentPanel = contentPanelObj.transform;
+            }
+            
+            // Check and create missing UI elements using helper method
+            TextMeshProUGUI statisticsText = EnsureUIElement(contentPanel, "StatisticsText", gameEndUIType, gameEndUI, "statisticsText",
+                "Cards Played: 0\nCaptures Made: 0\nLongest Chain: 0", 22, new Color(0.8f, 0.8f, 0.9f, 1f), new Vector2(0, 80));
+                
+            TextMeshProUGUI winLossText = EnsureUIElement(contentPanel, "WinLossRecordText", gameEndUIType, gameEndUI, "winLossRecordText",
+                "Wins: 0 | Losses: 0", 20, new Color(0.7f, 0.7f, 0.8f, 1f), new Vector2(0, 40));
+                
+            TextMeshProUGUI contextualMsgText = EnsureUIElement(contentPanel, "ContextualMessageText", gameEndUIType, gameEndUI, "contextualMessageText",
+                "Good Game!", 24, new Color(0.95f, 0.95f, 0.8f, 1f), new Vector2(0, 40));
+            
+            // Also ensure winnerText and finalScoreText have correct sizes if they exist
+            var winnerTextField = gameEndUIType.GetField("winnerText", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (winnerTextField != null)
+            {
+                TextMeshProUGUI winnerText = winnerTextField.GetValue(gameEndUI) as TextMeshProUGUI;
+                if (winnerText != null && winnerText.fontSize < 72)
+                {
+                    winnerText.fontSize = 72;
+                    RectTransform winnerRect = winnerText.GetComponent<RectTransform>();
+                    if (winnerRect != null)
+                    {
+                        winnerRect.sizeDelta = new Vector2(0, 100);
+                    }
+                }
+            }
+            
+            Debug.Log("HUDSetup: Verified/updated existing GameEndUI with all required elements");
+        }
+        
+        /// <summary>
+        /// [CardFront] Ensures a UI element exists and is wired to the GameEndUI component
+        /// </summary>
+        private TextMeshProUGUI EnsureUIElement(Transform parent, string elementName, System.Type gameEndUIType, 
+            GameEndUI gameEndUI, string fieldName, string defaultText, int fontSize, Color textColor, Vector2 sizeDelta)
+        {
+            // Check if element already exists
+            Transform existingElement = parent.Find(elementName);
+            TextMeshProUGUI textComponent = null;
+            
+            if (existingElement != null)
+            {
+                textComponent = existingElement.GetComponent<TextMeshProUGUI>();
+                if (textComponent != null)
+                {
+                    // Element exists, just wire it up
+                    SetPrivateField(gameEndUI, gameEndUIType, fieldName, textComponent);
+                    return textComponent;
+                }
+            }
+            
+            // Create new element
+            GameObject elementObj = new GameObject(elementName);
+            elementObj.transform.SetParent(parent, false);
+            
+            textComponent = elementObj.AddComponent<TextMeshProUGUI>();
+            textComponent.text = defaultText;
+            textComponent.fontSize = fontSize;
+            textComponent.alignment = TextAlignmentOptions.Center;
+            textComponent.color = textColor;
+            
+            RectTransform rect = elementObj.GetComponent<RectTransform>();
+            rect.sizeDelta = sizeDelta;
+            
+            // Wire up to GameEndUI
+            SetPrivateField(gameEndUI, gameEndUIType, fieldName, textComponent);
+            
+            Debug.Log($"HUDSetup: Created missing UI element '{elementName}' for GameEndUI");
+            return textComponent;
         }
         
         /// <summary>

@@ -81,56 +81,87 @@ namespace CardGame.Managers
         }
         
         /// <summary>
-        /// Recalculates scores by counting captured cards on the board
+        /// Gets the score margin (positive = player leads, negative = opponent leads)
+        /// </summary>
+        public int GetScoreMargin()
+        {
+            return playerScore - opponentScore;
+        }
+        
+        /// <summary>
+        /// [CardFront] Recalculates scores by counting spaces controlled by each player out of 16 total spaces
         /// </summary>
         public void RecalculateScores()
         {
             playerScore = 0;
             opponentScore = 0;
             
-            // Find all cards on the board
-            CardMover[] allCardMovers = FindObjectsOfType<CardMover>();
-            CardMoverOpp[] allCardMoverOpps = FindObjectsOfType<CardMoverOpp>();
+            // Find all CardDropArea1 instances (should be 16 total spaces on the board)
+            CardDropArea1[] allDropAreas = FindObjectsOfType<CardDropArea1>();
             
-            // Check player cards (CardMover)
-            foreach (CardMover cardMover in allCardMovers)
+            if (allDropAreas == null || allDropAreas.Length == 0)
             {
-                if (cardMover.Card != null && IsCardCaptured(cardMover.gameObject))
+                Debug.LogWarning("[ScoreManager] No CardDropArea1 instances found! Cannot calculate scores.");
+                OnScoreChanged?.Invoke(true, playerScore);
+                OnScoreChanged?.Invoke(false, opponentScore);
+                OnScoreUpdated?.Invoke(playerScore, opponentScore);
+                return;
+            }
+            
+            Debug.Log($"[ScoreManager] Found {allDropAreas.Length} CardDropArea1 instances. Calculating scores based on spaces controlled...");
+            
+            // Count spaces controlled by each player
+            foreach (CardDropArea1 dropArea in allDropAreas)
+            {
+                if (dropArea == null) continue;
+                
+                // Check if this space is occupied
+                if (!dropArea.IsOccupied)
                 {
-                    bool isPlayerCard = IsPlayerCard(cardMover.gameObject);
-                    if (isPlayerCard)
-                    {
-                        playerScore++;
-                    }
-                    else
-                    {
-                        opponentScore++;
-                    }
+                    // Empty space - no points for either player
+                    continue;
+                }
+                
+                // Get the occupying card
+                // Use reflection to access the private 'occupyingCard' field
+                var occupyingCardField = typeof(CardDropArea1).GetField("occupyingCard",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                
+                if (occupyingCardField == null)
+                {
+                    Debug.LogWarning($"[ScoreManager] Could not access 'occupyingCard' field on CardDropArea1 '{dropArea.gameObject.name}'. Skipping.");
+                    continue;
+                }
+                
+                GameObject occupyingCard = occupyingCardField.GetValue(dropArea) as GameObject;
+                
+                if (occupyingCard == null)
+                {
+                    // Space is marked as occupied but no card reference - skip
+                    continue;
+                }
+                
+                // Determine who controls this space based on the card's capture color/owner
+                bool isPlayerControlled = IsPlayerCard(occupyingCard);
+                
+                if (isPlayerControlled)
+                {
+                    playerScore++;
+                }
+                else
+                {
+                    opponentScore++;
                 }
             }
             
-            // Check opponent cards (CardMoverOpp)
-            foreach (CardMoverOpp cardMoverOpp in allCardMoverOpps)
-            {
-                if (cardMoverOpp.Card != null && IsCardCaptured(cardMoverOpp.gameObject))
-                {
-                    bool isPlayerCard = IsPlayerCard(cardMoverOpp.gameObject);
-                    if (isPlayerCard)
-                    {
-                        playerScore++;
-                    }
-                    else
-                    {
-                        opponentScore++;
-                    }
-                }
-            }
+            int totalSpaces = allDropAreas.Length;
+            int emptySpaces = totalSpaces - playerScore - opponentScore;
             
             OnScoreChanged?.Invoke(true, playerScore);
             OnScoreChanged?.Invoke(false, opponentScore);
             OnScoreUpdated?.Invoke(playerScore, opponentScore);
             
-            Debug.Log($"Recalculated scores - Player: {playerScore}, Opponent: {opponentScore}");
+            Debug.Log($"[ScoreManager] Recalculated scores based on {totalSpaces} spaces: Player controls {playerScore}/{totalSpaces}, Opponent controls {opponentScore}/{totalSpaces}, Empty: {emptySpaces}/{totalSpaces}");
         }
         
         /// <summary>
