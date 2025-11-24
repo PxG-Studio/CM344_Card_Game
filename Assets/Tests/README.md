@@ -64,9 +64,9 @@ These tests run in Edit mode (no Play mode required) and validate scene structur
 - ✅ ProceduralBoardBackdrop exists (if present)
 - ✅ All DropAreas have required components (CardDropArea1, Collider2D, IsOccupied property)
 - ✅ HandUIs have GetCardForUI method (for drag validation)
-- ✅ CardDropArea1 supports placement validation (OnCardDrop, OnCardDropOpp, IsOccupied)
-- ✅ NewCardUI has drag validation methods (OnBeginDrag, IsPlayerCard, IsOpponentCard)
-- ✅ NewCardUI has placement methods (PlaceOpponentCardOnBoard)
+- ✅ CardDropArea1 supports placement validation (OnCardDrop, OnCardDropP2, IsOccupied)
+- ✅ NewCardUI has drag validation methods (OnBeginDrag, IsP1Card, IsP2Card)
+- ✅ NewCardUI has placement methods (PlaceP2CardOnBoard)
 - ✅ FateFlowController has turn validation methods (CanAct, CurrentFate, SetFate)
 
 #### `ManagerSetupTests`
@@ -105,9 +105,9 @@ These tests run in Play mode and validate runtime behavior:
 
 #### `CardSystemPlayModeTests`
 - ✅ Player 1 deck initializes
-- ✅ Player 2/Opponent deck initializes
+- ✅ Player 2 deck initializes
 - ✅ Player 1 HandUI exists
-- ✅ Player 2 HandOppUI exists
+- ✅ Player 2 HandP2UI exists
 - ✅ All DropAreas have CardDropArea1 components with Collider2D triggers
 - ✅ Cards draw after coin toss completes
 - ✅ Prefab assets are inactive (if present)

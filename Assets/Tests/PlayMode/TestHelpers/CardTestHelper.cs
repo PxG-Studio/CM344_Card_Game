@@ -225,7 +225,7 @@ namespace CardGame.Tests
         public static CardMoverP1 CreateCardMoverWithCard(NewCard card, Vector3 position, bool isPlayerCard = true)
         {
             // Find prefab or create GameObject
-            GameObject cardPrefab = GameObject.Find("NewCardPrefab");
+            GameObject cardPrefab = GameObject.Find("NewCardPrefabP1");
             if (cardPrefab == null)
             {
                 // Create a minimal card GameObject
@@ -343,10 +343,10 @@ namespace CardGame.Tests
         /// </summary>
         public static CardMoverP2 CreateCardMoverP2WithCard(NewCard card, Vector3 position)
         {
-            GameObject cardPrefab = GameObject.Find("NewCardPrefabOpp");
+            GameObject cardPrefab = GameObject.Find("NewCardPrefabP2");
             if (cardPrefab == null)
             {
-                GameObject cardObj = new GameObject($"TestCardOpp_{card.Data.cardName}");
+                GameObject cardObj = new GameObject($"TestCardP2_{card.Data.cardName}");
                 cardObj.transform.position = position;
                 
                 // Add Collider2D FIRST (before CardMoverP2 so Start() can find it)
@@ -574,7 +574,7 @@ namespace CardGame.Tests
             if (!coinTossManager.HasSelection)
             {
                 Debug.Log("[CardTestHelper] No coin toss selection made. Automatically selecting 'Heads' for Player 1 (test environment).");
-                coinTossManager.SetPlayerSelection(true, FateSide.Player); // Select heads for Player 1
+                coinTossManager.SetPlayerSelection(true, FateSide.P1); // Select heads for Player 1
                 
                 // Also trigger the selection in CoinTossUI if it exists
                 CoinTossUI coinTossUI = Object.FindObjectOfType<CoinTossUI>(true);
@@ -925,7 +925,7 @@ namespace CardGame.Tests
             
             // Verify board is clear (only check cards at z ≈ 0)
             CardMoverP1[] remainingAll = Object.FindObjectsOfType<CardMoverP1>();
-            CardMoverP2[] remainingAllOpp = Object.FindObjectsOfType<CardMoverP2>();
+            CardMoverP2[] remainingAllP2 = Object.FindObjectsOfType<CardMoverP2>();
             
             int remainingOnBoard = 0;
             List<string> remainingCardNames = new List<string>();
@@ -937,7 +937,7 @@ namespace CardGame.Tests
                     remainingCardNames.Add($"{mover.gameObject.name} at {mover.transform.position}");
                 }
             }
-            foreach (CardMoverP2 moverP2 in remainingAllOpp)
+            foreach (CardMoverP2 moverP2 in remainingAllP2)
             {
                 if (moverP2 != null && Mathf.Abs(moverP2.transform.position.z) < 1f)
                 {

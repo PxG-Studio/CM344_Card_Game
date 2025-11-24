@@ -18,8 +18,6 @@ namespace CardGame.Managers
         [System.Obsolete("Use P1Score instead. This property will be removed in a future version.")]
         public int PlayerScore => p1Score; // Legacy property - use P1Score instead (P1 score)
         public int P2Score => p2Score; // P2 score
-        [System.Obsolete("Use P2Score instead. This property will be removed in a future version.")]
-        public int OpponentScore => p2Score; // Legacy property - use P2Score instead
         
         // Event triggered when score changes
         public System.Action<bool, int> OnScoreChanged; // (isPlayer, newScore)
@@ -158,7 +156,7 @@ namespace CardGame.Managers
                 }
                 
                 // Determine who controls this space based on the card's capture color/owner
-                bool isPlayerControlled = IsPlayerCard(occupyingCard);
+                bool isPlayerControlled = IsP1Card(occupyingCard);
                 
                 if (isPlayerControlled)
                 {
@@ -246,7 +244,7 @@ namespace CardGame.Managers
         /// <summary>
         /// Determines if a card belongs to the player based on its capture color
         /// </summary>
-        private bool IsPlayerCard(GameObject cardObject)
+        private bool IsP1Card(GameObject cardObject)
         {
             if (cardObject == null) return true;
             
@@ -265,8 +263,8 @@ namespace CardGame.Managers
                 // Fallback: check component type
                 CardMoverP1 mover = cardObject.GetComponent<CardMoverP1>();
                 if (mover != null) return true;
-                CardMoverP2 moverOpp = cardObject.GetComponent<CardMoverP2>();
-                if (moverOpp != null) return false;
+                CardMoverP2 moverP2 = cardObject.GetComponent<CardMoverP2>();
+                if (moverP2 != null) return false;
                 return true;
             }
             
@@ -317,8 +315,8 @@ namespace CardGame.Managers
             // Default: check component type
             CardMoverP1 defaultMover = cardObject.GetComponent<CardMoverP1>();
             if (defaultMover != null) return true;
-            CardMoverP2 defaultMoverOpp = cardObject.GetComponent<CardMoverP2>();
-            if (defaultMoverOpp != null) return false;
+            CardMoverP2 defaultMoverP2 = cardObject.GetComponent<CardMoverP2>();
+            if (defaultMoverP2 != null) return false;
             
             return true;
         }

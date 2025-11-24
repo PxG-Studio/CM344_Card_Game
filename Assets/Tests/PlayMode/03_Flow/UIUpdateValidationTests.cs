@@ -179,7 +179,7 @@ namespace CardGame.Tests
             yield return new WaitForSeconds(0.5f);
             
             // Switch turn
-            FateSide newTurn = initialTurn == FateSide.Player ? FateSide.P2 : FateSide.Player;
+            FateSide newTurn = initialTurn == FateSide.P1 ? FateSide.P2 : FateSide.P1;
             fateController.SetFate(newTurn);
             yield return new WaitForSeconds(0.5f); // Wait for UI update
             

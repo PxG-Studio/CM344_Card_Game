@@ -483,7 +483,7 @@ namespace CardGame.UI
 
             // Determine which player is making the selection (default to Player 1 for now)
             // TODO: In multiplayer, this should be determined by turn order or player input
-            FateSide selectingPlayer = FateSide.Player; // Player 1 selects first
+            FateSide selectingPlayer = FateSide.P1; // Player 1 selects first
 
             // Set the player's selection
             coinTossManager.SetPlayerSelection(selectHeads, selectingPlayer);
@@ -641,7 +641,7 @@ namespace CardGame.UI
                 // Perform coin toss now (triggers result based on selection)
                 Debug.Log("[CoinTossUI] Calling PerformCoinToss() to determine starting player...");
                 coinTossManager.PerformCoinToss();
-                Debug.Log($"[CoinTossUI] PerformCoinToss() completed. Starting player: {coinTossManager.GetStartingPlayer()} ({(coinTossManager.GetStartingPlayer() == FateSide.Player ? "Player 1" : "Player 2")})");
+                Debug.Log($"[CoinTossUI] PerformCoinToss() completed. Starting player: {coinTossManager.GetStartingPlayer()} ({(coinTossManager.GetStartingPlayer() == FateSide.P1 ? "Player 1" : "Player 2")})");
             }
             
             // NOTE: We get the result here but DON'T display it until after animation completes
@@ -650,7 +650,7 @@ namespace CardGame.UI
             
             // Get the actual flip result (heads or tails)
             bool? flipResult = coinTossManager.GetFlipResult();
-            bool isHeads = flipResult.HasValue ? flipResult.Value : (startingPlayer == FateSide.Player);
+            bool isHeads = flipResult.HasValue ? flipResult.Value : (startingPlayer == FateSide.P1);
 
             // Animate coin spinning
             float elapsed = 0f;
@@ -734,7 +734,7 @@ namespace CardGame.UI
             if (resultText != null)
             {
                 string flipResultString = isHeads ? "HEADS" : "TAILS";
-                string startingPlayerString = startingPlayer == FateSide.Player ? "Player 1" : "Player 2";
+                string startingPlayerString = startingPlayer == FateSide.P1 ? "Player 1" : "Player 2";
                 string resultString = $"{flipResultString}!\n{startingPlayerString} Goes First";
                 resultText.text = resultString;
                 resultText.gameObject.SetActive(true);
@@ -769,7 +769,7 @@ namespace CardGame.UI
 
             // Get the actual flip result (heads or tails)
             bool? flipResult = coinTossManager?.GetFlipResult();
-            bool isHeads = flipResult.HasValue ? flipResult.Value : (startingSide == FateSide.Player);
+            bool isHeads = flipResult.HasValue ? flipResult.Value : (startingSide == FateSide.P1);
 
             if (coinImage != null)
             {
@@ -783,7 +783,7 @@ namespace CardGame.UI
             if (resultText != null && !isAnimating)
             {
                 string flipResultString = isHeads ? "HEADS" : "TAILS";
-                string startingPlayerString = startingSide == FateSide.Player ? "Player 1" : "Player 2";
+                string startingPlayerString = startingSide == FateSide.P1 ? "Player 1" : "Player 2";
                 string resultString = $"{flipResultString}!\n{startingPlayerString} Goes First";
                 resultText.text = resultString;
                 resultText.gameObject.SetActive(true);

@@ -222,7 +222,7 @@ namespace CardGame.Tests
             if (!coinTossManager.IsComplete)
             {
                 // Set player selection (Player 1 selects heads)
-                coinTossManager.SetPlayerSelection(true, FateSide.Player);
+                coinTossManager.SetPlayerSelection(true, FateSide.P1);
                 coinTossManager.PerformCoinToss();
             }
             
@@ -291,7 +291,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return null;
             
@@ -357,7 +357,7 @@ namespace CardGame.Tests
                 FateFlowController fateController = FateFlowController.Instance;
                 if (fateController != null)
                 {
-                    fateController.SetFate(FateSide.Player);
+                    fateController.SetFate(FateSide.P1);
                 }
                 yield return null;
                 

@@ -45,7 +45,7 @@ namespace CardGame.Editor
                 string objName = obj.name;
                 
                 // Check for exact prefab asset names (without Clone suffix)
-                if ((objName == "NewCardPrefab" || objName == "NewCardPrefabOpp") && 
+                if ((objName == "NewCardPrefabP1" || objName == "NewCardPrefabP2") && 
                     !objName.Contains("(Clone)"))
                 {
                     // Verify it has NewCardUI component (indicates it's a card prefab)

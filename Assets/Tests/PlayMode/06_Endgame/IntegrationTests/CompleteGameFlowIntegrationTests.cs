@@ -108,7 +108,7 @@ namespace CardGame.Tests
                 $"Coin toss should be complete. HasSelection: {coinTossManager.HasSelection}, " +
                 $"StartingPlayer: {coinTossManager.GetStartingPlayer()}");
             FateSide startingSide = coinTossManager.GetStartingPlayer();
-            Assert.IsTrue(startingSide == FateSide.Player || startingSide == FateSide.P2, 
+            Assert.IsTrue(startingSide == FateSide.P1 || startingSide == FateSide.P2, 
                 "Starting side should be valid");
             
             // Step 2: Verify turn is set correctly
@@ -190,7 +190,7 @@ namespace CardGame.Tests
                     }
                     
                     // Set correct turn
-                    fateController.SetFate(FateSide.Player);
+                    fateController.SetFate(FateSide.P1);
                     yield return null;
                     
                     // Get initial score
@@ -314,7 +314,7 @@ namespace CardGame.Tests
             if (playerDeck != null && opponentDeck != null)
             {
                 // At least starting player should have cards
-                int startingPlayerCards = startingSide == FateSide.Player 
+                int startingPlayerCards = startingSide == FateSide.P1 
                     ? playerDeck.Hand.Count 
                     : opponentDeck.Hand.Count;
                 
@@ -324,7 +324,7 @@ namespace CardGame.Tests
             
             // Step 5: Card placement should work for starting player
             CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
-            if (dropAreas.Length > 0 && startingSide == FateSide.Player && playerDeck != null && playerDeck.Hand.Count > 0)
+            if (dropAreas.Length > 0 && startingSide == FateSide.P1 && playerDeck != null && playerDeck.Hand.Count > 0)
             {
                 CardDropArea emptyArea = null;
                 foreach (CardDropArea area in dropAreas)

@@ -72,15 +72,15 @@ namespace CardGame.Tests
             var cardProperty = typeof(NewCardUI).GetProperty("Card");
             Assert.IsNotNull(cardProperty, "NewCardUI should have Card property for validation");
             
-            // IsPlayerCard and IsOpponentCard are private methods used internally
+            // IsP1Card and IsP2Card are private methods used internally
             // The Card property provides access to the card data which can be used for validation
-            var isPlayerCardMethod = typeof(NewCardUI).GetMethod("IsPlayerCard",
+            var isPlayerCardMethod = typeof(NewCardUI).GetMethod("IsP1Card",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var isOpponentCardMethod = typeof(NewCardUI).GetMethod("IsOpponentCard",
+            var isP2CardMethod = typeof(NewCardUI).GetMethod("IsP2Card",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
             // These methods exist but are private - they're used internally by NewCardUI
-            Assert.IsTrue(cardProperty != null || (isPlayerCardMethod != null && isOpponentCardMethod != null),
+            Assert.IsTrue(cardProperty != null || (isPlayerCardMethod != null && isP2CardMethod != null),
                 "NewCardUI should have validation methods or Card property");
         }
 

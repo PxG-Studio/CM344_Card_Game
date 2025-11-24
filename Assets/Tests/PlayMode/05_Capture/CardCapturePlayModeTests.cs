@@ -121,7 +121,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return null;
             
@@ -153,6 +153,62 @@ namespace CardGame.Tests
             int newPlayerScore = CardTestHelper.GetPlayerScore(true);
             Assert.Greater(newPlayerScore, initialPlayerScore, 
                 "Player score should increase after capturing opponent card");
+        }
+
+        [UnityTest]
+        public IEnumerator SingleSideCapture_P2Attacker_When_AttackerIsHigher()
+        {
+            yield return CardTestHelper.WaitForCoinTossToComplete();
+            yield return new WaitForSeconds(1.0f);
+            yield return CardTestHelper.ClearBoard(0.5f);
+
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
+            Assert.IsTrue(dropAreas.Length >= 2, "Need at least 2 drop areas for capture test");
+
+            CardDropArea attackerArea = dropAreas[0];
+            CardDropArea defenderArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right") ?? dropAreas[1];
+
+            NewCard attackerCard = CardTestHelper.CreateTestCard(3, 5, 3, 3, "P2_Attacker");
+            NewCard defenderCard = CardTestHelper.CreateTestCard(3, 2, 3, 3, "P1_Defender");
+
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 p2Deck = Object.FindObjectOfType<NewDeckManagerP2>();
+            if (playerDeck != null)
+            {
+                CardTestHelper.AddCardToDeckManagerHand(playerDeck, defenderCard);
+            }
+            if (p2Deck != null)
+            {
+                CardTestHelper.AddCardToDeckManagerHand(p2Deck, attackerCard);
+            }
+
+            FateFlowController fateController = FateFlowController.Instance;
+            if (fateController != null)
+            {
+                fateController.SetFate(FateSide.P2);
+            }
+            yield return null;
+
+            int initialP2Score = CardTestHelper.GetPlayerScore(false);
+
+            CardMoverP2 attackerMover = CardTestHelper.CreateCardMoverP2WithCard(attackerCard, attackerArea.transform.position);
+            bool attackerPlaced = CardTestHelper.PlaceP2CardOnDropArea(attackerMover, attackerArea, true);
+            Assert.IsTrue(attackerPlaced, "P2 attacker card should be placed successfully");
+            yield return new WaitForSeconds(0.5f);
+
+            CardMoverP1 defenderMover = CardTestHelper.CreateCardMoverWithCard(defenderCard, defenderArea.transform.position, true);
+            bool defenderPlaced = CardTestHelper.PlaceP1CardOnDropArea(defenderMover, defenderArea, true);
+            Assert.IsTrue(defenderPlaced, "P1 defender card should be placed successfully");
+
+            yield return CardTestHelper.WaitForCaptureAnimations(3f);
+
+            bool defenderCaptured = CardTestHelper.IsCardCaptured(defenderMover.gameObject);
+            Assert.IsTrue(defenderCaptured,
+                "Defender should be captured when P2 attacker's right stat (5) > P1 defender's left stat (2).");
+
+            int newP2Score = CardTestHelper.GetPlayerScore(false);
+            Assert.Greater(newP2Score, initialP2Score,
+                "P2 score should increase after capturing player card.");
         }
 
         [UnityTest]
@@ -190,7 +246,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return null;
             
@@ -253,7 +309,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return null;
             
@@ -332,7 +388,7 @@ namespace CardGame.Tests
             
             FateFlowController fateController = FateFlowController.Instance;
             Assert.IsNotNull(fateController, "FateFlowController should exist");
-            fateController.SetFate(FateSide.Player);
+            fateController.SetFate(FateSide.P1);
             yield return new WaitForSeconds(0.1f);
             
             // CRITICAL: Clear the board of any existing cards before placing test cards
@@ -617,7 +673,7 @@ namespace CardGame.Tests
             // Switch to Player 1 and place center card
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return null;
             
@@ -1065,7 +1121,7 @@ namespace CardGame.Tests
             // Switch to Player 1 and place chain starter
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return null;
             
@@ -1344,7 +1400,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return null;
             

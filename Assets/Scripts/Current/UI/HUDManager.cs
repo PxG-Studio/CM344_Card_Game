@@ -35,7 +35,7 @@ namespace CardGame.UI
         
         private ScoreManager scoreManager;
         private int totalBoardTiles = 16; // 4x4 board
-        private FateSide currentFate = FateSide.Player;
+        private FateSide currentFate = FateSide.P1;
         
         private void Start()
         {
@@ -118,7 +118,7 @@ namespace CardGame.UI
         /// </summary>
         public void SetTurn(bool isPlayer1)
         {
-            currentFate = isPlayer1 ? FateSide.Player : FateSide.P2;
+            currentFate = isPlayer1 ? FateSide.P1 : FateSide.P2;
             UpdateTurnIndicators();
         }
         
@@ -198,7 +198,7 @@ namespace CardGame.UI
         /// </summary>
         private void UpdateTurnIndicators()
         {
-            bool isPlayer1Active = currentFate == FateSide.Player;
+            bool isPlayer1Active = currentFate == FateSide.P1;
 
             if (p1TurnIndicator != null)
             {

@@ -82,7 +82,7 @@ namespace CardGame.Managers
             playerSelection = selectHeads;
             selectedByPlayer = selectingPlayer;
             string selectionString = selectHeads ? "Heads" : "Tails";
-            string playerString = selectingPlayer == FateSide.Player ? "Player 1" : "Player 2";
+            string playerString = selectingPlayer == FateSide.P1 ? "Player 1" : "Player 2";
             Debug.Log($"[CoinTossManager] {playerString} selected: {selectionString}");
         }
 
@@ -104,7 +104,7 @@ namespace CardGame.Managers
                 Debug.LogWarning("[CoinTossManager] No player selection made. Defaulting to random result.");
                 // Fallback: random selection if no player selection was made
                 bool isHeads = UnityEngine.Random.Range(0, 2) == 0;
-                coinTossResult = isHeads ? FateSide.Player : FateSide.P2;
+                coinTossResult = isHeads ? FateSide.P1 : FateSide.P2;
                 isCoinTossComplete = true;
                 OnCoinTossComplete?.Invoke(coinTossResult.Value);
                 return coinTossResult.Value;
@@ -126,7 +126,7 @@ namespace CardGame.Managers
             else
             {
                 // Result doesn't match selection - other player goes first
-                startingPlayer = selectedByPlayer.Value == FateSide.Player ? FateSide.P2 : FateSide.Player;
+                startingPlayer = selectedByPlayer.Value == FateSide.P1 ? FateSide.P2 : FateSide.P1;
             }
 
             coinTossResult = startingPlayer;
@@ -134,16 +134,16 @@ namespace CardGame.Managers
 
             string flipResultString = flipResultIsHeads ? "Heads" : "Tails";
             string selectionString = playerSelectedHeads ? "Heads" : "Tails";
-            string playerString = selectedByPlayer.Value == FateSide.Player ? "Player 1" : "Player 2";
-            string startingPlayerString = startingPlayer == FateSide.Player ? "Player 1" : "Player 2";
+            string playerString = selectedByPlayer.Value == FateSide.P1 ? "Player 1" : "Player 2";
+            string startingPlayerString = startingPlayer == FateSide.P1 ? "Player 1" : "Player 2";
             
             Debug.Log($"[CoinTossManager] Coin flip result: {flipResultString}. {playerString} selected {selectionString}. " +
                 $"Result matches selection: {flipResultIsHeads == playerSelectedHeads}. {startingPlayerString} goes first.");
-            Debug.Log($"[CoinTossManager] coinTossResult set to: {coinTossResult.Value} ({(coinTossResult.Value == FateSide.Player ? "Player 1" : "Player 2")})");
+            Debug.Log($"[CoinTossManager] coinTossResult set to: {coinTossResult.Value} ({(coinTossResult.Value == FateSide.P1 ? "Player 1" : "Player 2")})");
 
             // Fire event for UI and other systems
             OnCoinTossComplete?.Invoke(coinTossResult.Value);
-            Debug.Log($"[CoinTossManager] OnCoinTossComplete event fired with: {coinTossResult.Value} ({(coinTossResult.Value == FateSide.Player ? "Player 1" : "Player 2")})");
+            Debug.Log($"[CoinTossManager] OnCoinTossComplete event fired with: {coinTossResult.Value} ({(coinTossResult.Value == FateSide.P1 ? "Player 1" : "Player 2")})");
 
             return coinTossResult.Value;
         }
@@ -196,13 +196,13 @@ namespace CardGame.Managers
         {
             if (coinTossResult.HasValue)
             {
-                Debug.Log($"[CoinTossManager] GetStartingPlayer() returning: {coinTossResult.Value} ({(coinTossResult.Value == FateSide.Player ? "Player 1" : "Player 2")})");
+                Debug.Log($"[CoinTossManager] GetStartingPlayer() returning: {coinTossResult.Value} ({(coinTossResult.Value == FateSide.P1 ? "Player 1" : "Player 2")})");
                 return coinTossResult.Value;
             }
 
             // Default to Player 1 if not yet tossed
             Debug.LogWarning("[CoinTossManager] Coin toss not yet performed. Defaulting to Player 1.");
-            return FateSide.Player;
+            return FateSide.P1;
         }
 
         /// <summary>

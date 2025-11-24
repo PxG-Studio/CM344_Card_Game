@@ -5,8 +5,8 @@ namespace CardGame.Managers
 {
     public enum FateSide
     {
-        Player = 0, // P1
-        P2 = 1      // Renamed from Opponent for P1/P2 consistency
+        P1 = 0,
+        P2 = 1      // Renamed from legacy naming for P1/P2 consistency
     }
 
     /// <summary>
@@ -16,7 +16,7 @@ namespace CardGame.Managers
     {
         public static FateFlowController Instance { get; private set; }
 
-        [SerializeField] private FateSide startingSide = FateSide.Player;
+        [SerializeField] private FateSide startingSide = FateSide.P1;
 
         public FateSide CurrentFate { get; private set; }
 
@@ -46,12 +46,12 @@ namespace CardGame.Managers
             {
                 // Coin toss already performed, use its result
                 FateSide coinTossResult = CoinTossManager.Instance.GetStartingPlayer();
-                Debug.Log($"[FateFlowController] Start() - Coin toss already complete. Setting CurrentFate from {CurrentFate} ({(CurrentFate == FateSide.Player ? "Player 1" : "Player 2")}) to {coinTossResult} ({(coinTossResult == FateSide.Player ? "Player 1" : "Player 2")})");
+                Debug.Log($"[FateFlowController] Start() - Coin toss already complete. Setting CurrentFate from {CurrentFate} ({(CurrentFate == FateSide.P1 ? "Player 1" : "Player 2")}) to {coinTossResult} ({(coinTossResult == FateSide.P1 ? "Player 1" : "Player 2")})");
                 CurrentFate = coinTossResult;
             }
             else
             {
-                Debug.Log($"[FateFlowController] Start() - Coin toss not yet complete. CurrentFate remains at default: {CurrentFate} ({(CurrentFate == FateSide.Player ? "Player 1" : "Player 2")})");
+                Debug.Log($"[FateFlowController] Start() - Coin toss not yet complete. CurrentFate remains at default: {CurrentFate} ({(CurrentFate == FateSide.P1 ? "Player 1" : "Player 2")})");
             }
             
             OnFateChanged?.Invoke(CurrentFate);
@@ -63,19 +63,19 @@ namespace CardGame.Managers
         {
             if (CurrentFate == side)
             {
-                Debug.Log($"[FateFlowController] SetFate called with {side} ({(side == FateSide.Player ? "Player 1" : "Player 2")}), but CurrentFate is already {CurrentFate}. No change needed.");
+                Debug.Log($"[FateFlowController] SetFate called with {side} ({(side == FateSide.P1 ? "Player 1" : "Player 2")}), but CurrentFate is already {CurrentFate}. No change needed.");
                 return;
             }
 
             FateSide previousFate = CurrentFate;
             CurrentFate = side;
-            Debug.Log($"[FateFlowController] SetFate: Changed from {previousFate} ({(previousFate == FateSide.Player ? "Player 1" : "Player 2")}) to {CurrentFate} ({(CurrentFate == FateSide.Player ? "Player 1" : "Player 2")})");
+            Debug.Log($"[FateFlowController] SetFate: Changed from {previousFate} ({(previousFate == FateSide.P1 ? "Player 1" : "Player 2")}) to {CurrentFate} ({(CurrentFate == FateSide.P1 ? "Player 1" : "Player 2")})");
             OnFateChanged?.Invoke(CurrentFate);
         }
 
         public void AdvanceFateFlow()
         {
-            FateSide next = CurrentFate == FateSide.Player ? FateSide.P2 : FateSide.Player;
+            FateSide next = CurrentFate == FateSide.P1 ? FateSide.P2 : FateSide.P1;
             SetFate(next);
         }
     }

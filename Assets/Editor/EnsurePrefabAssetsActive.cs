@@ -13,8 +13,8 @@ namespace CardGame.Editor
         [MenuItem("CardFront/Tools/Ensure Prefab Assets Are Active")]
         public static void EnsureActive()
         {
-            EnsurePrefabActive("Assets/PreFabs/NewCardPrefab.prefab");
-            EnsurePrefabActive("Assets/PreFabs/NewCardPrefabOpp.prefab");
+            EnsurePrefabActive("Assets/PreFabs/NewCardPrefabP1.prefab");
+            EnsurePrefabActive("Assets/PreFabs/NewCardPrefabP2.prefab");
             
             Debug.Log("[EnsurePrefabAssetsActive] ✓ Prefab assets checked and activated if needed.");
         }

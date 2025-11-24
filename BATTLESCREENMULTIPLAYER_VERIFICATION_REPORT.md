@@ -52,7 +52,7 @@ This report documents the systematic verification of the BattleScreenMultiplayer
 **Player 2 System** (Note: "Opponent" terminology refers to Player 2 in PvP context):
 - ✅ `NewDeckManager Earth` (line 3815) - Player 2's deck manager
 - ✅ `NewHandUI Earth` (line 2139) - Player 2's hand container
-- ⚠️ `NewCardSystemOpposition` - Present if needed for testing
+- ⚠️ `NewCardSystemP2` - Present if needed for testing
 
 **Clarification**: In this PvP context, both players interact within the same window. Each player has independent interaction systems. The codebase uses "Opponent" terminology, but this refers to Player 2.
 
@@ -67,7 +67,7 @@ This report documents the systematic verification of the BattleScreenMultiplayer
 - Prefab removal tool executed: `CardFront/Tools/Remove Prefab Assets from Scene`
 - No prefab assets found in scene hierarchy:
   - ❌ `NewCardPrefab` - Not found (clean)
-  - ❌ `NewCardPrefabOpp` - Not found (clean)
+  - ❌ `NewCardPrefabP2` - Not found (clean)
 - All prefab instances are properly cloned with "(Clone)" suffix
 
 ### 2.2 Verify Prefab Assets Status
@@ -76,7 +76,7 @@ This report documents the systematic verification of the BattleScreenMultiplayer
 
 - Prefab assets exist only in `Assets/PreFabs/` directory:
   - ✅ `Assets/PreFabs/NewCardPrefab.prefab`
-  - ✅ `Assets/PreFabs/NewCardPrefabOpp.prefab`
+  - ✅ `Assets/PreFabs/NewCardPrefabP2.prefab`
 - Prefab assets should be active by default (verified via `EnsurePrefabAssetsActive` tool)
 
 ---
@@ -114,9 +114,9 @@ The HUD system is automatically configured by `HUDSetup` component (execution or
 - ✅ `NewCardSystemTester` - Optional test component
 
 **Player 2 Components**:
-- ✅ `NewDeckManagerOpp` (Earth) - Starting deck configured
-- ✅ `NewHandOppUI` (Earth) - cardPrefab reference should be set to NewCardPrefabOpp
-- ✅ `NewCardSystemOpposition` - Optional test component
+- ✅ `NewDeckManagerP2` (Earth) - Starting deck configured
+- ✅ `NewHandP2UI` (Earth) - cardPrefab reference should be set to NewCardPrefabP2
+- ✅ `NewCardSystemP2` - Optional test component
 
 **CardFactory**:
 - ✅ Prefab references correct for both players
@@ -183,7 +183,7 @@ Current reference chain:
 - ✅ Deck Managers → Hand UIs (card drawn events)
 - ✅ Hand UIs → CardFactory (card creation)
 - ✅ CardFactory → NewCardUI prefabs (instantiation)
-- ✅ Cards → CardMover/CardMoverOpp (drag components)
+- ✅ Cards → CardMover/CardMoverP2 (drag components)
 - ✅ Cards → CardDropArea1 (drop zones)
 - ✅ CardDropArea1 → Managers (score, game end)
 - ✅ FateFlowController → HUDManager (updates turn indicators)
@@ -241,7 +241,7 @@ Current behavior:
 - ✅ Starting player card drops on valid drop area
 - ✅ Starting player card placement on board
 - ✅ Turn advances to other player (FateFlowController.AdvanceFateFlow)
-- ✅ Other player card dragging works (CardMoverOpp for Player 2)
+- ✅ Other player card dragging works (CardMoverP2 for Player 2)
 - ✅ Other player card placement on board
 - ✅ Turn advances back to starting player
 - ✅ Turn indicators update correctly for both players
@@ -330,7 +330,7 @@ Current behavior:
 
 **Changes Made**:
 - ✅ `NewCardSystemTester` now waits for coin toss to complete before drawing cards
-- ✅ `NewCardSystemOpposition` now waits for coin toss to complete before drawing cards
+- ✅ `NewCardSystemP2` now waits for coin toss to complete before drawing cards
 - ✅ Both use coroutines to wait for `CoinTossManager.IsComplete`
 - ✅ Prevents cards from drawing before coin toss animation completes
 
@@ -417,7 +417,7 @@ Expected log sequence:
 
 **Status**: ✅ **RESOLVED**
 
-**Issue**: Prefab assets (NewCardPrefab, NewCardPrefabOpp) may have been present in the scene hierarchy without "(Clone)" suffix.
+**Issue**: Prefab assets (NewCardPrefab, NewCardPrefabP2) may have been present in the scene hierarchy without "(Clone)" suffix.
 
 **Resolution**: Prefab removal tool executed. No prefab assets found in scene hierarchy.
 
@@ -473,7 +473,7 @@ After coin toss implementation, perform comprehensive Play mode testing:
 While HUDSetup auto-wires most references, manually verify in Unity Editor:
 
 1. NewHandUI.cardPrefab → NewCardPrefab
-2. NewHandOppUI.cardPrefab → NewCardPrefabOpp
+2. NewHandP2UI.cardPrefab → NewCardPrefabP2
 3. CardDropArea1 manager references (ScoreManager, GameEndManager, FateFlowController)
 4. Deck manager starting deck configurations
 

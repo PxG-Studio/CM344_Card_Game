@@ -150,7 +150,7 @@ namespace CardGame.Managers
             // Reset FateFlowController to default (will be set by coin toss)
             if (FateFlowController.Instance != null)
             {
-                FateFlowController.Instance.SetFate(FateSide.Player); // Default, will be overridden
+                FateFlowController.Instance.SetFate(FateSide.P1); // Default, will be overridden
             }
             
             // Perform coin toss and wait for result before starting game
@@ -229,12 +229,12 @@ namespace CardGame.Managers
             
             // Get coin toss result and set starting player
             FateSide startingSide = coinTossManager.GetStartingPlayer();
-            Debug.Log($"[GameManager] Coin toss result from CoinTossManager: {startingSide} ({(startingSide == FateSide.Player ? "Player 1" : "Player 2")})");
+            Debug.Log($"[GameManager] Coin toss result from CoinTossManager: {startingSide} ({(startingSide == FateSide.P1 ? "Player 1" : "Player 2")})");
             
             if (FateFlowController.Instance != null)
             {
                 FateFlowController.Instance.SetFate(startingSide);
-                Debug.Log($"[GameManager] SetFate called with: {startingSide} ({(startingSide == FateSide.Player ? "Player 1" : "Player 2")}). CurrentFate in FateFlowController: {FateFlowController.Instance.CurrentFate} ({(FateFlowController.Instance.CurrentFate == FateSide.Player ? "Player 1" : "Player 2")})");
+                Debug.Log($"[GameManager] SetFate called with: {startingSide} ({(startingSide == FateSide.P1 ? "Player 1" : "Player 2")}). CurrentFate in FateFlowController: {FateFlowController.Instance.CurrentFate} ({(FateFlowController.Instance.CurrentFate == FateSide.P1 ? "Player 1" : "Player 2")})");
             }
             else
             {
@@ -318,7 +318,7 @@ namespace CardGame.Managers
             if (FateFlowController.Instance != null)
             {
                 FateSide startingSide = FateFlowController.Instance.CurrentFate;
-                if (startingSide == FateSide.Player)
+                if (startingSide == FateSide.P1)
                 {
                     ChangeState(GameState.PlayerTurn);
                 }

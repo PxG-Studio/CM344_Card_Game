@@ -169,7 +169,7 @@ namespace CardGame.Tests
             fateController.OnFateChanged += (side) => { turnHistory.Add(side); };
             
             // Set initial turn
-            fateController.SetFate(FateSide.Player);
+            fateController.SetFate(FateSide.P1);
             yield return null;
             
             // Advance turn 10 times
@@ -181,7 +181,7 @@ namespace CardGame.Tests
                 FateSide after = fateController.CurrentFate;
                 
                 // Assert: Each advance should switch to opposite side
-                FateSide expected = before == FateSide.Player ? FateSide.P2 : FateSide.Player;
+                FateSide expected = before == FateSide.P1 ? FateSide.P2 : FateSide.P1;
                 Assert.AreEqual(expected, after, 
                     $"Turn {i + 1}: Should alternate from {before} to {expected}, got {after}");
             }

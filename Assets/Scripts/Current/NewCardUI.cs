@@ -15,6 +15,9 @@ namespace CardGame.UI
     /// </summary>
     public class NewCardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
+        private const string PlayerCardPrefabName = "NewCardPrefabP1";
+        private const string P2CardPrefabName = "NewCardPrefabP2";
+        
         [Header("UI References")]
         [SerializeField] private SpriteRenderer cardBackground;
         [SerializeField] private SpriteRenderer artwork;
@@ -49,11 +52,16 @@ namespace CardGame.UI
         [SerializeField] private bool allowDrag = true;
         
         [Header("Captured Colors")]
-        [SerializeField] private Color playerCapturedColor = new Color(1f, 128f/255f, 0f, 1f); // Orange #FF8000 for player's cards (matches card border orange)
-        [SerializeField] private Color opponentCapturedColor = new Color(0f, 0.8f, 0f, 1f); // Green for opponent's captured cards
+        [SerializeField] private Color p1CapturedColor = new Color(1f, 128f/255f, 0f, 1f); // Orange #FF8000 for player's cards (matches card border orange)
+        [SerializeField] private Color p2CapturedColor = new Color(0f, 0.8f, 0f, 1f); // Green for P2's captured cards
+        [Header("Hand Styling")]
+        [SerializeField] private Color handHighlightColor = new Color(0.98f, 0.78f, 0.19f, 1f); // gold
+        [SerializeField, Range(0f, 1f)] private float handHighlightIntensity = 0.75f;
+        private Color originalBackgroundColor;
+        private bool originalBackgroundStored;
         
-        public Color PlayerCapturedColor => playerCapturedColor;
-        public Color OpponentCapturedColor => opponentCapturedColor;
+        public Color P1CapturedColor => p1CapturedColor;
+        public Color P2CapturedColor => p2CapturedColor;
         
         
         private NewCard card;
@@ -64,6 +72,8 @@ namespace CardGame.UI
         private CanvasGroup canvasGroup;
         private bool isDragging = false;
         private Vector2 dragOffset;
+        private bool isHandStyleApplied;
+        private Outline uiOutline;
         
         public NewCard Card => card;
         public System.Action<NewCardUI> OnCardClicked;
@@ -73,6 +83,11 @@ namespace CardGame.UI
         {
             rectTransform = GetComponent<RectTransform>();
             canvas = GetComponentInParent<Canvas>();
+            if (cardBackground != null && !originalBackgroundStored)
+            {
+                originalBackgroundColor = cardBackground.color;
+                originalBackgroundStored = true;
+            }
             
             // Get or create CanvasGroup for drag support
             canvasGroup = GetComponent<CanvasGroup>();
@@ -86,7 +101,7 @@ namespace CardGame.UI
             // BUT: Board cards are valid cloned cards that have been renamed (no "(Clone)" suffix)
             // So we need to check if this is actually a prefab asset vs a renamed board card
             bool isPrefabAsset = !gameObject.name.Contains("(Clone)") && 
-                                 (gameObject.name == "NewCardPrefab" || gameObject.name == "NewCardPrefabOpp");
+                                 (gameObject.name == PlayerCardPrefabName || gameObject.name == P2CardPrefabName);
             
             if (isPrefabAsset)
             {
@@ -134,9 +149,9 @@ namespace CardGame.UI
             }
             
             // [CardFront] Diagnostic: Log card type and drag readiness
-            bool isPlayerCard = IsPlayerCard();
-            bool isOpponentCard = IsOpponentCard();
-            Debug.Log($"[NewCardUI] Awake complete for '{gameObject.name}'. IsPlayerCard: {isPlayerCard}, IsOpponentCard: {isOpponentCard}, AllowDrag: {allowDrag}, CanvasGroup.interactable: {canvasGroup.interactable}, CanvasGroup.blocksRaycasts: {canvasGroup.blocksRaycasts}");
+            bool isPlayerCard = IsP1Card();
+            bool isP2Card = IsP2Card();
+            Debug.Log($"[NewCardUI] Awake complete for '{gameObject.name}'. IsP1Card: {isPlayerCard}, IsP2Card: {isP2Card}, AllowDrag: {allowDrag}, CanvasGroup.interactable: {canvasGroup.interactable}, CanvasGroup.blocksRaycasts: {canvasGroup.blocksRaycasts}");
             
             // Auto-setup containers if not assigned (runtime setup)
             // Always set up containers if they're missing - needed for battle captures even if card starts face up
@@ -173,6 +188,66 @@ namespace CardGame.UI
                 {
                     flipAnimation = GetComponent<CardFlipAnimation>();
                 }
+            }
+        }
+
+        /// <summary>
+        /// Applies the hand visual style (gold border/outline) while the card is in the player's hand.
+        /// </summary>
+        public void ApplyHandStyle(Color? overrideColor = null)
+        {
+            Color targetColor = overrideColor ?? handHighlightColor;
+
+            if (cardBackground != null && originalBackgroundStored)
+            {
+                cardBackground.color = Color.Lerp(originalBackgroundColor, targetColor, handHighlightIntensity);
+            }
+
+            EnsureOutline();
+            if (uiOutline != null)
+            {
+                uiOutline.effectColor = targetColor;
+                uiOutline.effectDistance = new Vector2(2.5f, -2.5f);
+                uiOutline.enabled = true;
+            }
+
+            isHandStyleApplied = true;
+        }
+
+        /// <summary>
+        /// Restores the default visual style (used when a card leaves the hand and enters the board).
+        /// </summary>
+        public void ResetVisualStyle()
+        {
+            if (!isHandStyleApplied)
+            {
+                return;
+            }
+
+            if (cardBackground != null && originalBackgroundStored)
+            {
+                cardBackground.color = originalBackgroundColor;
+            }
+
+            if (uiOutline != null)
+            {
+                uiOutline.enabled = false;
+            }
+
+            isHandStyleApplied = false;
+        }
+
+        private void EnsureOutline()
+        {
+            if (uiOutline != null)
+            {
+                return;
+            }
+
+            uiOutline = GetComponent<Outline>();
+            if (uiOutline == null)
+            {
+                uiOutline = gameObject.AddComponent<Outline>();
             }
         }
         
@@ -453,7 +528,7 @@ namespace CardGame.UI
             if (cardBackground != null)
             {
                 // Determine if this card belongs to the player or opponent
-                bool isPlayerCard = IsPlayerCard();
+                bool isPlayerCard = IsP1Card();
                 
                 // Set background color: use card's original color for player cards (orange tint), green for opponent cards
                 // Only apply if card is face up (not captured) - captured cards get their color from CardFlipAnimation
@@ -468,7 +543,7 @@ namespace CardGame.UI
                         }
                         else
                         {
-                            cardBackground.color = playerCapturedColor; // Fallback to orange
+                            cardBackground.color = p1CapturedColor; // Fallback to orange
                         }
                     }
                     else
@@ -480,7 +555,7 @@ namespace CardGame.UI
                         }
                         else
                         {
-                            cardBackground.color = opponentCapturedColor; // Fallback to green
+                            cardBackground.color = p2CapturedColor; // Fallback to green
                         }
                     }
                 }
@@ -495,7 +570,7 @@ namespace CardGame.UI
             // BUT: Board cards are valid cloned cards that have been renamed (no "(Clone)" suffix)
             // So we need to check if this is actually a prefab asset vs a renamed board card
             bool isPrefabAsset = !gameObject.name.Contains("(Clone)") && 
-                                 (gameObject.name == "NewCardPrefab" || gameObject.name == "NewCardPrefabOpp");
+                                 (gameObject.name == PlayerCardPrefabName || gameObject.name == P2CardPrefabName);
             
             if (isPrefabAsset)
             {
@@ -534,7 +609,7 @@ namespace CardGame.UI
                 
                 // Check if this is an uninitialized prefab instance (placed directly in scene)
                 bool isPrefabInstance = UnityEditor.PrefabUtility.IsPartOfPrefabInstance(gameObject);
-                if (isPrefabInstance && (gameObject.name == "NewCardPrefab" || gameObject.name == "NewCardPrefabOpp"))
+                if (isPrefabInstance && (gameObject.name == PlayerCardPrefabName || gameObject.name == P2CardPrefabName))
                 {
                     // [CardFront] This is an uninitialized prefab instance - expected to be null until Initialize() is called
                     // Only warn if it's actually in a hand container (should have been initialized)
@@ -576,10 +651,10 @@ namespace CardGame.UI
                 
                 if (card == null)
                 {
-                    CardGame.UI.NewHandP2UI parentHandOppUI = GetComponentInParent<CardGame.UI.NewHandP2UI>();
-                    if (parentHandOppUI != null)
+                    CardGame.UI.NewHandP2UI parentHandP2UI = GetComponentInParent<CardGame.UI.NewHandP2UI>();
+                    if (parentHandP2UI != null)
                     {
-                        NewCard foundCard = parentHandOppUI.GetCardForUI(this);
+                        NewCard foundCard = parentHandP2UI.GetCardForUI(this);
                         if (foundCard != null)
                         {
                             card = foundCard;
@@ -759,14 +834,14 @@ namespace CardGame.UI
         public void OnBeginDrag(PointerEventData eventData)
         {
             // [CardFront] CardFront-style logging prefix - ALWAYS log to diagnose missing player card drags
-            Debug.Log($"[NewCardUI] OnBeginDrag CALLED for '{gameObject.name}'. allowDrag: {allowDrag}, card bound: {card != null}, Card property: {Card != null}, IsPlayerCard: {IsPlayerCard()}, IsOpponentCard: {IsOpponentCard()}");
+            Debug.Log($"[NewCardUI] OnBeginDrag CALLED for '{gameObject.name}'. allowDrag: {allowDrag}, card bound: {card != null}, Card property: {Card != null}, IsP1Card: {IsP1Card()}, IsP2Card: {IsP2Card()}");
             
             // Prevent dragging prefab assets (not instantiated in scene)
-            // [CardFront] CRITICAL: Cards are renamed from "NewCardPrefab(Clone)" to card names in Initialize()
+            // [CardFront] CRITICAL: Cards are renamed from "NewCardPrefabP1(Clone)" to card names in Initialize()
             // So we can't check for "(Clone)" in the name. Instead, check if it's an actual prefab asset.
             // Valid cloned cards have been renamed to their card names (e.g., "Earth Historian")
-            // Prefab assets have the exact names "NewCardPrefab" or "NewCardPrefabOpp" (without Clone)
-            bool isPrefabAsset = (gameObject.name == "NewCardPrefab" || gameObject.name == "NewCardPrefabOpp");
+            // Prefab assets have the exact names "NewCardPrefabP1" or "NewCardPrefabP2" (without Clone)
+            bool isPrefabAsset = (gameObject.name == PlayerCardPrefabName || gameObject.name == P2CardPrefabName);
             
             if (isPrefabAsset)
             {
@@ -812,10 +887,10 @@ namespace CardGame.UI
                 return;
             }
             
-           // CRITICAL: Opponent cards should only be draggable during opponent's turn
-           // Check if this is an opponent card and verify it's the opponent's turn
-           bool isOpponentCard = IsOpponentCard();
-           if (isOpponentCard)
+           // CRITICAL: P2 cards should only be draggable during P2's turn
+           // Check if this is a P2 card and verify it's currently P2's turn
+           bool isP2Card = IsP2Card();
+           if (isP2Card)
            {
                // [CardFront] Check if CardMoverP2 is present - if so, let it handle the drag instead
                // This prevents conflicts between CardMoverP2 (OnMouseDown) and NewCardUI (OnBeginDrag)
@@ -831,26 +906,26 @@ namespace CardGame.UI
                
                if (cardMoverP2 != null)
                {
-                   // CardMoverP2 handles opponent card dragging via OnMouseDown - don't interfere
-                   Debug.Log($"[NewCardUI] Opponent card '{gameObject.name}' drag handled by CardMoverP2 - skipping NewCardUI drag handling to prevent conflicts.");
+                   // CardMoverP2 handles P2 card dragging via OnMouseDown - don't interfere
+                   Debug.Log($"[NewCardUI] P2 card '{gameObject.name}' drag handled by CardMoverP2 - skipping NewCardUI drag handling to prevent conflicts.");
                    return;
                }
                
-               // [CardFront] Allow opponent cards to drag when it's the opponent's turn
-               // Check if it's currently the opponent's turn using FateFlowController
-               bool canOpponentAct = CardGame.Managers.FateFlowController.Instance != null && 
-                                     CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.P2);
+               // [CardFront] Allow P2 cards to drag when it's P2's turn
+               // Check if it's currently P2's turn using FateFlowController
+               bool canP2Act = CardGame.Managers.FateFlowController.Instance != null && 
+                               CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.P2);
                
-               if (!canOpponentAct)
+               if (!canP2Act)
                {
-                   // [CardFront] Block opponent cards when it's NOT the opponent's turn (expected behavior)
-                   Debug.Log($"[NewCardUI] Opponent card '{gameObject.name}' drag blocked - not opponent's turn (expected behavior).");
+                   // [CardFront] Block P2 cards when it's NOT P2's turn (expected behavior)
+                   Debug.Log($"[NewCardUI] P2 card '{gameObject.name}' drag blocked - not P2's turn (expected behavior).");
                    return;
                }
                else
                {
-                   // [CardFront] Allow opponent cards to drag when it IS the opponent's turn
-                   Debug.Log($"[NewCardUI] Opponent card '{gameObject.name}' drag allowed - opponent's turn.");
+                   // [CardFront] Allow P2 cards to drag when it IS P2's turn
+                   Debug.Log($"[NewCardUI] P2 card '{gameObject.name}' drag allowed - P2's turn.");
                    // Continue with drag initialization below
                }
            }
@@ -859,7 +934,7 @@ namespace CardGame.UI
            // Cards already on board should not be draggable
            bool isCardInHand = false;
            
-           if (IsPlayerCard())
+           if (IsP1Card())
            {
                CardGame.UI.NewHandP1UI handUI = GetComponentInParent<CardGame.UI.NewHandP1UI>();
                if (handUI != null)
@@ -868,7 +943,7 @@ namespace CardGame.UI
                    isCardInHand = (handCard != null && handCard == card);
                }
            }
-           else if (IsOpponentCard())
+           else if (IsP2Card())
            {
                CardGame.UI.NewHandP2UI handP2UI = GetComponentInParent<CardGame.UI.NewHandP2UI>();
                if (handP2UI != null)
@@ -916,7 +991,7 @@ namespace CardGame.UI
                         if (foundCard != null)
                         {
                             card = foundCard;
-                            Debug.Log($"[NewCardUI] Recovered card from parent HandOppUI Hub: {card.Data.cardName}");
+                            Debug.Log($"[NewCardUI] Recovered card from parent HandP2UI Hub: {card.Data.cardName}");
                         }
                     }
                     
@@ -948,26 +1023,26 @@ namespace CardGame.UI
                                 card = handP2UI.GetCardForUIByIndex(siblingIndex);
                                 if (card != null)
                                 {
-                                    Debug.Log($"[NewCardUI] Recovered card by sibling index from HandOppUI Hub: {card.Data.cardName}");
+                                    Debug.Log($"[NewCardUI] Recovered card by sibling index from HandP2UI Hub: {card.Data.cardName}");
                                 }
                             }
                         }
                     }
                     
-                    // Strategy 4: Try to find card by matching with all instantiated cards in HandUI/HandOppUI lists
+                    // Strategy 4: Try to find card by matching with all instantiated cards in HandUI/HandP2UI lists
                     // This is a fallback when the card reference is lost but the card is still in hand
                     if (card == null)
                     {
                         // Try to find NewHandP2UI and match by GameObject instance
-                        NewHandP2UI sceneHandOppUI = FindObjectOfType<NewHandP2UI>();
-                        if (sceneHandOppUI != null)
+                        NewHandP2UI sceneHandP2UI = FindObjectOfType<NewHandP2UI>();
+                        if (sceneHandP2UI != null)
                         {
                             // Use the Hub's GetCardForUI method which has multiple fallback strategies
-                            NewCard foundCard = sceneHandOppUI.GetCardForUI(this);
+                            NewCard foundCard = sceneHandP2UI.GetCardForUI(this);
                             if (foundCard != null)
                             {
                                 card = foundCard;
-                                Debug.Log($"[NewCardUI] Recovered card via HandOppUI Hub's GetCardForUI: {card.Data.cardName}");
+                                Debug.Log($"[NewCardUI] Recovered card via HandP2UI Hub's GetCardForUI: {card.Data.cardName}");
                             }
                         }
                         
@@ -1002,7 +1077,7 @@ namespace CardGame.UI
                 
                 Debug.LogError($"[NewCardUI] CRITICAL: Card reference lost. GameObject: {gameObject.name}, InstanceID: {GetInstanceID()}. Cannot start drag.");
                 Debug.LogError($"[NewCardUI] This indicates Initialize() was not called or card field was cleared. Check CardFactory.");
-                Debug.LogError($"[NewCardUI] Recovery strategies failed. Parent: {(transform.parent != null ? transform.parent.name : "null")}, IsOpponentCard: {isOpponentCard}, HasHandOppUI: {(GetComponentInParent<NewHandP2UI>() != null ? "Yes" : "No")}");
+                Debug.LogError($"[NewCardUI] Recovery strategies failed. Parent: {(transform.parent != null ? transform.parent.name : "null")}, IsP2Card: {isP2Card}, HasHandP2UI: {(GetComponentInParent<NewHandP2UI>() != null ? "Yes" : "No")}");
                 return;
             }
             
@@ -1012,9 +1087,9 @@ namespace CardGame.UI
             if (CardGame.Managers.FateFlowController.Instance != null)
             {
                 // Determine which side this card belongs to
-                CardGame.Managers.FateSide cardSide = isOpponentCard ? 
+                CardGame.Managers.FateSide cardSide = isP2Card ? 
                     CardGame.Managers.FateSide.P2 : 
-                    CardGame.Managers.FateSide.Player;
+                    CardGame.Managers.FateSide.P1;
                 
                 bool canAct = CardGame.Managers.FateFlowController.Instance.CanAct(cardSide);
                 if (!canAct)
@@ -1045,8 +1120,8 @@ namespace CardGame.UI
         
         public void OnDrag(PointerEventData eventData)
         {
-            // If CardMoverP2 is present, let it handle opponent card dragging
-            if (IsOpponentCard())
+            // If CardMoverP2 is present, let it handle P2 card dragging
+            if (IsP2Card())
             {
                 CardMoverP2 cardMoverP2 = GetComponent<CardMoverP2>();
                 if (cardMoverP2 == null) cardMoverP2 = GetComponentInChildren<CardMoverP2>();
@@ -1070,7 +1145,7 @@ namespace CardGame.UI
         public void OnEndDrag(PointerEventData eventData)
         {
             // If CardMoverP2 is present, let it handle opponent card dragging
-            if (IsOpponentCard())
+            if (IsP2Card())
             {
                 CardMoverP2 cardMoverP2 = GetComponent<CardMoverP2>();
                 if (cardMoverP2 == null) cardMoverP2 = GetComponentInChildren<CardMoverP2>();
@@ -1081,29 +1156,29 @@ namespace CardGame.UI
             // [CardFront] OnEndDrag: Validate drag state
             if (!isDragging)
             {
-                // [CardFront] Check if opponent card drag was blocked because it's not their turn
-                // If it's the opponent's turn, we should allow dragging - check turn state
-                bool isOpponentCard = IsOpponentCard();
-                if (isOpponentCard)
+                // [CardFront] Check if P2 card drag was blocked because it's not their turn
+                // If it's P2's turn, we should allow dragging - check turn state
+                bool isP2Card = IsP2Card();
+                if (isP2Card)
                 {
-                    // Check if it's actually the opponent's turn - if so, we should have been dragging
-                    bool canOpponentAct = CardGame.Managers.FateFlowController.Instance != null && 
-                                         CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.P2);
+                    // Check if it's actually P2's turn - if so, we should have been dragging
+                    bool canP2Act = CardGame.Managers.FateFlowController.Instance != null && 
+                                    CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.P2);
                     
-                    if (canOpponentAct)
+                    if (canP2Act)
                     {
-                        // It's the opponent's turn but drag wasn't started - this is unexpected
-                        Debug.LogWarning($"[NewCardUI] OnEndDrag: Opponent card '{gameObject.name}' drag should have started but didn't. Drag may have been interrupted.");
+                        // It's P2's turn but drag wasn't started - this is unexpected
+                        Debug.LogWarning($"[NewCardUI] OnEndDrag: P2 card '{gameObject.name}' drag should have started but didn't. Drag may have been interrupted.");
                     }
                     else
                     {
-                        // It's not the opponent's turn - silently ignore (expected behavior)
+                        // It's not P2's turn - silently ignore (expected behavior)
                         return;
                     }
                 }
                 
                 // Only warn if this is a player card that should have been dragging
-                if (IsPlayerCard() && allowDrag)
+                if (IsP1Card() && allowDrag)
                 {
                     Debug.LogWarning($"[NewCardUI] OnEndDrag called but isDragging is false for player card '{gameObject.name}'. Drag may have been interrupted.");
                 }
@@ -1154,10 +1229,10 @@ namespace CardGame.UI
                 Debug.Log($"[NewCardUI] OnEndDrag: Drop area found! '{dropArea.name}' at {dropArea.transform.position}. Placing card...");
                 
                 // [CardFront] Handle P2 cards differently - they use CardMoverP2 and OnCardDropP2
-                bool isOpponentCard = IsOpponentCard();
-                if (isOpponentCard)
+                bool isP2Card = IsP2Card();
+                if (isP2Card)
                 {
-                    PlaceOpponentCardOnBoard(dropArea);
+                    PlaceP2CardOnBoard(dropArea);
                 }
                 else
                 {
@@ -1362,7 +1437,7 @@ namespace CardGame.UI
             // Check if it's the player's turn
             if (CardGame.Managers.FateFlowController.Instance != null)
             {
-                if (!CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.Player))
+                if (!CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.P1))
                 {
                     Debug.LogWarning($"Cannot place card - not player's turn. Current fate: {CardGame.Managers.FateFlowController.Instance.CurrentFate}");
                     return;
@@ -1427,11 +1502,11 @@ namespace CardGame.UI
             
             // [CardFront] Hub approach: Use CardFactory to create board card
             // CardFactory is the Hub for card creation - use it instead of manual instantiation
-            GameObject boardCardPrefab = UnityEngine.Resources.Load<GameObject>("NewCardPrefab");
+            GameObject boardCardPrefab = UnityEngine.Resources.Load<GameObject>(PlayerCardPrefabName);
             
             if (boardCardPrefab == null)
             {
-                Debug.LogError("[NewCardUI] PlaceCardOnBoard: NewCardPrefab not found in Resources folder. Cannot create board card.");
+                Debug.LogError($"[NewCardUI] PlaceCardOnBoard: {PlayerCardPrefabName} not found in Resources folder. Cannot create board card.");
                 return;
             }
             
@@ -1475,103 +1550,103 @@ namespace CardGame.UI
         /// <summary>
         /// [CardFront] Places a P2 card on the board using CardMoverP2
         /// </summary>
-        private void PlaceOpponentCardOnBoard(CardDropArea dropArea)
+        private void PlaceP2CardOnBoard(CardDropArea dropArea)
         {
-            Debug.Log($"[NewCardUI] PlaceOpponentCardOnBoard: Attempting to place opponent card on {dropArea?.name}");
+            Debug.Log($"[NewCardUI] PlaceP2CardOnBoard: Attempting to place P2 card on {dropArea?.name}");
             
             if (dropArea == null || card == null)
             {
-                Debug.LogWarning($"PlaceOpponentCardOnBoard: dropArea or card is null. dropArea: {dropArea != null}, card: {card != null}");
+                Debug.LogWarning($"PlaceP2CardOnBoard: dropArea or card is null. dropArea: {dropArea != null}, card: {card != null}");
                 return;
             }
             
-            // Check if it's the opponent's turn
+            // Check if it's P2's turn
             if (CardGame.Managers.FateFlowController.Instance != null)
             {
                 if (!CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.P2))
                 {
-                    Debug.LogWarning($"Cannot place opponent card - not opponent's turn. Current fate: {CardGame.Managers.FateFlowController.Instance.CurrentFate}");
+                    Debug.LogWarning($"Cannot place P2 card - not P2's turn. Current fate: {CardGame.Managers.FateFlowController.Instance.CurrentFate}");
                     return;
                 }
                 else
                 {
-                    Debug.Log($"PlaceOpponentCardOnBoard: Turn check passed. Current fate: {CardGame.Managers.FateFlowController.Instance.CurrentFate}");
+                    Debug.Log($"PlaceP2CardOnBoard: Turn check passed. Current fate: {CardGame.Managers.FateFlowController.Instance.CurrentFate}");
                 }
             }
             else
             {
-                Debug.LogWarning("PlaceOpponentCardOnBoard: FateFlowController.Instance is null - allowing placement anyway");
+                Debug.LogWarning("PlaceP2CardOnBoard: FateFlowController.Instance is null - allowing placement anyway");
             }
             
             // Check if drop area is occupied
             if (dropArea.IsOccupied)
             {
-                Debug.LogWarning($"Cannot place opponent card - drop area {dropArea.name} is occupied");
+                Debug.LogWarning($"Cannot place P2 card - drop area {dropArea.name} is occupied");
                 return;
             }
             
-            // [CardFront] Hub connection: Get opponent deck manager via Hub (NewHandP2UI) instead of FindObjectOfType
-            // NewHandP2UI is the Hub that manages opponent card UI instances and knows about deckManagerP2
+            // [CardFront] Hub connection: Get P2 deck manager via Hub (NewHandP2UI) instead of FindObjectOfType
+            // NewHandP2UI is the Hub that manages P2 card UI instances and knows about deckManagerP2
             CardGame.Managers.NewDeckManagerP2 deckManagerP2 = null;
             
-            // Use parent Hub connection to get opponent deck manager
+            // Use parent Hub connection to get P2 deck manager
             CardGame.UI.NewHandP2UI handP2UI = GetComponentInParent<CardGame.UI.NewHandP2UI>();
             if (handP2UI != null)
             {
                 // [CardFront] Access deckManagerP2 via Hub property (clean Hub connection)
                 deckManagerP2 = handP2UI.DeckManager;
                 
-                // Validate card via Hub connection (HandOppUI knows which cards are in hand)
+                // Validate card via Hub connection (HandP2UI knows which cards are in hand)
                 NewCard validatedCard = handP2UI.GetCardForUI(this);
                 if (validatedCard == null || validatedCard != card)
                 {
-                    Debug.LogWarning($"[NewCardUI] PlaceOpponentCardOnBoard: Card '{card.Data?.cardName}' not found in HandOppUI Hub. Cannot place.");
+                    Debug.LogWarning($"[NewCardUI] PlaceP2CardOnBoard: Card '{card.Data?.cardName}' not found in HandP2UI Hub. Cannot place.");
                     return;
                 }
             }
             else
             {
-                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: NewHandP2UI Hub not found in parent hierarchy. Cannot place opponent card.");
+                Debug.LogError("[NewCardUI] PlaceP2CardOnBoard: NewHandP2UI Hub not found in parent hierarchy. Cannot place P2 card.");
                 return;
             }
             
             // [CardFront] Validate deckManagerP2 exists
             if (deckManagerP2 == null)
             {
-                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: DeckManagerOpp is null in HandOppUI Hub. Cannot place opponent card.");
+                Debug.LogError("[NewCardUI] PlaceP2CardOnBoard: DeckManagerP2 is null in HandP2UI Hub. Cannot place P2 card.");
                 return;
             }
             
-            // [CardFront] Final validation: Card must be in opponent hand (via Hub connection)
+            // [CardFront] Final validation: Card must be in P2 hand (via Hub connection)
             if (!deckManagerP2.Hand.Contains(card))
             {
-                Debug.LogWarning($"[NewCardUI] PlaceOpponentCardOnBoard: Card '{card.Data?.cardName}' not found in opponent hand. Hand contains {deckManagerP2.Hand.Count} cards.");
+                Debug.LogWarning($"[NewCardUI] PlaceP2CardOnBoard: Card '{card.Data?.cardName}' not found in P2 hand. Hand contains {deckManagerP2.Hand.Count} cards.");
                 return;
             }
             
-            Debug.Log($"[NewCardUI] PlaceOpponentCardOnBoard: All checks passed. Creating opponent board card for '{card.Data.cardName}'...");
+            Debug.Log($"[NewCardUI] PlaceP2CardOnBoard: All checks passed. Creating P2 board card for '{card.Data.cardName}'...");
             
-            // [CardFront] Hub approach: Get opponent board card prefab from NewHandP2UI (Hub)
+            // [CardFront] Hub approach: Get P2 board card prefab from NewHandP2UI (Hub)
             // NewHandP2UI has the cardPrefab reference assigned in Inspector - use that instead of Resources.Load
             NewCardUI opponentPrefab = handP2UI.CardPrefab;
             
             if (opponentPrefab == null)
             {
-                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: cardPrefab is null in NewHandP2UI Hub. Cannot create opponent board card. Please assign the prefab in the Inspector.");
+                Debug.LogError("[NewCardUI] PlaceP2CardOnBoard: cardPrefab is null in NewHandP2UI Hub. Cannot create P2 board card. Please assign the prefab in the Inspector.");
                 return;
             }
             
             // [CardFront] Use CardFactory Hub for board card creation (similar to player cards)
             // CardFactory.CreateBoardCard handles proper initialization and activation
-            GameObject boardCardOpp = CardGame.Factories.CardFactory.CreateBoardCard(
+            GameObject boardCardP2 = CardGame.Factories.CardFactory.CreateBoardCard(
                 card,
                 opponentPrefab.gameObject,
                 dropArea.transform.position
             );
             
-            if (boardCardOpp == null)
+            if (boardCardP2 == null)
             {
-                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: Failed to instantiate opponent board card.");
+                Debug.LogError("[NewCardUI] PlaceP2CardOnBoard: Failed to instantiate P2 board card.");
                 return;
             }
             
@@ -1582,35 +1657,35 @@ namespace CardGame.UI
             // - Refreshing home position on the mover component
             
             // Get CardMoverP2 component (should already be set up by CardFactory)
-            CardMoverP2 cardMoverP2 = boardCardOpp.GetComponent<CardMoverP2>();
+            CardMoverP2 cardMoverP2 = boardCardP2.GetComponent<CardMoverP2>();
             if (cardMoverP2 == null)
             {
-                cardMoverP2 = boardCardOpp.GetComponentInChildren<CardMoverP2>();
+                cardMoverP2 = boardCardP2.GetComponentInChildren<CardMoverP2>();
             }
             
             if (cardMoverP2 == null)
             {
-                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: P2 board card prefab missing CardMoverP2 component. Cannot drag P2 board card. Please ensure the prefab has a CardMoverP2 component.");
-                Destroy(boardCardOpp);
+                Debug.LogError("[NewCardUI] PlaceP2CardOnBoard: P2 board card prefab missing CardMoverP2 component. Cannot drag P2 board card. Please ensure the prefab has a CardMoverP2 component.");
+                Destroy(boardCardP2);
                 return;
             }
             
             // [CardFront] Safety check: Ensure card reference is set (CardFactory should have done this)
             if (cardMoverP2.Card == null)
             {
-                Debug.LogWarning("[NewCardUI] PlaceOpponentCardOnBoard: CardMoverP2 card reference is null (CardFactory should have set it). Setting it now as fallback.");
+                Debug.LogWarning("[NewCardUI] PlaceP2CardOnBoard: CardMoverP2 card reference is null (CardFactory should have set it). Setting it now as fallback.");
                 cardMoverP2.SetCard(card);
                 cardMoverP2.RefreshHomePosition();
             }
             
             // [CardFront] Trigger opponent drop through CardDropArea (uses event channel)
             // This will handle: playing card, placement, battles via Hub connections
-            Debug.Log($"[NewCardUI] PlaceOpponentCardOnBoard: Triggering opponent drop for card '{card.Data.cardName}' on {dropArea.name}");
+            Debug.Log($"[NewCardUI] PlaceP2CardOnBoard: Triggering P2 drop for card '{card.Data.cardName}' on {dropArea.name}");
             dropArea.OnCardDropP2(cardMoverP2);
             
             // [CardFront] Remove from hand UI via event channel (cluster cleanup)
             // NewHandP2UI will handle removal when OnCardPlayed event fires
-            Debug.Log($"[NewCardUI] PlaceOpponentCardOnBoard: Opponent card '{card.Data.cardName}' placement complete!");
+            Debug.Log($"[NewCardUI] PlaceP2CardOnBoard: P2 card '{card.Data.cardName}' placement complete!");
         }
         
         public void RefreshVisuals()
@@ -1640,7 +1715,7 @@ namespace CardGame.UI
                 Debug.Log($"[NewCardUI] Synced card reference '{card.Data.cardName}' to CardMover on '{gameObject.name}'");
             }
             
-            // Opponent mover on this GameObject (if present)
+            // P2 mover on this GameObject (if present)
             if (TryGetComponent<CardMoverP2>(out var moverP2))
             {
                 moverP2.SetCard(card);
@@ -1681,13 +1756,13 @@ namespace CardGame.UI
         /// Determines if this card belongs to the player (vs opponent)
         /// </summary>
         /// <summary>
-        /// Determines if this card belongs to the opponent.
+        /// Determines if this card belongs to P2.
         /// Checks GameObject name, parent hierarchy, and deck manager.
         /// </summary>
-        private bool IsOpponentCard()
+        private bool IsP2Card()
         {
             // [CardFront] CRITICAL: Check for CardMoverP2 component FIRST (most reliable for board cards)
-            // Board cards don't have "Opp" in their name (renamed to card name), so component check is essential
+            // Board cards don't have "P2" in their name (renamed to card name), so component check is essential
             CardMoverP2 cardMoverP2 = GetComponent<CardMoverP2>();
             if (cardMoverP2 != null)
             {
@@ -1708,17 +1783,17 @@ namespace CardGame.UI
                 return true; // P2 card (has CardMoverP2 in parent)
             }
             
-            // Check GameObject name for "Opp" marker (works for hand cards)
-            if (gameObject.name.Contains("Opp") || gameObject.name.Contains("NewCardPrefabOpp"))
+            // Check GameObject name for P2 markers (works for hand cards)
+            if (gameObject.name.Contains("P2") || gameObject.name.Contains(P2CardPrefabName))
             {
                 return true;
             }
             
-            // Check parent hierarchy for opponent containers (works for hand cards)
+            // Check parent hierarchy for P2 containers (works for hand cards)
             Transform parent = transform.parent;
             while (parent != null)
             {
-                if (parent.name.Contains("Opp") || parent.name.Contains("Opponent"))
+                if (parent.name.Contains("P2") || parent.name.Contains("Player 2"))
                 {
                     return true;
                 }
@@ -1752,7 +1827,7 @@ namespace CardGame.UI
         /// <summary>
         /// Determines if this card belongs to the player.
         /// </summary>
-        private bool IsPlayerCard()
+        private bool IsP1Card()
         {
             // [CardFront] Use Hub connection instead of FindObjectOfType
             // Check if card is in player's hand via parent Hub

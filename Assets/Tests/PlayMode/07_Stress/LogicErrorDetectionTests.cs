@@ -110,7 +110,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return null;
             
@@ -168,7 +168,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return null;
             
@@ -280,7 +280,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return null;
             
@@ -317,7 +317,7 @@ namespace CardGame.Tests
             
             // Get initial turn
             FateSide initialTurn = fateController.CurrentFate;
-            FateSide expectedNextTurn = initialTurn == FateSide.Player ? FateSide.P2 : FateSide.Player;
+            FateSide expectedNextTurn = initialTurn == FateSide.P1 ? FateSide.P2 : FateSide.P1;
             
             // Switch turn
             fateController.AdvanceFateFlow();
@@ -350,11 +350,11 @@ namespace CardGame.Tests
             Assert.IsNotNull(fateController, "FateFlowController should exist");
             
             // Set to Player 1's turn
-            fateController.SetFate(FateSide.Player);
+            fateController.SetFate(FateSide.P1);
             yield return null;
             
             // LOGIC ASSERTION: Only Player 1 should be able to act
-            bool player1CanAct = fateController.CanAct(FateSide.Player);
+            bool player1CanAct = fateController.CanAct(FateSide.P1);
             bool player2CanAct = fateController.CanAct(FateSide.P2);
             
             Assert.IsTrue(player1CanAct, 
@@ -367,7 +367,7 @@ namespace CardGame.Tests
             yield return null;
             
             // LOGIC ASSERTION: Only Player 2 should be able to act
-            player1CanAct = fateController.CanAct(FateSide.Player);
+            player1CanAct = fateController.CanAct(FateSide.P1);
             player2CanAct = fateController.CanAct(FateSide.P2);
             
             Assert.IsFalse(player1CanAct, 
@@ -398,7 +398,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return null;
             
@@ -436,7 +436,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return null;
             

@@ -6,11 +6,11 @@ using CardGame.UI;
 namespace CardGame.Editor
 {
     /// <summary>
-    /// Editor script to validate NewCardPrefab setup for flip animation
+    /// Editor script to validate NewCardPrefabP1/P2 setup for flip animation
     /// </summary>
     public class NewCardPrefabValidator : EditorWindow
     {
-        [MenuItem("Card Game/Validate NewCardPrefab Setup")]
+        [MenuItem("Card Game/Validate Card Prefab Setup")]
         public static void ShowWindow()
         {
             GetWindow<NewCardPrefabValidator>("Card Prefab Validator");
@@ -18,7 +18,7 @@ namespace CardGame.Editor
 
         private void OnGUI()
         {
-            GUILayout.Label("NewCardPrefab Flip Animation Validator", EditorStyles.boldLabel);
+            GUILayout.Label("NewCard Prefab Flip Animation Validator", EditorStyles.boldLabel);
             GUILayout.Space(10);
 
             if (GUILayout.Button("Validate Current Selection", GUILayout.Height(30)))
@@ -28,7 +28,7 @@ namespace CardGame.Editor
 
             GUILayout.Space(10);
             GUILayout.Label("Instructions:", EditorStyles.boldLabel);
-            GUILayout.Label("1. Select NewCardPrefab in Project window");
+            GUILayout.Label("1. Select NewCardPrefabP1 or NewCardPrefabP2 in Project window");
             GUILayout.Label("2. Click 'Validate Current Selection'");
             GUILayout.Label("3. Check Console for validation results");
         }
@@ -39,7 +39,7 @@ namespace CardGame.Editor
             
             if (prefab == null)
             {
-                Debug.LogError("No GameObject selected! Please select NewCardPrefab.");
+                Debug.LogError("No GameObject selected! Please select NewCardPrefabP1 or NewCardPrefabP2.");
                 return;
             }
 

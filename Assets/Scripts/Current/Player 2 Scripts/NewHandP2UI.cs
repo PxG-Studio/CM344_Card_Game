@@ -1,0 +1,336 @@
+using System.Collections.Generic;
+using UnityEngine;
+using CardGame.Core;
+using CardGame.Managers;
+using CardGame.Factories;
+
+namespace CardGame.UI
+{
+    /// <summary>
+    /// Manages the visual representation of P2's hand with NewCard
+    /// </summary>
+    public class NewHandP2UI : MonoBehaviour
+    {
+        [Header("References")]
+        [SerializeField] private NewCardUI cardPrefab;
+        [SerializeField] private Transform cardContainer;
+        
+        [Header("Layout Settings")]
+        [SerializeField] private float cardSpacing = 180f;
+        [SerializeField] private float maxSpread = 900f;
+        [SerializeField] private float arcHeight = 80f;
+        [SerializeField] private float rotationAngle = 12f;
+        
+        private List<NewCardUI> cardUIList = new List<NewCardUI>();
+        private NewDeckManagerP2 deckManager;
+        
+        // [CardFront] Static cache for prefab reference (fallback if serialized reference is lost)
+        private static NewCardUI staticCardPrefab;
+        
+        /// <summary>
+        /// [CardFront] Hub property: Exposes deck manager for Hub connections
+        /// </summary>
+        public NewDeckManagerP2 DeckManager => deckManager;
+        
+        /// <summary>
+        /// [CardFront] Hub property: Exposes card prefab for Hub connections
+        /// </summary>
+        public NewCardUI CardPrefab => cardPrefab;
+        
+        /// <summary>
+        /// Gets the card associated with a specific card UI instance.
+        /// </summary>
+        public NewCard GetCardForUI(NewCardUI cardUI)
+        {
+            if (cardUI == null) return null;
+            
+            // First try: check if it's in the list and has a card
+            if (cardUIList.Contains(cardUI))
+            {
+                if (cardUI.Card != null)
+                {
+                    return cardUI.Card;
+                }
+            }
+            
+            // Second try: find by GameObject reference (in case card field is null)
+            int index = -1;
+            for (int i = 0; i < cardUIList.Count; i++)
+            {
+                var ui = cardUIList[i];
+                if (ui != null && ui.gameObject == cardUI.gameObject)
+                {
+                    if (ui.Card != null)
+                    {
+                        return ui.Card;
+                    }
+                    // Store index for fallback
+                    index = i;
+                    break;
+                }
+            }
+            
+            // Third try: match by index with deck manager hand (if card field is null)
+            if (index >= 0 && deckManager != null && deckManager.Hand != null && index < deckManager.Hand.Count)
+            {
+                NewCard handCard = deckManager.Hand[index];
+                if (handCard != null)
+                {
+                    Debug.Log($"GetCardForUI: Found card by index matching: {handCard.Data?.cardName}");
+                    return handCard;
+                }
+            }
+            
+            return null;
+        }
+        
+        /// <summary>
+        /// Gets the card count in the hand UI.
+        /// </summary>
+        public int GetCardCount()
+        {
+            return cardUIList.Count;
+        }
+        
+        /// <summary>
+        /// Gets the card at a specific index in the hand UI list.
+        /// </summary>
+        public NewCard GetCardForUIByIndex(int index)
+        {
+            if (index >= 0 && index < cardUIList.Count)
+            {
+                var cardUI = cardUIList[index];
+                if (cardUI != null)
+                {
+                    if (cardUI.Card != null)
+                    {
+                        return cardUI.Card;
+                    }
+                    // Try to get from deck manager by index
+                    if (deckManager != null && deckManager.Hand != null && index < deckManager.Hand.Count)
+                    {
+                        return deckManager.Hand[index];
+                    }
+                }
+            }
+            return null;
+        }
+        
+        private void Awake()
+        {
+            // [CardFront] Cache prefab reference in static variable as fallback
+            if (cardPrefab != null && staticCardPrefab == null)
+            {
+                staticCardPrefab = cardPrefab;
+                Debug.Log("[NewHandP2UI] Cached cardPrefab reference in static variable");
+            }
+            
+            // [CardFront] Restore prefab reference from static cache if lost
+            if (cardPrefab == null && staticCardPrefab != null)
+            {
+                cardPrefab = staticCardPrefab;
+                Debug.Log("[NewHandP2UI] Restored cardPrefab reference from static cache (reference was lost during rematch)");
+            }
+            
+            // Ensure cardContainer is assigned
+            if (cardContainer == null)
+            {
+                cardContainer = transform;
+                Debug.Log("[NewHandP2UI] Auto-assigned cardContainer to self transform");
+            }
+        }
+        
+        private void Start()
+        {
+            deckManager = FindObjectOfType<NewDeckManagerP2>();
+            
+            if (deckManager != null)
+            {
+                deckManager.OnCardDrawn += HandleCardDrawn;
+                deckManager.OnCardPlayed += HandleCardPlayed;
+                deckManager.OnCardDiscarded += HandleCardDiscarded;
+            }
+        }
+        
+        private void OnDestroy()
+        {
+            if (deckManager != null)
+            {
+                deckManager.OnCardDrawn -= HandleCardDrawn;
+                deckManager.OnCardPlayed -= HandleCardPlayed;
+                deckManager.OnCardDiscarded -= HandleCardDiscarded;
+            }
+        }
+        
+        private void HandleCardDrawn(NewCard card)
+        {
+            AddCardToHand(card);
+        }
+        
+        private void HandleCardPlayed(NewCard card)
+        {
+            RemoveCardFromHand(card);
+        }
+        
+        private void HandleCardDiscarded(NewCard card)
+        {
+            RemoveCardFromHand(card);
+        }
+        
+        public void AddCardToHand(NewCard card)
+        {
+            if (card == null)
+            {
+                Debug.LogError("NewHandP2UI.AddCardToHand: Cannot add null card to hand!");
+                return;
+            }
+            
+            if (cardPrefab == null)
+            {
+                // [CardFront] Try to restore from static cache
+                if (staticCardPrefab != null)
+                {
+                    cardPrefab = staticCardPrefab;
+                    Debug.Log("[NewHandP2UI] Restored cardPrefab from static cache during AddCardToHand");
+                }
+                else
+                {
+                    Debug.LogError("[NewHandP2UI] AddCardToHand: CardPrefab is null and static cache is also null! Please ensure the prefab is assigned in the Inspector for the NewHandP2UI component.");
+                    return;
+                }
+            }
+            
+            if (cardContainer == null)
+            {
+                Debug.LogError("NewHandP2UI.AddCardToHand: CardContainer is not assigned!");
+                return;
+            }
+            
+            // Calculate reveal delay BEFORE creating card (for staggered flip animations)
+            float revealDelay = 0f;
+            if (cardUIList.Count > 0 && cardPrefab.autoFlipOnReveal)
+            {
+                revealDelay = cardUIList.Count * 0.1f;
+            }
+            
+            // CRITICAL: Use CardFactory to ensure Initialize() is called BEFORE Start()
+            NewCardUI cardUI = CardFactory.CreateCardUI(card, cardPrefab, cardContainer, revealDelay);
+            
+            if (cardUI == null)
+            {
+                Debug.LogError($"NewHandP2UI.AddCardToHand: Failed to create card UI for '{card.Data?.cardName ?? "UNKNOWN"}'");
+                return;
+            }
+            
+            // Verify card is bound (should always be true if CardFactory worked)
+            if (cardUI.Card == null)
+            {
+                Debug.LogError($"NewHandP2UI.AddCardToHand: Card UI was created but card is null for '{card.Data?.cardName ?? "UNKNOWN"}'. This should never happen with CardFactory.");
+                Destroy(cardUI.gameObject);
+                return;
+            }
+            
+            // Subscribe to card played event
+            cardUI.OnCardPlayed += HandleCardUIPlayed;
+            
+            // Add to list
+            cardUIList.Add(cardUI);
+            
+            // Arrange cards in hand
+            ArrangeCards();
+            
+            Debug.Log($"NewHandP2UI.AddCardToHand: Successfully added card '{card.Data.cardName}' to hand. Total cards: {cardUIList.Count}");
+        }
+        
+        private void HandleCardUIPlayed(NewCardUI cardUI)
+        {
+            if (deckManager != null)
+            {
+                // Play the card
+                deckManager.PlayCard(cardUI.Card);
+                
+                // Apply card effects if needed
+                ApplyCardEffects(cardUI.Card);
+            }
+        }
+        
+        private void ApplyCardEffects(NewCard card)
+        {
+            // Apply effects based on your game logic
+            // This is where you'd handle the directional stats and card effects
+            if (card.Data.effects != null)
+            {
+                foreach (var effect in card.Data.effects)
+                {
+                    // Handle different effect types
+                    Debug.Log($"Applying effect: {effect.effectType} with value {effect.effectValue}");
+                    // Add your effect handling logic here
+                }
+            }
+        }
+        
+        public void RemoveCardFromHand(NewCard card)
+        {
+            NewCardUI cardUIToRemove = cardUIList.Find(c => c.Card.InstanceID == card.InstanceID);
+            
+            if (cardUIToRemove != null)
+            {
+                cardUIList.Remove(cardUIToRemove);
+                
+                // Only destroy if it's a UI card (NewCardUI), not a 2D board card (CardMover)
+                // CardMover cards should stay on the board when played
+                CardMoverP2 cardMover = cardUIToRemove.GetComponent<CardMoverP2>();
+                if (cardMover == null)
+                {
+                    // It's a UI card, safe to destroy
+                    Destroy(cardUIToRemove.gameObject);
+                }
+                else
+                {
+                    // It's a board card (CardMover), just remove from UI list but keep the GameObject
+                    Debug.Log($"Card {card.Data.cardName} played on board - keeping GameObject");
+                }
+                
+                ArrangeCards();
+            }
+        }
+        
+        public void ClearHand()
+        {
+            foreach (NewCardUI cardUI in cardUIList)
+            {
+                Destroy(cardUI.gameObject);
+            }
+            cardUIList.Clear();
+        }
+        
+        private void ArrangeCards()
+        {
+            int cardCount = cardUIList.Count;
+            if (cardCount == 0) return;
+            
+            float totalWidth = Mathf.Min((cardCount - 1) * cardSpacing, maxSpread);
+            float startX = -totalWidth * 0.5f;
+            
+            for (int i = 0; i < cardCount; i++)
+            {
+                NewCardUI cardUI = cardUIList[i];
+                RectTransform rectTransform = cardUI.GetComponent<RectTransform>();
+                
+                float t = cardCount > 1 ? (float)i / (cardCount - 1) : 0.5f;
+                float x = cardCount > 1 ? startX + (t * totalWidth) : 0f;
+
+                float centered = (t - 0.5f) * 2f;
+                float y = -Mathf.Pow(centered, 2f) * arcHeight + arcHeight;
+
+                float rotation = centered * rotationAngle;
+
+                rectTransform.anchoredPosition = new Vector2(x, y);
+                rectTransform.localRotation = Quaternion.Euler(0f, 0f, rotation);
+                
+                // Set sibling index for proper overlap
+                cardUI.transform.SetSiblingIndex(i);
+            }
+        }
+    }
+}

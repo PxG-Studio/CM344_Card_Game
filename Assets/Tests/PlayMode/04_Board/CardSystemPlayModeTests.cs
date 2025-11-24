@@ -104,7 +104,7 @@ namespace CardGame.Tests
         }
 
         [UnityTest]
-        public IEnumerator Player2_HandOppUI_Exists()
+        public IEnumerator Player2_HandP2UI_Exists()
         {
             yield return new WaitForSeconds(0.5f);
             
@@ -165,20 +165,20 @@ namespace CardGame.Tests
             yield return new WaitForSeconds(0.5f);
             
             // Prefab assets should be inactive if they exist in scene
-            GameObject prefab1 = GameObject.Find("NewCardPrefab");
-            GameObject prefab2 = GameObject.Find("NewCardPrefabOpp");
+            GameObject prefab1 = GameObject.Find("NewCardPrefabP1");
+            GameObject prefab2 = GameObject.Find("NewCardPrefabP2");
             
             if (prefab1 != null)
             {
                 // Should be inactive (disabled by NewCardUI)
                 Assert.IsFalse(prefab1.activeSelf, 
-                    "NewCardPrefab should be inactive if present in scene");
+                    "NewCardPrefabP1 should be inactive if present in scene");
             }
             
             if (prefab2 != null)
             {
                 Assert.IsFalse(prefab2.activeSelf, 
-                    "NewCardPrefabOpp should be inactive if present in scene");
+                    "NewCardPrefabP2 should be inactive if present in scene");
             }
         }
 
@@ -245,7 +245,7 @@ namespace CardGame.Tests
                                 FateFlowController fateController = FateFlowController.Instance;
                                 if (fateController != null)
                                 {
-                                    fateController.SetFate(FateSide.Player);
+                                    fateController.SetFate(FateSide.P1);
                                 }
                                 yield return null;
                                 

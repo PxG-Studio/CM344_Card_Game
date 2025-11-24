@@ -170,7 +170,7 @@ namespace CardGame.Tests
             
             // Act: Switch turn
             FateSide initialFate = fateController.CurrentFate;
-            FateSide newFate = initialFate == FateSide.Player ? FateSide.P2 : FateSide.Player;
+            FateSide newFate = initialFate == FateSide.P1 ? FateSide.P2 : FateSide.P1;
             
             fateController.SetFate(newFate);
             yield return null; // Wait one frame for UI update
@@ -267,7 +267,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return null;
             

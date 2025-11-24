@@ -368,14 +368,14 @@ namespace CardGame.UI
                 // If card belongs to player, use opponent's capture color (green)
                 // If card belongs to opponent, use player's capture color (orange)
                 // We'll check by looking at which deck manager owns the card
-                bool isPlayerCard = IsPlayerCard();
+                bool isPlayerCard = IsP1Card();
                 if (isPlayerCard)
                 {
-                    capturedColor = cardUI.OpponentCapturedColor; // Player's card captured = green
+                    capturedColor = cardUI.P2CapturedColor; // Player's card captured = green
                 }
                 else
                 {
-                    capturedColor = cardUI.PlayerCapturedColor; // Opponent's card captured = orange
+                    capturedColor = cardUI.P1CapturedColor; // P2 card captured = orange
                 }
             }
             
@@ -608,7 +608,7 @@ namespace CardGame.UI
         /// <summary>
         /// Determines if this card belongs to the player (vs opponent)
         /// </summary>
-        private bool IsPlayerCard()
+        private bool IsP1Card()
         {
             // Try to find which deck manager owns this card
             // Check if card is in player's hand or was played by player
@@ -633,7 +633,7 @@ namespace CardGame.UI
                 //if (cardMoverP2 != null)
                 if (frontContainer.CompareTag("p2"))
                 {
-                    return false; // Opponent card
+                    return false; // P2 card
                 }
             }
             
@@ -667,14 +667,14 @@ namespace CardGame.UI
                 }
                 else if (cardUI != null)
                 {
-                    bool isPlayerCard = IsPlayerCard();
+                    bool isPlayerCard = IsP1Card();
                     if (isPlayerCard)
                     {
-                        capturedColor = cardUI.OpponentCapturedColor; // Player's card captured = green
+                        capturedColor = cardUI.P2CapturedColor; // Player's card captured = green
                     }
                     else
                     {
-                        capturedColor = cardUI.PlayerCapturedColor; // Opponent's card captured = orange
+                        capturedColor = cardUI.P1CapturedColor; // P2 card captured = orange
                     }
                 }
             }

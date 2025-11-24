@@ -569,7 +569,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             bool placedCardLost = CheckBattleBetweenCards(placedPosition, placedCard, otherCardMover.transform.position, otherCardMover.Card, otherCardMover.gameObject, placedCardMover.gameObject);
             if (placedCardLost)
             {
-                bool winningCardIsPlayer = IsPlayerCard(otherCardMover.gameObject);
+                bool winningCardIsPlayer = IsP1Card(otherCardMover.gameObject);
                 Color captureColor = winningCardIsPlayer ? 
                     GetPlayerCaptureColor() : GetP2CaptureColor();
                 float distance = Vector3.Distance(placedPosition, otherCardMover.transform.position);
@@ -587,7 +587,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 bool placedCardLost = CheckBattleBetweenCards(placedPosition, placedCard, otherCardMoverP2.transform.position, otherCardMoverP2.Card, otherCardMoverP2.gameObject, placedCardMover.gameObject);
                 if (placedCardLost)
                 {
-                    bool winningCardIsPlayer = IsPlayerCard(otherCardMoverP2.gameObject);
+                    bool winningCardIsPlayer = IsP1Card(otherCardMoverP2.gameObject);
                     Color captureColor = winningCardIsPlayer ? 
                         GetPlayerCaptureColor() : GetP2CaptureColor();
                     float distance = Vector3.Distance(placedPosition, otherCardMoverP2.transform.position);
@@ -632,7 +632,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     /// Determines if a card GameObject belongs to P1 (vs P2)
     /// Checks both component type (CardMover (P1) vs CardMoverP2 (P2)) and border color (for captured cards)
     /// </summary>
-    private bool IsPlayerCard(GameObject cardObject)
+    private bool IsP1Card(GameObject cardObject)
     {
         if (cardObject == null) return true; // Default to player
         
@@ -1000,7 +1000,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             bool placedCardLost = CheckBattleBetweenCards(placedPosition, placedCard, otherCardMover.transform.position, otherCardMover.Card, otherCardMover.gameObject, placedCardMover.gameObject);
             if (placedCardLost)
             {
-                bool winningCardIsPlayer = IsPlayerCard(otherCardMover.gameObject);
+                bool winningCardIsPlayer = IsP1Card(otherCardMover.gameObject);
                 Color captureColor = winningCardIsPlayer ? 
                     GetPlayerCaptureColor() : GetP2CaptureColor();
                 float distance = Vector3.Distance(placedPosition, otherCardMover.transform.position);
@@ -1019,7 +1019,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 bool placedCardLost = CheckBattleBetweenCards(placedPosition, placedCard, otherCardMoverP2.transform.position, otherCardMoverP2.Card, otherCardMoverP2.gameObject, placedCardMover.gameObject);
                 if (placedCardLost)
                 {
-                    bool winningCardIsPlayer = IsPlayerCard(otherCardMoverP2.gameObject);
+                    bool winningCardIsPlayer = IsP1Card(otherCardMoverP2.gameObject);
                     Color captureColor = winningCardIsPlayer ? 
                         GetPlayerCaptureColor() : GetP2CaptureColor();
                     float distance = Vector3.Distance(placedPosition, otherCardMoverP2.transform.position);
@@ -1131,8 +1131,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     private bool CheckBattleBetweenCards(Vector3 placedPos, NewCard placedCard, Vector3 otherPos, NewCard otherCard, GameObject otherCardObject, GameObject placedCardObject)
     {
         // Don't battle cards that belong to the same player
-        bool placedCardIsPlayer = IsPlayerCard(placedCardObject);
-        bool otherCardIsPlayer = IsPlayerCard(otherCardObject);
+        bool placedCardIsPlayer = IsP1Card(placedCardObject);
+        bool otherCardIsPlayer = IsP1Card(otherCardObject);
         
         if (placedCardIsPlayer == otherCardIsPlayer)
         {
@@ -1391,7 +1391,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             Debug.Log($"[CardDropArea] ScoreManager lookup for {card.Data.cardName}. Cached scoreManager: {scoreManager != null}, ScoreManager.Instance: {ScoreManager.Instance != null}, Final scoreMgr: {scoreMgr != null}");
             if (scoreMgr != null)
             {
-                bool isPlayerCapture = IsPlayerCard(cardObject);
+                bool isPlayerCapture = IsP1Card(cardObject);
                 // Note: The card is being captured, so the capture color determines who gets the score
                 Color playerColor = GetPlayerCaptureColor();
                 Color p2Color = GetP2CaptureColor();
@@ -1444,8 +1444,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     private FlipTarget CheckBattleBetweenCardsForRipple(Vector3 placedPos, NewCard placedCard, Vector3 otherPos, NewCard otherCard, GameObject otherCardObject, GameObject placedCardObject)
     {
         // Don't battle cards that belong to the same player
-        bool placedCardIsPlayer = IsPlayerCard(placedCardObject);
-        bool otherCardIsPlayer = IsPlayerCard(otherCardObject);
+        bool placedCardIsPlayer = IsP1Card(placedCardObject);
+        bool otherCardIsPlayer = IsP1Card(otherCardObject);
         
         if (placedCardIsPlayer == otherCardIsPlayer)
         {
@@ -1782,8 +1782,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             }
             
             // Only check battles if cards belong to different players (after capture)
-            bool capturedCardIsPlayer = IsPlayerCard(capturedCard);
-            bool otherCardIsPlayer = IsPlayerCard(otherCardMover.gameObject);
+            bool capturedCardIsPlayer = IsP1Card(capturedCard);
+            bool otherCardIsPlayer = IsP1Card(otherCardMover.gameObject);
             
             // Skip if both cards belong to same player (no battle)
             if (capturedCardIsPlayer == otherCardIsPlayer) continue;
@@ -1818,8 +1818,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             }
             
             // Only check battles if cards belong to different players (after capture)
-            bool capturedCardIsPlayer = IsPlayerCard(capturedCard);
-            bool otherCardIsPlayer = IsPlayerCard(otherCardMoverP2.gameObject);
+            bool capturedCardIsPlayer = IsP1Card(capturedCard);
+            bool otherCardIsPlayer = IsP1Card(otherCardMoverP2.gameObject);
             
             // Skip if both cards belong to same player (no battle)
             if (capturedCardIsPlayer == otherCardIsPlayer) continue;

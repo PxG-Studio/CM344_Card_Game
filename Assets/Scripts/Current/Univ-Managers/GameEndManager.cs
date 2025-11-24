@@ -20,8 +20,8 @@ namespace CardGame.Managers
         [SerializeField] private CardGame.UI.GameEndUI gameEndUI;
         
         // References to deck managers (auto-found if not assigned)
-        private NewDeckManagerP1 playerDeckManager;
-        private NewDeckManagerP2 opponentDeckManager;
+        private NewDeckManagerP1 p1DeckManager;
+        private NewDeckManagerP2 p2DeckManager;
         
         private void Awake()
         {
@@ -37,13 +37,13 @@ namespace CardGame.Managers
         private void Start()
         {
             // Auto-find deck managers if not assigned
-            if (playerDeckManager == null)
+            if (p1DeckManager == null)
             {
-                playerDeckManager = FindObjectOfType<NewDeckManagerP1>();
+                p1DeckManager = FindObjectOfType<NewDeckManagerP1>();
             }
-            if (opponentDeckManager == null)
+            if (p2DeckManager == null)
             {
-                opponentDeckManager = FindObjectOfType<NewDeckManagerP2>();
+                p2DeckManager = FindObjectOfType<NewDeckManagerP2>();
             }
             
             if (gameEndUI == null)
@@ -78,52 +78,52 @@ namespace CardGame.Managers
             // [CardFront] Check if all cards have been played
             // Game ends when:
             // 1. Both players' hands are empty (no more cards to play)
-            // 2. All 10 cards have been placed on the board (5 player + 5 opponent)
+            // 2. All 10 cards have been placed on the board (5 P1 + 5 P2)
             // Note: Cards are moved to discard pile when played, so IsDeckEmpty() is not reliable
             
-            bool playerHandEmpty = false;
-            bool opponentHandEmpty = false;
+            bool p1HandEmpty = false;
+            bool p2HandEmpty = false;
             int totalCardsPlayed = CardDropArea.GetCardsPlayed();
-            int playerHandCount = 0;
-            int opponentHandCount = 0;
+            int p1HandCount = 0;
+            int p2HandCount = 0;
             
-            if (playerDeckManager != null)
+            if (p1DeckManager != null)
             {
-                playerHandEmpty = playerDeckManager.IsHandEmpty();
+                p1HandEmpty = p1DeckManager.IsHandEmpty();
                 // [CardFront] Get actual hand count for detailed diagnostics
-                if (playerDeckManager.Hand != null)
+                if (p1DeckManager.Hand != null)
                 {
-                    playerHandCount = playerDeckManager.Hand.Count;
+                    p1HandCount = p1DeckManager.Hand.Count;
                 }
-                Debug.Log($"[GameEndManager] Player hand check - IsHandEmpty: {playerHandEmpty}, Hand.Count: {playerHandCount}, DeckManager: {(playerDeckManager != null ? "Found" : "NULL")}");
+                Debug.Log($"[GameEndManager] P1 hand check - IsHandEmpty: {p1HandEmpty}, Hand.Count: {p1HandCount}, DeckManager: {(p1DeckManager != null ? "Found" : "NULL")}");
             }
             else
             {
-                Debug.LogWarning("[GameEndManager] PlayerDeckManager is NULL! Cannot check player hand.");
+                Debug.LogWarning("[GameEndManager] P1DeckManager is NULL! Cannot check P1 hand.");
             }
             
-            if (opponentDeckManager != null)
+            if (p2DeckManager != null)
             {
-                opponentHandEmpty = opponentDeckManager.IsHandEmpty();
+                p2HandEmpty = p2DeckManager.IsHandEmpty();
                 // [CardFront] Get actual hand count for detailed diagnostics
-                if (opponentDeckManager.Hand != null)
+                if (p2DeckManager.Hand != null)
                 {
-                    opponentHandCount = opponentDeckManager.Hand.Count;
+                    p2HandCount = p2DeckManager.Hand.Count;
                 }
-                Debug.Log($"[GameEndManager] Opponent hand check - IsHandEmpty: {opponentHandEmpty}, Hand.Count: {opponentHandCount}, DeckManager: {(opponentDeckManager != null ? "Found" : "NULL")}");
+                Debug.Log($"[GameEndManager] P2 hand check - IsHandEmpty: {p2HandEmpty}, Hand.Count: {p2HandCount}, DeckManager: {(p2DeckManager != null ? "Found" : "NULL")}");
             }
             else
             {
-                Debug.LogWarning("[GameEndManager] OpponentDeckManager is NULL! Cannot check opponent hand.");
+                Debug.LogWarning("[GameEndManager] P2DeckManager is NULL! Cannot check P2 hand.");
             }
             
             // Game ends when both hands are empty AND all 10 cards are on the board
-            bool allCardsPlayed = (totalCardsPlayed >= 10) && playerHandEmpty && opponentHandEmpty;
+            bool allCardsPlayed = (totalCardsPlayed >= 10) && p1HandEmpty && p2HandEmpty;
             
             Debug.Log($"[GameEndManager] ===== GAME END CHECK =====");
             Debug.Log($"[GameEndManager] Cards played: {totalCardsPlayed}/10");
-            Debug.Log($"[GameEndManager] Player hand empty: {playerHandEmpty} (hand.Count: {playerHandCount})");
-            Debug.Log($"[GameEndManager] Opponent hand empty: {opponentHandEmpty} (hand.Count: {opponentHandCount})");
+            Debug.Log($"[GameEndManager] P1 hand empty: {p1HandEmpty} (hand.Count: {p1HandCount})");
+            Debug.Log($"[GameEndManager] P2 hand empty: {p2HandEmpty} (hand.Count: {p2HandCount})");
             Debug.Log($"[GameEndManager] All cards played condition: {allCardsPlayed}");
             Debug.Log($"[GameEndManager] ==========================");
             
@@ -144,11 +144,11 @@ namespace CardGame.Managers
                 {
                     Debug.Log($"[GameEndManager] ❌ Game continues - Waiting for all cards to be played. Cards played: {totalCardsPlayed}/10 (need 10)");
                 }
-                else if (!playerHandEmpty || !opponentHandEmpty)
+                else if (!p1HandEmpty || !p2HandEmpty)
                 {
                     Debug.Log($"[GameEndManager] ❌ Game continues - Waiting for hands to empty.");
-                    Debug.Log($"[GameEndManager]   - Player hand empty: {playerHandEmpty} (hand.Count: {playerHandCount})");
-                    Debug.Log($"[GameEndManager]   - Opponent hand empty: {opponentHandEmpty} (hand.Count: {opponentHandCount})");
+                    Debug.Log($"[GameEndManager]   - P1 hand empty: {p1HandEmpty} (hand.Count: {p1HandCount})");
+                    Debug.Log($"[GameEndManager]   - P2 hand empty: {p2HandEmpty} (hand.Count: {p2HandCount})");
                 }
             }
         }
@@ -238,7 +238,7 @@ namespace CardGame.Managers
             }
             else if (p2Score > p1Score)
             {
-                Debug.Log("Opponent wins!");
+                Debug.Log("P2 wins!");
                 GameManager.Instance.ChangeState(GameState.Defeat);
                 ShowWinnerUI(false, false, cardsPlayed, capturesMade, longestChain, scoreMargin);
             }
@@ -285,13 +285,13 @@ namespace CardGame.Managers
         /// </summary>
         private void LogDeckStatus()
         {
-            if (playerDeckManager != null)
+            if (p1DeckManager != null)
             {
-                Debug.Log($"Player - Hand Empty: {playerDeckManager.IsHandEmpty()}, Deck Empty: {playerDeckManager.IsDeckEmpty()}");
+                Debug.Log($"P1 - Hand Empty: {p1DeckManager.IsHandEmpty()}, Deck Empty: {p1DeckManager.IsDeckEmpty()}");
             }
-            if (opponentDeckManager != null)
+            if (p2DeckManager != null)
             {
-                Debug.Log($"Opponent - Hand Empty: {opponentDeckManager.IsHandEmpty()}, Deck Empty: {opponentDeckManager.IsDeckEmpty()}");
+                Debug.Log($"P2 - Hand Empty: {p2DeckManager.IsHandEmpty()}, Deck Empty: {p2DeckManager.IsDeckEmpty()}");
             }
         }
         
@@ -300,15 +300,15 @@ namespace CardGame.Managers
         /// </summary>
         public NewDeckManagerP1 GetPlayerDeckManager()
         {
-            return playerDeckManager;
+            return p1DeckManager;
         }
         
         /// <summary>
-        /// Gets the opponent deck manager (for external access if needed)
+        /// Gets the P2 deck manager (for external access if needed)
         /// </summary>
-        public NewDeckManagerP2 GetOpponentDeckManager()
+        public NewDeckManagerP2 GetP2DeckManager()
         {
-            return opponentDeckManager;
+            return p2DeckManager;
         }
         
         /// <summary>

@@ -3,6 +3,7 @@
     "rootNamespace": "CardGame.Tests.EditMode",
     "references": [
         "CM344.CardGame",
+        "UnityEngine.UI",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "Unity.TextMeshPro",

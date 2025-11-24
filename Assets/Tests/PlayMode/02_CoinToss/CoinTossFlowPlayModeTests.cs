@@ -140,7 +140,7 @@ namespace CardGame.Tests
             {
                 // Auto-select would set a default selection and call PerformCoinToss() here
                 // For testing, we'll set a default selection (heads)
-                coinTossManager.SetPlayerSelection(true, FateSide.Player);
+                coinTossManager.SetPlayerSelection(true, FateSide.P1);
                 coinTossManager.PerformCoinToss();
             }
             
@@ -256,7 +256,7 @@ namespace CardGame.Tests
             // CRITICAL: Make a selection first (this activates the coin image)
             // OnSelectionMade() activates the coin image before starting animation
             // We need to simulate the selection flow
-            coinTossManager.SetPlayerSelection(true, FateSide.Player); // Select heads
+            coinTossManager.SetPlayerSelection(true, FateSide.P1); // Select heads
             
             // Get OnSelectionMade method via reflection to trigger selection
             var onSelectionMadeMethod = typeof(CoinTossUI).GetMethod("OnSelectionMade", 
@@ -339,13 +339,13 @@ namespace CardGame.Tests
                 
                 // Set player selection (alternate between heads and tails for variety)
                 bool selectHeads = (i % 2 == 0);
-                coinTossManager.SetPlayerSelection(selectHeads, FateSide.Player);
+                coinTossManager.SetPlayerSelection(selectHeads, FateSide.P1);
                 
                 FateSide result = coinTossManager.PerformCoinToss();
                 results.Add(result);
                 
                 // Verify result is valid
-                Assert.IsTrue(result == FateSide.Player || result == FateSide.P2, 
+                Assert.IsTrue(result == FateSide.P1 || result == FateSide.P2, 
                     $"Coin toss result should be Player or Opponent, got {result}");
                 
                 yield return null;
@@ -357,8 +357,8 @@ namespace CardGame.Tests
             
             // Verify deterministic result can be forced
             coinTossManager.ResetCoinToss();
-            coinTossManager.SetForcedResult(FateSide.Player);
-            Assert.AreEqual(FateSide.Player, coinTossManager.GetStartingPlayer(), 
+            coinTossManager.SetForcedResult(FateSide.P1);
+            Assert.AreEqual(FateSide.P1, coinTossManager.GetStartingPlayer(), 
                 "Forced result should return Player");
             
             coinTossManager.ResetCoinToss();
@@ -385,7 +385,7 @@ namespace CardGame.Tests
             
             // Test Player 1 wins
             coinTossManager.ResetCoinToss();
-            coinTossManager.SetForcedResult(FateSide.Player);
+            coinTossManager.SetForcedResult(FateSide.P1);
             yield return null;
             
             // Start coin toss UI
@@ -449,7 +449,7 @@ namespace CardGame.Tests
             coinTossManager.ResetCoinToss();
             
             // Set player selection (Player 1 selects heads)
-            coinTossManager.SetPlayerSelection(true, FateSide.Player);
+            coinTossManager.SetPlayerSelection(true, FateSide.P1);
             
             coinTossManager.PerformCoinToss();
             yield return null;
@@ -591,19 +591,19 @@ namespace CardGame.Tests
             
             // Reset coin toss and force Player 1 to win
             coinTossManager.ResetCoinToss();
-            coinTossManager.SetForcedResult(FateSide.Player);
+            coinTossManager.SetForcedResult(FateSide.P1);
             yield return null;
             
             // Set fate to match coin toss result
-            fateController.SetFate(FateSide.Player);
+            fateController.SetFate(FateSide.P1);
             yield return null;
             
             // Assert: Player 1 should have first turn
-            Assert.AreEqual(FateSide.Player, fateController.CurrentFate, 
+            Assert.AreEqual(FateSide.P1, fateController.CurrentFate, 
                 "FateFlowController should reflect Player 1's turn after coin toss win");
             
             // Verify CanAct works correctly
-            bool canPlayer1Act = fateController.CanAct(FateSide.Player);
+            bool canPlayer1Act = fateController.CanAct(FateSide.P1);
             bool canPlayer2Act = fateController.CanAct(FateSide.P2);
             
             Assert.IsTrue(canPlayer1Act, "Player 1 should be able to act after winning coin toss");
@@ -638,7 +638,7 @@ namespace CardGame.Tests
                 "FateFlowController should reflect Player 2's turn after coin toss win");
             
             // Verify CanAct works correctly
-            bool canPlayer1Act = fateController.CanAct(FateSide.Player);
+            bool canPlayer1Act = fateController.CanAct(FateSide.P1);
             bool canPlayer2Act = fateController.CanAct(FateSide.P2);
             
             Assert.IsFalse(canPlayer1Act, "Player 1 should not be able to act when Player 2 has turn");
@@ -669,7 +669,7 @@ namespace CardGame.Tests
             coinTossManager.ResetCoinToss();
             
             // Set player selection (Player 1 selects heads)
-            coinTossManager.SetPlayerSelection(true, FateSide.Player);
+            coinTossManager.SetPlayerSelection(true, FateSide.P1);
             
             coinTossManager.PerformCoinToss();
             FateSide startingSide = coinTossManager.GetStartingPlayer();

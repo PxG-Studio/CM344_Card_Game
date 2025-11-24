@@ -2,7 +2,10 @@
     "name": "CM344.CardGame",
     "rootNamespace": "",
     "references": [
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "UnityEngine.UI",
+        "PhotonRealtime",
+        "PhotonUnityNetworking"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

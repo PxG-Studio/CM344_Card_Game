@@ -99,7 +99,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return new WaitForSeconds(0.5f);
             
@@ -118,7 +118,7 @@ namespace CardGame.Tests
             Assert.IsFalse(testCard.IsPlayed, "Test card should not be played");
             
             // Verify CanInteract (turn check)
-            bool canInteract = fateController != null && fateController.CanAct(FateSide.Player);
+            bool canInteract = fateController != null && fateController.CanAct(FateSide.P1);
             Assert.IsTrue(canInteract, "Player 1 should be able to interact during their turn");
             
             // Log hover capability
@@ -184,7 +184,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return new WaitForSeconds(0.5f);
             
@@ -243,7 +243,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return new WaitForSeconds(0.5f);
             
@@ -367,7 +367,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return new WaitForSeconds(0.5f);
             
@@ -476,7 +476,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return new WaitForSeconds(0.5f);
             
@@ -517,7 +517,7 @@ namespace CardGame.Tests
             debugInstrumentation?.LogDropAttempt(testCard.gameObject, testDropArea.gameObject, dropResult, "Player1_CanDropOnValidTile");
             
             // Drop should succeed if turn is correct
-            if (fateController != null && fateController.CanAct(FateSide.Player))
+            if (fateController != null && fateController.CanAct(FateSide.P1))
             {
                 Assert.IsTrue(dropResult, $"Player 1 should be able to drop card on valid tile '{testDropArea.gameObject.name}'");
             }
@@ -533,7 +533,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return new WaitForSeconds(0.5f);
             
@@ -559,7 +559,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return new WaitForSeconds(0.5f);
             

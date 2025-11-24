@@ -92,8 +92,8 @@ namespace CardGame.Tests
         public void FateSide_Enum_Is_Defined()
         {
             // Verify FateSide enum exists and has expected values
-            Assert.IsTrue(System.Enum.IsDefined(typeof(FateSide), FateSide.Player),
-                "FateSide.Player should be defined");
+            Assert.IsTrue(System.Enum.IsDefined(typeof(FateSide), FateSide.P1),
+                "FateSide.P1 should be defined");
             Assert.IsTrue(System.Enum.IsDefined(typeof(FateSide), FateSide.P2),
                 "FateSide.P2 should be defined");
         }

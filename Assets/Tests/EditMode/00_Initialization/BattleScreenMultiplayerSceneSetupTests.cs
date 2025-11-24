@@ -93,8 +93,8 @@ namespace CardGame.Tests
         {
             // Prefab assets should not be in the scene hierarchy, but if they are, they should be inactive
             // NewCardUI.Start() disables them, but in EditMode they may still be active
-            GameObject prefabAsset1 = GameObject.Find("NewCardPrefab");
-            GameObject prefabAsset2 = GameObject.Find("NewCardPrefabOpp");
+            GameObject prefabAsset1 = GameObject.Find("NewCardPrefabP1");
+            GameObject prefabAsset2 = GameObject.Find("NewCardPrefabP2");
             
             if (prefabAsset1 != null)
             {
@@ -103,15 +103,15 @@ namespace CardGame.Tests
                 if (prefabAsset1.activeSelf)
                 {
                     // Info: Prefab is active in EditMode (expected) - NewCardUI will disable it at runtime
-                    Debug.Log($"NewCardPrefab is active in scene (EditMode). " +
+                    Debug.Log($"NewCardPrefabP1 is active in scene (EditMode). " +
                              $"It will be disabled at runtime by NewCardUI.Start(). " +
                              $"This is expected behavior - prefab assets are disabled at runtime.");
                     // Don't fail - this is handled at runtime
-                    Assert.IsTrue(true, "NewCardPrefab exists (will be disabled at runtime)");
+                    Assert.IsTrue(true, "NewCardPrefabP1 exists (will be disabled at runtime)");
                 }
                 else
                 {
-                    Assert.IsTrue(true, "NewCardPrefab is inactive (good)");
+                    Assert.IsTrue(true, "NewCardPrefabP1 is inactive (good)");
                 }
             }
             
@@ -122,15 +122,15 @@ namespace CardGame.Tests
                 if (prefabAsset2.activeSelf)
                 {
                     // Info: Prefab is active in EditMode (expected) - NewCardUI will disable it at runtime
-                    Debug.Log($"NewCardPrefabOpp is active in scene (EditMode). " +
+                    Debug.Log($"NewCardPrefabP2 is active in scene (EditMode). " +
                              $"It will be disabled at runtime by NewCardUI.Start(). " +
                              $"This is expected behavior - prefab assets are disabled at runtime.");
                     // Don't fail - this is handled at runtime
-                    Assert.IsTrue(true, "NewCardPrefabOpp exists (will be disabled at runtime)");
+                    Assert.IsTrue(true, "NewCardPrefabP2 exists (will be disabled at runtime)");
                 }
                 else
                 {
-                    Assert.IsTrue(true, "NewCardPrefabOpp is inactive (good)");
+                    Assert.IsTrue(true, "NewCardPrefabP2 is inactive (good)");
                 }
             }
             
@@ -146,7 +146,7 @@ namespace CardGame.Tests
         {
             // Try finding by GameObject name first (may have old or new naming)
             GameObject handUI1GameObject = GameObject.Find("NewHandP1UI Flame") ?? GameObject.Find("NewHandUI Flame");
-            GameObject handUI2GameObject = GameObject.Find("NewHandP2UI Earth") ?? GameObject.Find("NewHandOppUI Earth") ?? GameObject.Find("NewHandUI Earth");
+            GameObject handUI2GameObject = GameObject.Find("NewHandP2UI Earth") ?? GameObject.Find("NewHandUI Earth");
             
             // Check by component type (more robust)
             NewHandP1UI handUIComponent1 = Object.FindObjectOfType<NewHandP1UI>();
@@ -312,27 +312,27 @@ namespace CardGame.Tests
             var onBeginDragMethod = typeof(NewCardUI).GetMethod("OnBeginDrag");
             Assert.IsNotNull(onBeginDragMethod, "NewCardUI should have OnBeginDrag method for drag validation");
             
-            // IsPlayerCard and IsOpponentCard are private methods, so we need to search with BindingFlags
-            var isPlayerCardMethod = typeof(NewCardUI).GetMethod("IsPlayerCard", 
+            // IsP1Card and IsP2Card are private methods, so we need to search with BindingFlags
+            var isPlayerCardMethod = typeof(NewCardUI).GetMethod("IsP1Card", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            Assert.IsNotNull(isPlayerCardMethod, "NewCardUI should have IsPlayerCard method (private)");
+            Assert.IsNotNull(isPlayerCardMethod, "NewCardUI should have IsP1Card method (private)");
             
-            var isOpponentCardMethod = typeof(NewCardUI).GetMethod("IsOpponentCard", 
+            var isP2CardMethod = typeof(NewCardUI).GetMethod("IsP2Card", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            Assert.IsNotNull(isOpponentCardMethod, "NewCardUI should have IsOpponentCard method (private)");
+            Assert.IsNotNull(isP2CardMethod, "NewCardUI should have IsP2Card method (private)");
         }
 
         [Test]
         public void NewCardUI_Has_Placement_Methods()
         {
             // Verify NewCardUI has methods for card placement
-            var placeOpponentCardMethod = typeof(NewCardUI).GetMethod("PlaceOpponentCardOnBoard", 
+            var placeP2CardMethod = typeof(NewCardUI).GetMethod("PlaceP2CardOnBoard", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            Assert.IsNotNull(placeOpponentCardMethod, "NewCardUI should have PlaceOpponentCardOnBoard method for Player 2 card placement");
+            Assert.IsNotNull(placeP2CardMethod, "NewCardUI should have PlaceP2CardOnBoard method for Player 2 card placement");
             
             // Verify method signature matches expected parameters
-            var parameters = placeOpponentCardMethod.GetParameters();
-            Assert.IsTrue(parameters.Length >= 1, "PlaceOpponentCardOnBoard should accept CardDropArea parameter");
+            var parameters = placeP2CardMethod.GetParameters();
+            Assert.IsTrue(parameters.Length >= 1, "PlaceP2CardOnBoard should accept CardDropArea parameter");
         }
 
         [Test]

@@ -1,52 +1,62 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 using UnityEngine.SceneManagement;
+using TMPro;
+using UnityEngine.Events;
 
 namespace CardGame.UI
 {
     /// <summary>
-    /// Sets up a beautiful main menu with title and properly styled buttons
+    /// Builds a themed main menu UI at runtime so the scene stays minimal.
+    /// Matches the dark/teal palette used by CardBattleMultiplayer.
     /// </summary>
     [DefaultExecutionOrder(-50)]
     public class MainMenuSetup : MonoBehaviour
     {
+        private static bool isHooked;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void AutoSetup()
+        private static void AutoHook()
         {
-            // Only run in MainMenu scene
-            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+            if (isHooked) return;
+            isHooked = true;
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
-        private static void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (scene.name == "MainMenu")
-            {
-                // Check if setup already exists
-                if (FindObjectOfType<MainMenuSetup>() == null)
-                {
+            if (scene.name != "MainMenu") return;
+
+            // Avoid duplicates if scene already contains a setup component
+            if (FindObjectOfType<MainMenuSetup>() != null) return;
+
                     GameObject setupObj = new GameObject("MainMenuSetup");
                     setupObj.AddComponent<MainMenuSetup>();
-                }
-            }
         }
 
         private void Awake()
         {
-            SetupMainMenu();
+            BuildMenu();
         }
 
-        private void SetupMainMenu()
+        private void BuildMenu()
         {
-            // Set beautiful gradient background
+            // Configure camera background to match multiplayer scene
             Camera mainCamera = Camera.main;
             if (mainCamera != null)
             {
                 mainCamera.clearFlags = CameraClearFlags.SolidColor;
-                mainCamera.backgroundColor = new Color(0.1f, 0.15f, 0.25f); // Dark blue
+                mainCamera.backgroundColor = new Color32(8, 14, 26, 255); // deep navy
             }
 
-            // Find or create canvas
+            // Ensure there is an EventSystem so the buttons are interactable
+            if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
+            {
+                GameObject eventSystemObj = new GameObject("EventSystem");
+                eventSystemObj.AddComponent<UnityEngine.EventSystems.EventSystem>();
+                eventSystemObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            }
+
             Canvas canvas = FindObjectOfType<Canvas>();
             if (canvas == null)
             {
@@ -57,346 +67,196 @@ namespace CardGame.UI
                 canvasObj.AddComponent<GraphicRaycaster>();
             }
 
-            // Configure canvas scaler
+            MainMenu menuLogic = canvas.GetComponent<MainMenu>();
+            if (menuLogic == null)
+            {
+                menuLogic = canvas.gameObject.AddComponent<MainMenu>();
+                Debug.Log("[MainMenuSetup] Attached MainMenu to Canvas so runtime lobby UI can anchor correctly.");
+            }
+
             CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
             if (scaler != null)
             {
                 scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 scaler.referenceResolution = new Vector2(1920, 1080);
+                scaler.matchWidthOrHeight = 0.5f;
             }
 
             Transform canvasTransform = canvas.transform;
 
-            // Create gradient background panel
-            CreateBackgroundPanel(canvasTransform);
-
-            // Create title
-            CreateTitle(canvasTransform);
-
-            // Create button container
-            GameObject buttonContainer = new GameObject("ButtonContainer");
-            buttonContainer.transform.SetParent(canvasTransform, false);
-            RectTransform containerRect = buttonContainer.AddComponent<RectTransform>();
-            containerRect.anchorMin = new Vector2(0.5f, 0.5f);
-            containerRect.anchorMax = new Vector2(0.5f, 0.5f);
-            containerRect.pivot = new Vector2(0.5f, 0.5f);
-            containerRect.anchoredPosition = new Vector2(0, -100);
-            containerRect.sizeDelta = new Vector2(400, 400);
-
-            // Add vertical layout
-            VerticalLayoutGroup layout = buttonContainer.AddComponent<VerticalLayoutGroup>();
-            layout.spacing = 20;
-            layout.childAlignment = TextAnchor.MiddleCenter;
-            layout.childControlWidth = true;
-            layout.childControlHeight = false;
-            layout.childForceExpandWidth = true;
-            layout.childForceExpandHeight = false;
-
-            // Create buttons
-            CreateMenuButton(buttonContainer.transform, "PLAY GAME", "BattleScreenMultiplayer");
-            CreateMenuButton(buttonContainer.transform, "COLLECTION", "ComingSoon");
-            CreateMenuButton(buttonContainer.transform, "PLAY ONLINE", "ComingSoon");
-            CreateMenuButton(buttonContainer.transform, "SETTINGS", "ComingSoon");
-            CreateMenuButton(buttonContainer.transform, "QUIT", null);
-
-            Debug.Log("MainMenuSetup: Beautiful menu created!");
-        }
-
-        private void CreateBackgroundPanel(Transform parent)
-        {
-            GameObject bgPanel = new GameObject("BackgroundPanel");
-            bgPanel.transform.SetParent(parent, false);
-            bgPanel.layer = 5;
-
-            RectTransform bgRect = bgPanel.AddComponent<RectTransform>();
-            bgRect.anchorMin = Vector2.zero;
-            bgRect.anchorMax = Vector2.one;
-            bgRect.sizeDelta = Vector2.zero;
-            bgRect.anchoredPosition = Vector2.zero;
-
-            Image bgImage = bgPanel.AddComponent<Image>();
-            // Beautiful gradient from dark blue to purple
-            bgImage.color = new Color(0.08f, 0.12f, 0.2f, 1f); // Deep blue-purple
-            bgImage.sprite = CreateGradientSprite();
-        }
-
-        private Sprite CreateGradientSprite()
-        {
-            Texture2D texture = new Texture2D(2, 256);
-            Color[] pixels = new Color[2 * 256];
-            
-            for (int y = 0; y < 256; y++)
+            // Clear any previous auto-generated layout
+            Transform old = canvasTransform.Find("GeneratedMenuRoot");
+            if (old != null)
             {
-                float t = y / 255f;
-                // Gradient from dark blue at bottom to lighter blue-purple at top
-                Color color = Color.Lerp(
-                    new Color(0.05f, 0.08f, 0.15f, 1f), // Dark blue bottom
-                    new Color(0.15f, 0.2f, 0.35f, 1f),  // Lighter blue-purple top
-                    t                                    // Interpolation value
-                );
-                pixels[y * 2] = color;
-                pixels[y * 2 + 1] = color;
+                DestroyImmediate(old.gameObject);
             }
-            
-            texture.SetPixels(pixels);
-            texture.Apply();
-            
-            return Sprite.Create(texture, new Rect(0, 0, 2, 256), new Vector2(0.5f, 0.5f));
+
+            // Dim the main menu when the overlay is active.
+            Image canvasBackground = canvas.GetComponent<Image>();
+            if (canvasBackground == null)
+            {
+                canvasBackground = canvas.gameObject.AddComponent<Image>();
+                canvasBackground.color = new Color(0f, 0f, 0f, 0.6f);
+                canvasBackground.raycastTarget = false;
+            }
+
+            GameObject root = new GameObject("GeneratedMenuRoot");
+            root.transform.SetParent(canvasTransform, false);
+            RectTransform rootRect = root.AddComponent<RectTransform>();
+            rootRect.anchorMin = Vector2.zero;
+            rootRect.anchorMax = Vector2.one;
+            rootRect.offsetMin = Vector2.zero;
+            rootRect.offsetMax = Vector2.zero;
+
+            CreateBackground(root.transform);
+            CreateTitle(root.transform);
+            CreateButtons(menuLogic, root.transform);
+        }
+
+        private void CreateBackground(Transform parent)
+        {
+            GameObject bg = new GameObject("Background");
+            bg.transform.SetParent(parent, false);
+            RectTransform rect = bg.AddComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            Image image = bg.AddComponent<Image>();
+            image.color = new Color32(9, 19, 33, 255);
         }
 
         private void CreateTitle(Transform parent)
         {
-            GameObject titleObj = new GameObject("GameTitle");
-            titleObj.transform.SetParent(parent, false);
-            titleObj.layer = 5; // UI layer
+            GameObject title = new GameObject("MenuTitle");
+            title.transform.SetParent(parent, false);
 
-            RectTransform rectTransform = titleObj.AddComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0.5f, 1f);
-            rectTransform.anchorMax = new Vector2(0.5f, 1f);
-            rectTransform.pivot = new Vector2(0.5f, 1f);
-            rectTransform.anchoredPosition = new Vector2(0, -100);
-            rectTransform.sizeDelta = new Vector2(800, 150);
+            RectTransform rect = title.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 1f);
+            rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = new Vector2(0f, -120f);
+            rect.sizeDelta = new Vector2(900f, 140f);
 
-            TextMeshProUGUI titleText = titleObj.AddComponent<TextMeshProUGUI>();
-            titleText.text = "CARD BATTLE";
-            titleText.fontSize = 72;
-            titleText.fontStyle = FontStyles.Bold;
-            titleText.alignment = TextAlignmentOptions.Center;
-            titleText.color = Color.white;
-
-            // Add beautiful cyan/blue gradient
-            titleText.enableVertexGradient = true;
-            titleText.colorGradient = new VertexGradient(
-                new Color(0.5f, 0.9f, 1f),    // Light cyan top
-                new Color(0.5f, 0.9f, 1f),    // Light cyan top
-                new Color(0.2f, 0.6f, 1f),    // Bright blue bottom
-                new Color(0.2f, 0.6f, 1f)     // Bright blue bottom
-            );
+            TextMeshProUGUI tmp = title.AddComponent<TextMeshProUGUI>();
+            tmp.text = "CARD FRONT v1.0";
+            tmp.fontSize = 86f;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.fontStyle = FontStyles.Bold;
+            tmp.color = Color.white;
+            tmp.enableVertexGradient = true;
+            tmp.colorGradient = new VertexGradient(
+                new Color32(69, 206, 255, 255),
+                new Color32(69, 206, 255, 255),
+                new Color32(26, 137, 191, 255),
+                new Color32(26, 137, 191, 255));
         }
 
-        private void CreateMenuButton(Transform parent, string buttonText, string sceneName)
+        private void CreateButtons(MainMenu menuLogic, Transform parent)
         {
-            GameObject buttonObj = new GameObject(buttonText + "Button");
+            GameObject container = new GameObject("ButtonColumn");
+            container.transform.SetParent(parent, false);
+            RectTransform rect = container.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = new Vector2(0f, -60f);
+            rect.sizeDelta = new Vector2(520f, 520f);
+
+            VerticalLayoutGroup layout = container.AddComponent<VerticalLayoutGroup>();
+            layout.spacing = 18f;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+
+            AddButton(container.transform, "Play Game", () => menuLogic.StartSinglePlayer());
+            AddButton(container.transform, "Collection", () => menuLogic.OpenDeckCollection());
+            AddButton(container.transform, "Play Online", () => menuLogic.OpenMultiplayerLobby());
+            AddButton(container.transform, "Settings", () => menuLogic.OpenSettings());
+            AddButton(container.transform, "Quit", () => menuLogic.ExitGame());
+        }
+
+        private void AddButton(Transform parent, string label, UnityAction onClick)
+        {
+            GameObject buttonObj = new GameObject(label + "Button", typeof(RectTransform), typeof(CanvasRenderer));
             buttonObj.transform.SetParent(parent, false);
-            buttonObj.layer = 5; // UI layer
 
-            RectTransform rectTransform = buttonObj.AddComponent<RectTransform>();
-            rectTransform.sizeDelta = new Vector2(350, 70);
+            LayoutElement layoutElement = buttonObj.AddComponent<LayoutElement>();
+            layoutElement.preferredHeight = 72f;
+            layoutElement.minHeight = 72f;
 
-            // Add button component
+            RectTransform rect = buttonObj.GetComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(0f, 72f); // width controlled by layout
+
+            Image image = buttonObj.AddComponent<Image>();
+            image.sprite = CreateRoundedSprite();
+            image.type = Image.Type.Sliced;
+            image.color = new Color32(24, 95, 142, 230);
+
             Button button = buttonObj.AddComponent<Button>();
-            
-            // Add image for button background
-            Image buttonImage = buttonObj.AddComponent<Image>();
-            buttonImage.color = new Color(0.2f, 0.5f, 0.9f, 1f); // Blue
-            buttonImage.sprite = CreateButtonSprite();
-
-            // Configure button colors - beautiful blue shades
             ColorBlock colors = button.colors;
-            colors.normalColor = new Color(0.2f, 0.5f, 0.9f, 1f);      // Medium blue
-            colors.highlightedColor = new Color(0.3f, 0.65f, 1f, 1f);  // Bright blue
-            colors.pressedColor = new Color(0.15f, 0.4f, 0.75f, 1f);   // Dark blue
-            colors.selectedColor = new Color(0.3f, 0.65f, 1f, 1f);     // Bright blue
-            colors.disabledColor = new Color(0.4f, 0.4f, 0.5f, 0.5f);  // Gray
-            colors.colorMultiplier = 1f;
-            colors.fadeDuration = 0.1f;
+            colors.normalColor = new Color32(24, 95, 142, 230);
+            colors.highlightedColor = new Color32(37, 140, 201, 240);
+            colors.pressedColor = new Color32(18, 73, 110, 230);
+            colors.selectedColor = colors.normalColor;
+            colors.disabledColor = new Color32(40, 40, 40, 120);
             button.colors = colors;
 
-            // Add button text
-            GameObject textObj = new GameObject("Text");
+            GameObject textObj = new GameObject("Label");
             textObj.transform.SetParent(buttonObj.transform, false);
-            textObj.layer = 5;
-
             RectTransform textRect = textObj.AddComponent<RectTransform>();
             textRect.anchorMin = Vector2.zero;
             textRect.anchorMax = Vector2.one;
-            textRect.sizeDelta = Vector2.zero;
-            textRect.anchoredPosition = Vector2.zero;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
 
-            TextMeshProUGUI text = textObj.AddComponent<TextMeshProUGUI>();
-            text.text = buttonText;
-            text.fontSize = 32;
-            text.fontStyle = FontStyles.Bold;
-            text.alignment = TextAlignmentOptions.Center;
-            text.color = Color.white;
+            TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
+            tmp.text = label.ToUpperInvariant();
+            tmp.fontSize = 32f;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.fontStyle = FontStyles.Bold;
+            tmp.color = Color.white;
 
-            // Add button functionality
-            if (sceneName == "ComingSoon")
+            if (onClick != null)
             {
-                button.onClick.AddListener(() => ShowComingSoon(buttonText));
-            }
-            else if (sceneName != null)
-            {
-                button.onClick.AddListener(() => LoadScene(sceneName));
-            }
-            else if (buttonText == "QUIT")
-            {
-                button.onClick.AddListener(QuitGame);
+                button.onClick.AddListener(onClick);
             }
         }
 
-        private Sprite CreateButtonSprite()
+        private Sprite CreateRoundedSprite()
         {
-            // Create a simple rounded rectangle sprite
-            Texture2D texture = new Texture2D(100, 100);
-            Color[] pixels = new Color[100 * 100];
-            
-            for (int y = 0; y < 100; y++)
+            const int size = 64;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.ARGB32, false);
+            Color[] pixels = new Color[size * size];
+            float radius = size / 2f;
+            float cornerRadius = radius - 6f;
+
+            for (int y = 0; y < size; y++)
             {
-                for (int x = 0; x < 100; x++)
+                for (int x = 0; x < size; x++)
                 {
-                    // Create rounded corners
-                    float dx = Mathf.Abs(x - 50f);
-                    float dy = Mathf.Abs(y - 50f);
-                    float distance = Mathf.Sqrt(dx * dx + dy * dy);
-                    
-                    if ((x < 10 || x > 90 || y < 10 || y > 90) && distance > 40)
-                    {
-                        pixels[y * 100 + x] = Color.clear;
-                    }
-                    else
-                    {
-                        pixels[y * 100 + x] = Color.white;
-                    }
+                    float dx = Mathf.Min(Mathf.Abs(x - radius + 0.5f), cornerRadius);
+                    float dy = Mathf.Min(Mathf.Abs(y - radius + 0.5f), cornerRadius);
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                    pixels[y * size + x] = dist <= cornerRadius ? Color.white : Color.clear;
                 }
             }
-            
-            texture.SetPixels(pixels);
-            texture.Apply();
-            
-            return Sprite.Create(texture, new Rect(0, 0, 100, 100), new Vector2(0.5f, 0.5f), 100, 0, SpriteMeshType.FullRect, new Vector4(10, 10, 10, 10));
-        }
 
-        private void ShowComingSoon(string featureName)
-        {
-            Debug.Log($"{featureName} - Coming Soon!");
-            
-            // Create a "Coming Soon" popup
-            Canvas canvas = FindObjectOfType<Canvas>();
-            if (canvas == null) return;
+            tex.SetPixels(pixels);
+            tex.Apply();
 
-            GameObject popup = new GameObject("ComingSoonPopup");
-            popup.transform.SetParent(canvas.transform, false);
-            popup.layer = 5;
-
-            RectTransform popupRect = popup.AddComponent<RectTransform>();
-            popupRect.anchorMin = Vector2.zero;
-            popupRect.anchorMax = Vector2.one;
-            popupRect.sizeDelta = Vector2.zero;
-
-            // Semi-transparent background
-            Image bgImage = popup.AddComponent<Image>();
-            bgImage.color = new Color(0, 0, 0, 0.8f);
-
-            // Message panel
-            GameObject messagePanel = new GameObject("MessagePanel");
-            messagePanel.transform.SetParent(popup.transform, false);
-            messagePanel.layer = 5;
-
-            RectTransform msgRect = messagePanel.AddComponent<RectTransform>();
-            msgRect.anchorMin = new Vector2(0.5f, 0.5f);
-            msgRect.anchorMax = new Vector2(0.5f, 0.5f);
-            msgRect.pivot = new Vector2(0.5f, 0.5f);
-            msgRect.anchoredPosition = Vector2.zero;
-            msgRect.sizeDelta = new Vector2(600, 300);
-
-            Image panelImage = messagePanel.AddComponent<Image>();
-            panelImage.color = new Color(0.15f, 0.2f, 0.35f, 1f);
-            panelImage.sprite = CreateButtonSprite();
-
-            // Title text
-            GameObject titleObj = new GameObject("Title");
-            titleObj.transform.SetParent(messagePanel.transform, false);
-            titleObj.layer = 5;
-
-            RectTransform titleRect = titleObj.AddComponent<RectTransform>();
-            titleRect.anchorMin = new Vector2(0.5f, 0.7f);
-            titleRect.anchorMax = new Vector2(0.5f, 0.7f);
-            titleRect.pivot = new Vector2(0.5f, 0.5f);
-            titleRect.anchoredPosition = Vector2.zero;
-            titleRect.sizeDelta = new Vector2(500, 80);
-
-            TextMeshProUGUI titleText = titleObj.AddComponent<TextMeshProUGUI>();
-            titleText.text = "COMING SOON";
-            titleText.fontSize = 48;
-            titleText.fontStyle = FontStyles.Bold;
-            titleText.alignment = TextAlignmentOptions.Center;
-            titleText.color = new Color(0.5f, 0.9f, 1f);
-
-            // Feature text
-            GameObject featureObj = new GameObject("Feature");
-            featureObj.transform.SetParent(messagePanel.transform, false);
-            featureObj.layer = 5;
-
-            RectTransform featureRect = featureObj.AddComponent<RectTransform>();
-            featureRect.anchorMin = new Vector2(0.5f, 0.5f);
-            featureRect.anchorMax = new Vector2(0.5f, 0.5f);
-            featureRect.pivot = new Vector2(0.5f, 0.5f);
-            featureRect.anchoredPosition = Vector2.zero;
-            featureRect.sizeDelta = new Vector2(500, 60);
-
-            TextMeshProUGUI featureText = featureObj.AddComponent<TextMeshProUGUI>();
-            featureText.text = $"{featureName} is under development!";
-            featureText.fontSize = 24;
-            featureText.alignment = TextAlignmentOptions.Center;
-            featureText.color = Color.white;
-
-            // Close button
-            GameObject closeButton = new GameObject("CloseButton");
-            closeButton.transform.SetParent(messagePanel.transform, false);
-            closeButton.layer = 5;
-
-            RectTransform closeRect = closeButton.AddComponent<RectTransform>();
-            closeRect.anchorMin = new Vector2(0.5f, 0.2f);
-            closeRect.anchorMax = new Vector2(0.5f, 0.2f);
-            closeRect.pivot = new Vector2(0.5f, 0.5f);
-            closeRect.anchoredPosition = Vector2.zero;
-            closeRect.sizeDelta = new Vector2(200, 60);
-
-            Button closeBtn = closeButton.AddComponent<Button>();
-            Image closeBtnImage = closeButton.AddComponent<Image>();
-            closeBtnImage.color = new Color(0.2f, 0.5f, 0.9f, 1f);
-            closeBtnImage.sprite = CreateButtonSprite();
-
-            ColorBlock colors = closeBtn.colors;
-            colors.normalColor = new Color(0.2f, 0.5f, 0.9f, 1f);
-            colors.highlightedColor = new Color(0.3f, 0.65f, 1f, 1f);
-            colors.pressedColor = new Color(0.15f, 0.4f, 0.75f, 1f);
-            closeBtn.colors = colors;
-
-            closeBtn.onClick.AddListener(() => Destroy(popup));
-
-            GameObject closeTxt = new GameObject("Text");
-            closeTxt.transform.SetParent(closeButton.transform, false);
-            closeTxt.layer = 5;
-
-            RectTransform closeTxtRect = closeTxt.AddComponent<RectTransform>();
-            closeTxtRect.anchorMin = Vector2.zero;
-            closeTxtRect.anchorMax = Vector2.one;
-            closeTxtRect.sizeDelta = Vector2.zero;
-
-            TextMeshProUGUI closeText = closeTxt.AddComponent<TextMeshProUGUI>();
-            closeText.text = "OK";
-            closeText.fontSize = 28;
-            closeText.fontStyle = FontStyles.Bold;
-            closeText.alignment = TextAlignmentOptions.Center;
-            closeText.color = Color.white;
-        }
-
-        private void LoadScene(string sceneName)
-        {
-            Debug.Log($"Loading scene: {sceneName}");
-            SceneManager.LoadScene(sceneName);
-        }
-
-        private void QuitGame()
-        {
-            Debug.Log("Quitting game...");
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
-            Application.Quit();
-#endif
+            Sprite sprite = Sprite.Create(
+                tex,
+                new Rect(0, 0, size, size),
+                new Vector2(0.5f, 0.5f),
+                100f,
+                0,
+                SpriteMeshType.FullRect,
+                new Vector4(16f, 16f, 16f, 16f));
+            return sprite;
         }
     }
 }

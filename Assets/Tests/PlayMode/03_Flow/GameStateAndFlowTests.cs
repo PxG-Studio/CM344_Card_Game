@@ -255,11 +255,11 @@ namespace CardGame.Tests
             
             // Verify CurrentFate property is accessible
             FateSide currentFate = fateFlow.CurrentFate;
-            Assert.IsTrue(currentFate == FateSide.Player || currentFate == FateSide.P2,
+            Assert.IsTrue(currentFate == FateSide.P1 || currentFate == FateSide.P2,
                 $"CurrentFate should be Player or Opponent, but was {currentFate}");
             
             // Verify CanAct works for both sides
-            bool playerCanAct = fateFlow.CanAct(FateSide.Player);
+            bool playerCanAct = fateFlow.CanAct(FateSide.P1);
             bool opponentCanAct = fateFlow.CanAct(FateSide.P2);
             
             // Only one side should be able to act at a time

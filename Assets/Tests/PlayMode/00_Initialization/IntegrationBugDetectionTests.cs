@@ -138,7 +138,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return null;
             
@@ -279,7 +279,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return null;
             
@@ -467,10 +467,10 @@ namespace CardGame.Tests
             Assert.IsNotNull(fateController, "FateFlowController should exist");
             
             // Set to Player 1's turn
-            fateController.SetFate(FateSide.Player);
+            fateController.SetFate(FateSide.P1);
             yield return null;
             
-            bool player1CanActBefore = fateController.CanAct(FateSide.Player);
+            bool player1CanActBefore = fateController.CanAct(FateSide.P1);
             bool player2CanActBefore = fateController.CanAct(FateSide.P2);
             
             Assert.IsTrue(player1CanActBefore, "Player 1 should be able to act");
@@ -481,7 +481,7 @@ namespace CardGame.Tests
             yield return null;
             
             // INTEGRATION ASSERTION: CanAct MUST update after turn switch
-            bool player1CanActAfter = fateController.CanAct(FateSide.Player);
+            bool player1CanActAfter = fateController.CanAct(FateSide.P1);
             bool player2CanActAfter = fateController.CanAct(FateSide.P2);
             
             Assert.IsFalse(player1CanActAfter, 
@@ -725,7 +725,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                fateController.SetFate(FateSide.P1);
             }
             yield return null;
             

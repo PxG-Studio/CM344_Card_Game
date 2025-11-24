@@ -161,7 +161,7 @@ namespace CardGame.Tests
             Assert.IsFalse(coinTossManager.IsComplete, "Coin toss should not be complete after reset");
             
             // Set player selection (Player 1 selects heads)
-            coinTossManager.SetPlayerSelection(true, FateSide.Player);
+            coinTossManager.SetPlayerSelection(true, FateSide.P1);
             
             // Perform coin toss
             FateSide result = coinTossManager.PerformCoinToss();
@@ -169,7 +169,7 @@ namespace CardGame.Tests
             yield return new WaitForSeconds(0.1f);
             
             Assert.IsTrue(coinTossManager.IsComplete, "Coin toss should be complete after PerformCoinToss");
-            Assert.IsTrue(result == FateSide.Player || result == FateSide.P2, 
+            Assert.IsTrue(result == FateSide.P1 || result == FateSide.P2, 
                 "Coin toss result should be either Player or Opponent");
             Assert.AreEqual(result, coinTossManager.GetStartingPlayer(), 
                 "GetStartingPlayer should return the same result");
@@ -187,7 +187,7 @@ namespace CardGame.Tests
             coinTossManager.ResetCoinToss();
             
             // Set player selection (Player 1 selects heads)
-            coinTossManager.SetPlayerSelection(true, FateSide.Player);
+            coinTossManager.SetPlayerSelection(true, FateSide.P1);
             
             FateSide startingPlayer = coinTossManager.PerformCoinToss();
             
