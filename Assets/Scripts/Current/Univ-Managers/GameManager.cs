@@ -229,10 +229,16 @@ namespace CardGame.Managers
             
             // Get coin toss result and set starting player
             FateSide startingSide = coinTossManager.GetStartingPlayer();
+            Debug.Log($"[GameManager] Coin toss result from CoinTossManager: {startingSide} ({(startingSide == FateSide.Player ? "Player 1" : "Player 2")})");
+            
             if (FateFlowController.Instance != null)
             {
                 FateFlowController.Instance.SetFate(startingSide);
-                Debug.Log($"[GameManager] Coin toss result: {startingSide}. Starting player set in FateFlowController.");
+                Debug.Log($"[GameManager] SetFate called with: {startingSide} ({(startingSide == FateSide.Player ? "Player 1" : "Player 2")}). CurrentFate in FateFlowController: {FateFlowController.Instance.CurrentFate} ({(FateFlowController.Instance.CurrentFate == FateSide.Player ? "Player 1" : "Player 2")})");
+            }
+            else
+            {
+                Debug.LogError("[GameManager] FateFlowController.Instance is null! Cannot set starting player.");
             }
             
             // Wait for coin toss UI animation to complete (additional buffer)

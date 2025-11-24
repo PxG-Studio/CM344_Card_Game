@@ -139,9 +139,11 @@ namespace CardGame.Managers
             
             Debug.Log($"[CoinTossManager] Coin flip result: {flipResultString}. {playerString} selected {selectionString}. " +
                 $"Result matches selection: {flipResultIsHeads == playerSelectedHeads}. {startingPlayerString} goes first.");
+            Debug.Log($"[CoinTossManager] coinTossResult set to: {coinTossResult.Value} ({(coinTossResult.Value == FateSide.Player ? "Player 1" : "Player 2")})");
 
             // Fire event for UI and other systems
             OnCoinTossComplete?.Invoke(coinTossResult.Value);
+            Debug.Log($"[CoinTossManager] OnCoinTossComplete event fired with: {coinTossResult.Value} ({(coinTossResult.Value == FateSide.Player ? "Player 1" : "Player 2")})");
 
             return coinTossResult.Value;
         }
@@ -194,6 +196,7 @@ namespace CardGame.Managers
         {
             if (coinTossResult.HasValue)
             {
+                Debug.Log($"[CoinTossManager] GetStartingPlayer() returning: {coinTossResult.Value} ({(coinTossResult.Value == FateSide.Player ? "Player 1" : "Player 2")})");
                 return coinTossResult.Value;
             }
 

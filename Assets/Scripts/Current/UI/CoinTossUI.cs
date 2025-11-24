@@ -635,18 +635,13 @@ namespace CardGame.UI
                 resultText.gameObject.SetActive(false);
             }
 
-            // Perform coin toss if not already performed
-            if (coinTossManager != null && !coinTossManager.IsComplete)
-            {
-                // Perform coin toss now (triggers result)
-                coinTossManager.PerformCoinToss();
-            }
-            
             // Perform coin toss if not already performed (this determines starting player based on selection)
             if (coinTossManager != null && !coinTossManager.IsComplete)
             {
                 // Perform coin toss now (triggers result based on selection)
+                Debug.Log("[CoinTossUI] Calling PerformCoinToss() to determine starting player...");
                 coinTossManager.PerformCoinToss();
+                Debug.Log($"[CoinTossUI] PerformCoinToss() completed. Starting player: {coinTossManager.GetStartingPlayer()} ({(coinTossManager.GetStartingPlayer() == FateSide.Player ? "Player 1" : "Player 2")})");
             }
             
             // NOTE: We get the result here but DON'T display it until after animation completes
