@@ -41,7 +41,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     [SerializeField] private Vector3 cardScaleOnBoard = Vector3.one; // Leave at (1,1,1) to auto-match drop area size
     [SerializeField, Range(0.5f, 1.2f)] private float cardScaleFillPercent = 0.9f;
     [SerializeField] private SpriteRenderer tileSpriteRenderer;
-    [SerializeField] private float adjacentCardDistance = 3f; // Distance to consider cards adjacent (increased from 2f)
+    // [SerializeField] private float adjacentCardDistance = 3f; // Distance to consider cards adjacent (increased from 2f) - Currently unused, kept for future use
     [SerializeField] private bool enableCardBattles = true; // Enable stat comparison and card flipping
     [SerializeField] private bool debugBattles = true; // Log battle detection for debugging
     
@@ -1299,10 +1299,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             }
         }
         return false; // Placed card won, don't flip it
-        
-        // This should never be reached due to early return above, but kept for safety
-        Debug.LogWarning($"[CheckBattleBetweenCards] UNREACHABLE CODE: Reached end of method without returning. Stats: {placedCardStat} vs {otherCardStat}");
-        return false; // Default: no flip
     }
     
     /// <summary>

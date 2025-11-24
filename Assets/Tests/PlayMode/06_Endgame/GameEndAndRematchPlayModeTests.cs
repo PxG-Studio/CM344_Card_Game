@@ -103,8 +103,8 @@ namespace CardGame.Tests
             scoreManager.RecalculateScores();
             
             // Verify scores are accessible
-            int playerScore = scoreManager.PlayerScore;
-            int opponentScore = scoreManager.OpponentScore;
+            int playerScore = scoreManager.P1Score;
+            int opponentScore = scoreManager.P2Score;
             
             // Scores should be non-negative
             Assert.GreaterOrEqual(playerScore, 0, "Player score should be non-negative");
@@ -197,8 +197,8 @@ namespace CardGame.Tests
             scoreManager.AddScore(true);
             scoreManager.AddScore(false);
             
-            int playerScoreBefore = scoreManager.PlayerScore;
-            int opponentScoreBefore = scoreManager.OpponentScore;
+            int playerScoreBefore = scoreManager.P1Score;
+            int opponentScoreBefore = scoreManager.P2Score;
             
             Assert.Greater(playerScoreBefore, 0, "Player should have score before reset");
             
@@ -211,8 +211,8 @@ namespace CardGame.Tests
             Assert.AreEqual(initialTotalGames, statsTracker.TotalGames, "Total games should persist after rematch");
             
             // Verify scores are reset (per-game scores reset)
-            Assert.AreEqual(0, scoreManager.PlayerScore, "Player score should reset to 0 after rematch");
-            Assert.AreEqual(0, scoreManager.OpponentScore, "Opponent score should reset to 0 after rematch");
+            Assert.AreEqual(0, scoreManager.P1Score, "Player score should reset to 0 after rematch");
+            Assert.AreEqual(0, scoreManager.P2Score, "Opponent score should reset to 0 after rematch");
             
             // Verify game state transitions back to Menu (or Preparing if auto-starts)
             GameState currentState = gameManager.CurrentState;
@@ -244,8 +244,8 @@ namespace CardGame.Tests
             scoreManager.RecalculateScores();
             
             // Verify scores are valid after recalculation
-            int playerScore = scoreManager.PlayerScore;
-            int opponentScore = scoreManager.OpponentScore;
+            int playerScore = scoreManager.P1Score;
+            int opponentScore = scoreManager.P2Score;
             
             Assert.GreaterOrEqual(playerScore, 0, "Player score should be valid after recalculation");
             Assert.GreaterOrEqual(opponentScore, 0, "Opponent score should be valid after recalculation");

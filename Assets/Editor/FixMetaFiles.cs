@@ -70,7 +70,6 @@ namespace CardGame.Editor
             GUILayout.Space(10);
             GUILayout.Label("Note: Always backup your project before deleting .meta files!", EditorStyles.wordWrappedMiniLabel);
             GUILayout.Label("Note: This tool only scans Assets folder. Library and Packages are excluded.", EditorStyles.wordWrappedMiniLabel);
-            GUILayout.Label("Warning: MCP Unity package meta file warnings are harmless - Packages folder is immutable and managed by Unity Package Manager.", EditorStyles.wordWrappedMiniLabel);
         }
         
         private void ScanForOrphanedMetaFiles()

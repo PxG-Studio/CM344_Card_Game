@@ -194,7 +194,7 @@ namespace CardGame.Tests
                     yield return null;
                     
                     // Get initial score
-                    int initialPlayerScore = scoreManager.PlayerScore;
+                    int initialPlayerScore = scoreManager.P1Score;
                     
                     // Place attacker
                     CardMoverP1 attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, area1.transform.position, true);
@@ -271,7 +271,7 @@ namespace CardGame.Tests
                         $"Defender should be captured when attacker is higher. Distance: {finalDistance:F2}");
                     
                     // Step 6: Verify score updated
-                    int newPlayerScore = scoreManager.PlayerScore;
+                    int newPlayerScore = scoreManager.P1Score;
                     Assert.Greater(newPlayerScore, initialPlayerScore, 
                         $"Player score should increase after capture. Was: {initialPlayerScore}, Now: {newPlayerScore}");
                 }

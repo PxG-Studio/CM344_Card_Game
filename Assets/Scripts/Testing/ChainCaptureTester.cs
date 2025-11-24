@@ -49,8 +49,8 @@ namespace CardGame.Testing
                 {
                     Debug.Log("✅ Test 1 PASSED: ScoreManager found in scene");
                 }
-                currentPlayerScore = ScoreManager.Instance.PlayerScore;
-                currentOpponentScore = ScoreManager.Instance.OpponentScore;
+                currentPlayerScore = ScoreManager.Instance.P1Score;
+                currentOpponentScore = ScoreManager.Instance.P2Score;
             }
             else
             {
@@ -194,8 +194,8 @@ namespace CardGame.Testing
             
             if (ScoreManager.Instance != null)
             {
-                int initialPlayerScore = ScoreManager.Instance.PlayerScore;
-                int initialOpponentScore = ScoreManager.Instance.OpponentScore;
+                int initialPlayerScore = ScoreManager.Instance.P1Score;
+                int initialOpponentScore = ScoreManager.Instance.P2Score;
                 
                 if (logTestResults)
                 {
@@ -257,7 +257,7 @@ namespace CardGame.Testing
         {
             if (ScoreManager.Instance != null)
             {
-                Debug.Log($"Current Scores - Player: {ScoreManager.Instance.PlayerScore}, Opponent: {ScoreManager.Instance.OpponentScore}");
+                Debug.Log($"Current Scores - Player: {ScoreManager.Instance.P1Score}, Opponent: {ScoreManager.Instance.P2Score}");
             }
             else
             {
@@ -291,7 +291,7 @@ namespace CardGame.Testing
             if (ScoreManager.Instance != null)
             {
                 ScoreManager.Instance.RecalculateScores();
-                Debug.Log($"Recalculated Scores - Player: {ScoreManager.Instance.PlayerScore}, Opponent: {ScoreManager.Instance.OpponentScore}");
+                Debug.Log($"Recalculated Scores - Player: {ScoreManager.Instance.P1Score}, Opponent: {ScoreManager.Instance.P2Score}");
             }
             else
             {
@@ -304,8 +304,8 @@ namespace CardGame.Testing
             // Update score display in inspector
             if (ScoreManager.Instance != null)
             {
-                currentPlayerScore = ScoreManager.Instance.PlayerScore;
-                currentOpponentScore = ScoreManager.Instance.OpponentScore;
+                currentPlayerScore = ScoreManager.Instance.P1Score;
+                currentOpponentScore = ScoreManager.Instance.P2Score;
             }
         }
     }

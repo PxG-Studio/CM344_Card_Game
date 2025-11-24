@@ -177,8 +177,8 @@ namespace CardGame.Tests
             ScoreManager scoreManager = ScoreManager.Instance;
             Assert.IsNotNull(scoreManager, "ScoreManager should exist");
             
-            int initialPlayerScore = scoreManager.PlayerScore;
-            int initialOpponentScore = scoreManager.OpponentScore;
+            int initialPlayerScore = scoreManager.P1Score;
+            int initialOpponentScore = scoreManager.P2Score;
             
             CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length >= 2, "Need at least 2 drop areas");
@@ -405,8 +405,8 @@ namespace CardGame.Tests
             ScoreManager scoreMgrCheck = ScoreManager.Instance;
             Debug.Log($"[IntegrationBug_CaptureOccurs_ButScoreNotUpdated] ScoreManager diagnostics - " +
                 $"Instance exists: {scoreMgrCheck != null}, " +
-                $"PlayerScore: {scoreMgrCheck?.PlayerScore ?? -1}, " +
-                $"OpponentScore: {scoreMgrCheck?.OpponentScore ?? -1}");
+                $"P1Score: {scoreMgrCheck?.P1Score ?? -1}, " +
+                $"P2Score: {scoreMgrCheck?.P2Score ?? -1}");
             
             if (!defenderCaptured && finalDistance > 1.6f)
             {
@@ -426,8 +426,8 @@ namespace CardGame.Tests
                 Assert.Fail("INTEGRATION BUG: ScoreManager.Instance is null! Cannot verify score update.");
             }
             
-            int newPlayerScore = finalScoreManager.PlayerScore;
-            int newOpponentScore = finalScoreManager.OpponentScore;
+            int newPlayerScore = finalScoreManager.P1Score;
+            int newOpponentScore = finalScoreManager.P2Score;
             
             Debug.Log($"[IntegrationBug_CaptureOccurs_ButScoreNotUpdated] ═══ SCORE UPDATE VERIFICATION ═══");
             Debug.Log($"[IntegrationBug_CaptureOccurs_ButScoreNotUpdated] Initial scores - Player: {initialPlayerScore}, Opponent: {initialOpponentScore}");
@@ -563,13 +563,13 @@ namespace CardGame.Tests
                 }
             }
             
-            int initialManagerScore = scoreManager.PlayerScore;
+            int initialManagerScore = scoreManager.P1Score;
             
             // Update score
             scoreManager.AddScore(true);
             yield return new WaitForSeconds(0.5f); // Wait for UI update
             
-            int newManagerScore = scoreManager.PlayerScore;
+            int newManagerScore = scoreManager.P1Score;
             Assert.Greater(newManagerScore, initialManagerScore, "ScoreManager score should increase");
             
             // INTEGRATION ASSERTION: UI MUST reflect score change

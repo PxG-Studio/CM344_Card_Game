@@ -200,12 +200,10 @@ namespace CardGame.Tests
             // Manually adjust defender position if needed to ensure strict adjacency
             float actualDistance = Vector3.Distance(attackerMover.transform.position, defenderMover.transform.position);
             const float strictAdjacencyTolerance = 1.6f;
-            bool positionAdjusted = false;
             if (actualDistance > strictAdjacencyTolerance)
             {
                 Debug.Log($"[LogicError_CaptureCalculation_DefenderHigher_ShouldNotCapture] Adjusting defender position. Distance: {actualDistance:F3}, Target: {defenderPosition}");
                 defenderMover.transform.position = attackerPosition + Vector3.right * 1.5f;
-                positionAdjusted = true;
                 yield return new WaitForEndOfFrame();
             }
             
@@ -256,7 +254,7 @@ namespace CardGame.Tests
             ScoreManager scoreManager = ScoreManager.Instance;
             Assert.IsNotNull(scoreManager, "ScoreManager should exist");
             
-            int initialPlayerScore = scoreManager.PlayerScore;
+            int initialPlayerScore = scoreManager.P1Score;
             
             CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length >= 2, "Need at least 2 drop areas");
@@ -300,7 +298,7 @@ namespace CardGame.Tests
             Assert.IsTrue(defenderCaptured, "Defender should be captured for score test");
             
             // LOGIC ASSERTION: Score MUST increase after capture
-            int newPlayerScore = scoreManager.PlayerScore;
+            int newPlayerScore = scoreManager.P1Score;
             Assert.Greater(newPlayerScore, initialPlayerScore, 
                 $"LOGIC ERROR: Player score should increase after capturing opponent card. " +
                 $"Was: {initialPlayerScore}, Now: {newPlayerScore}. " +

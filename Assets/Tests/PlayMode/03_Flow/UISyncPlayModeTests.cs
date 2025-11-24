@@ -119,15 +119,15 @@ namespace CardGame.Tests
             }
             
             // Get initial scores
-            int initialPlayerScore = scoreManager.PlayerScore;
-            int initialOpponentScore = scoreManager.OpponentScore;
+            int initialPlayerScore = scoreManager.P1Score;
+            int initialOpponentScore = scoreManager.P2Score;
             
             // Act: Trigger a capture by adding score
             scoreManager.AddScore(true); // Add point to player
             yield return new WaitForSeconds(0.5f); // Wait for UI update
             
             // Assert: Score should have increased
-            int newPlayerScore = scoreManager.PlayerScore;
+            int newPlayerScore = scoreManager.P1Score;
             Assert.AreEqual(initialPlayerScore + 1, newPlayerScore, 
                 "Player score should increase after AddScore(true)");
             

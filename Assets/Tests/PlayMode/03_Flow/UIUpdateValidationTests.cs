@@ -113,7 +113,7 @@ namespace CardGame.Tests
             }
             
             // Get initial values
-            int initialManagerScore = scoreManager.PlayerScore;
+            int initialManagerScore = scoreManager.P1Score;
             int initialDisplayedScore = 0;
             if (int.TryParse(player1ScoreText.text, out int parsed))
             {
@@ -124,7 +124,7 @@ namespace CardGame.Tests
             scoreManager.AddScore(true);
             yield return new WaitForSeconds(0.5f); // Wait for UI update
             
-            int newManagerScore = scoreManager.PlayerScore;
+            int newManagerScore = scoreManager.P1Score;
             
             // UI ASSERTION: Displayed score MUST match manager score
             int newDisplayedScore = 0;
@@ -343,7 +343,7 @@ namespace CardGame.Tests
             }
             
             // Get initial values
-            int initialManagerScore = scoreManager.OpponentScore;
+            int initialManagerScore = scoreManager.P2Score;
             int initialDisplayedScore = 0;
             if (int.TryParse(player2ScoreText.text, out int parsed))
             {
@@ -354,7 +354,7 @@ namespace CardGame.Tests
             scoreManager.AddScore(false);
             yield return new WaitForSeconds(0.5f);
             
-            int newManagerScore = scoreManager.OpponentScore;
+            int newManagerScore = scoreManager.P2Score;
             
             // UI ASSERTION: Player 2 score UI MUST match manager score
             int newDisplayedScore = 0;

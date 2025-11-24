@@ -676,7 +676,7 @@ namespace CardGame.Tests
             ScoreManager scoreManager = ScoreManager.Instance;
             if (scoreManager == null) return 0;
             
-            return isPlayer1 ? scoreManager.PlayerScore : scoreManager.OpponentScore;
+            return isPlayer1 ? scoreManager.P1Score : scoreManager.P2Score;
         }
 
         /// <summary>

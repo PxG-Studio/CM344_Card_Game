@@ -18,7 +18,6 @@ namespace CardGame.Tests
     {
         private const string SCENE_NAME = "BattleScreenMultiplayer";
         private Scene scene;
-        private bool sceneLoaded = false;
 
         [UnitySetUp]
         public IEnumerator SetUp()
@@ -31,7 +30,6 @@ namespace CardGame.Tests
             yield return TestSceneInitializer.LoadBattleScene();
             
             scene = SceneManager.GetActiveScene();
-            sceneLoaded = true;
             Assert.AreEqual(SCENE_NAME, scene.name, $"Active scene should be '{SCENE_NAME}'");
         }
         
