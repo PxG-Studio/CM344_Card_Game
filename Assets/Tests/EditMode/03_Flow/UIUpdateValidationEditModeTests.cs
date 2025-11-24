@@ -47,27 +47,27 @@ namespace CardGame.Tests
         [Test]
         public void NewHandUI_Has_Update_Methods()
         {
-            // Verify NewHandUI has methods to update hand display
-            var addCardToHandMethod = typeof(NewHandUI).GetMethod("AddCardToHand",
+            // Verify NewHandP1UI has methods to update hand display
+            var addCardToHandMethod = typeof(NewHandP1UI).GetMethod("AddCardToHand",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            var removeCardFromHandMethod = typeof(NewHandUI).GetMethod("RemoveCardFromHand",
+            var removeCardFromHandMethod = typeof(NewHandP1UI).GetMethod("RemoveCardFromHand",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
             
-            Assert.IsNotNull(addCardToHandMethod, "NewHandUI should have AddCardToHand method");
-            Assert.IsNotNull(removeCardFromHandMethod, "NewHandUI should have RemoveCardFromHand method");
+            Assert.IsNotNull(addCardToHandMethod, "NewHandP1UI should have AddCardToHand method");
+            Assert.IsNotNull(removeCardFromHandMethod, "NewHandP1UI should have RemoveCardFromHand method");
         }
 
         [Test]
-        public void NewHandOppUI_Has_Update_Methods()
+        public void NewHandP2UI_Has_Update_Methods()
         {
-            // Verify NewHandOppUI has methods to update hand display
-            var addCardToHandMethod = typeof(NewHandOppUI).GetMethod("AddCardToHand",
+            // Verify NewHandP2UI has methods to update hand display
+            var addCardToHandMethod = typeof(NewHandP2UI).GetMethod("AddCardToHand",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            var removeCardFromHandMethod = typeof(NewHandOppUI).GetMethod("RemoveCardFromHand",
+            var removeCardFromHandMethod = typeof(NewHandP2UI).GetMethod("RemoveCardFromHand",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
             
-            Assert.IsNotNull(addCardToHandMethod, "NewHandOppUI should have AddCardToHand method");
-            Assert.IsNotNull(removeCardFromHandMethod, "NewHandOppUI should have RemoveCardFromHand method");
+            Assert.IsNotNull(addCardToHandMethod, "NewHandP2UI should have AddCardToHand method");
+            Assert.IsNotNull(removeCardFromHandMethod, "NewHandP2UI should have RemoveCardFromHand method");
         }
 
         [Test]

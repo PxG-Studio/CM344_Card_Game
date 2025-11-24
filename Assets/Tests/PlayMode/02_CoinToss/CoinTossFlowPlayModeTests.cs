@@ -248,29 +248,69 @@ namespace CardGame.Tests
             coinTossManager.ResetCoinToss();
             yield return null;
             
-            // Act: Start coin toss animation
+            // Act: Start coin toss (this shows selection UI)
             coinTossUI.StartCoinToss();
             yield return new WaitForEndOfFrame();
             yield return null;
             
-            coinTossUI.StartCoinTossAnimation();
+            // CRITICAL: Make a selection first (this activates the coin image)
+            // OnSelectionMade() activates the coin image before starting animation
+            // We need to simulate the selection flow
+            coinTossManager.SetPlayerSelection(true, FateSide.Player); // Select heads
+            
+            // Get OnSelectionMade method via reflection to trigger selection
+            var onSelectionMadeMethod = typeof(CoinTossUI).GetMethod("OnSelectionMade", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            // Get coin image field reference for later use
+            var coinImageField = typeof(CoinTossUI).GetField("coinImage", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            if (onSelectionMadeMethod != null)
+            {
+                // Trigger selection (this will activate coin image and start animation)
+                onSelectionMadeMethod.Invoke(coinTossUI, new object[] { true }); // Select heads
+            }
+            else
+            {
+                // Fallback: Manually activate coin image if method not accessible
+                if (coinImageField != null)
+                {
+                    Image coinImage = coinImageField.GetValue(coinTossUI) as Image;
+                    if (coinImage != null)
+                    {
+                        coinImage.gameObject.SetActive(true);
+                    }
+                }
+                
+                // Then start animation
+                coinTossUI.StartCoinTossAnimation();
+            }
+            
+            yield return new WaitForEndOfFrame();
+            yield return null;
             
             // Wait for animation to start
             yield return new WaitForSeconds(0.1f);
             
             // Assert: Animation should be playing
-            // Check if coin image exists and is rotating
-            var coinImageField = typeof(CoinTossUI).GetField("coinImage", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
+            // Check if coin image exists and is active
             if (coinImageField != null)
             {
                 Image coinImage = coinImageField.GetValue(coinTossUI) as Image;
                 if (coinImage != null)
                 {
-                    // Verify coin image is active
+                    // Verify coin image is active during animation
                     Assert.IsTrue(coinImage.gameObject.activeSelf, "Coin image should be active during animation");
                 }
+                else
+                {
+                    Assert.Fail("Coin image field exists but value is null");
+                }
+            }
+            else
+            {
+                Assert.Fail("Coin image field not found in CoinTossUI");
             }
             
             // Wait for animation to complete
@@ -305,7 +345,7 @@ namespace CardGame.Tests
                 results.Add(result);
                 
                 // Verify result is valid
-                Assert.IsTrue(result == FateSide.Player || result == FateSide.Opponent, 
+                Assert.IsTrue(result == FateSide.Player || result == FateSide.P2, 
                     $"Coin toss result should be Player or Opponent, got {result}");
                 
                 yield return null;
@@ -322,8 +362,8 @@ namespace CardGame.Tests
                 "Forced result should return Player");
             
             coinTossManager.ResetCoinToss();
-            coinTossManager.SetForcedResult(FateSide.Opponent);
-            Assert.AreEqual(FateSide.Opponent, coinTossManager.GetStartingPlayer(), 
+            coinTossManager.SetForcedResult(FateSide.P2);
+            Assert.AreEqual(FateSide.P2, coinTossManager.GetStartingPlayer(), 
                 "Forced result should return Opponent");
         }
 
@@ -373,7 +413,7 @@ namespace CardGame.Tests
             
             // Test Player 2 wins
             coinTossManager.ResetCoinToss();
-            coinTossManager.SetForcedResult(FateSide.Opponent);
+            coinTossManager.SetForcedResult(FateSide.P2);
             yield return null;
             
             coinTossUI.StartCoinToss();
@@ -457,8 +497,8 @@ namespace CardGame.Tests
             // Arrange: Wait for scene to load and coin toss to complete
             yield return new WaitForSeconds(2.0f);
             
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            Assert.IsNotNull(playerDeck, "NewDeckManager should exist");
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            Assert.IsNotNull(playerDeck, "NewDeckManagerP1 should exist");
             
             // Wait for cards to be drawn (after coin toss completes)
             yield return new WaitForSeconds(2.0f);
@@ -484,8 +524,8 @@ namespace CardGame.Tests
             // Arrange: Wait for scene to load and coin toss to complete
             yield return new WaitForSeconds(2.0f);
             
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
-            Assert.IsNotNull(opponentDeck, "NewDeckManagerOpp should exist");
+            NewDeckManagerP2 opponentDeck = Object.FindObjectOfType<NewDeckManagerP2>();
+            Assert.IsNotNull(opponentDeck, "NewDeckManagerP2 should exist");
             
             // Wait for cards to be drawn (after coin toss completes)
             yield return new WaitForSeconds(2.0f);
@@ -511,13 +551,13 @@ namespace CardGame.Tests
             // Arrange: Wait for scene to load
             yield return new WaitForSeconds(1.0f);
             
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            Assert.IsNotNull(playerDeck, "NewDeckManager should exist");
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            Assert.IsNotNull(playerDeck, "NewDeckManagerP1 should exist");
             
             // Note: Unity's Random doesn't support seeding in the same way
             // This test validates that ShuffleDeck() method exists and can be called
-            var shuffleMethod = typeof(NewDeckManager).GetMethod("ShuffleDeck");
-            Assert.IsNotNull(shuffleMethod, "NewDeckManager should have ShuffleDeck method");
+            var shuffleMethod = typeof(NewDeckManagerP1).GetMethod("ShuffleDeck");
+            Assert.IsNotNull(shuffleMethod, "NewDeckManagerP1 should have ShuffleDeck method");
             
             // Initialize deck
             playerDeck.InitializeDeck();
@@ -564,7 +604,7 @@ namespace CardGame.Tests
             
             // Verify CanAct works correctly
             bool canPlayer1Act = fateController.CanAct(FateSide.Player);
-            bool canPlayer2Act = fateController.CanAct(FateSide.Opponent);
+            bool canPlayer2Act = fateController.CanAct(FateSide.P2);
             
             Assert.IsTrue(canPlayer1Act, "Player 1 should be able to act after winning coin toss");
             Assert.IsFalse(canPlayer2Act, "Player 2 should not be able to act when Player 1 has turn");
@@ -586,20 +626,20 @@ namespace CardGame.Tests
             
             // Reset coin toss and force Player 2 to win
             coinTossManager.ResetCoinToss();
-            coinTossManager.SetForcedResult(FateSide.Opponent);
+            coinTossManager.SetForcedResult(FateSide.P2);
             yield return null;
             
             // Set fate to match coin toss result
-            fateController.SetFate(FateSide.Opponent);
+            fateController.SetFate(FateSide.P2);
             yield return null;
             
             // Assert: Player 2 should have first turn
-            Assert.AreEqual(FateSide.Opponent, fateController.CurrentFate, 
+            Assert.AreEqual(FateSide.P2, fateController.CurrentFate, 
                 "FateFlowController should reflect Player 2's turn after coin toss win");
             
             // Verify CanAct works correctly
             bool canPlayer1Act = fateController.CanAct(FateSide.Player);
-            bool canPlayer2Act = fateController.CanAct(FateSide.Opponent);
+            bool canPlayer2Act = fateController.CanAct(FateSide.P2);
             
             Assert.IsFalse(canPlayer1Act, "Player 1 should not be able to act when Player 2 has turn");
             Assert.IsTrue(canPlayer2Act, "Player 2 should be able to act after winning coin toss");

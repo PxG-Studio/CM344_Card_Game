@@ -20,8 +20,8 @@ namespace CardGame.Managers
         [SerializeField] private CardGame.UI.GameEndUI gameEndUI;
         
         // References to deck managers (auto-found if not assigned)
-        private NewDeckManager playerDeckManager;
-        private NewDeckManagerOpp opponentDeckManager;
+        private NewDeckManagerP1 playerDeckManager;
+        private NewDeckManagerP2 opponentDeckManager;
         
         private void Awake()
         {
@@ -39,11 +39,11 @@ namespace CardGame.Managers
             // Auto-find deck managers if not assigned
             if (playerDeckManager == null)
             {
-                playerDeckManager = FindObjectOfType<NewDeckManager>();
+                playerDeckManager = FindObjectOfType<NewDeckManagerP1>();
             }
             if (opponentDeckManager == null)
             {
-                opponentDeckManager = FindObjectOfType<NewDeckManagerOpp>();
+                opponentDeckManager = FindObjectOfType<NewDeckManagerP2>();
             }
             
             if (gameEndUI == null)
@@ -83,7 +83,7 @@ namespace CardGame.Managers
             
             bool playerHandEmpty = false;
             bool opponentHandEmpty = false;
-            int totalCardsPlayed = CardDropArea1.GetCardsPlayed();
+            int totalCardsPlayed = CardDropArea.GetCardsPlayed();
             int playerHandCount = 0;
             int opponentHandCount = 0;
             
@@ -202,25 +202,25 @@ namespace CardGame.Managers
                 return;
             }
             
-            int playerScore = ScoreManager.Instance.PlayerScore;
-            int opponentScore = ScoreManager.Instance.OpponentScore;
-            bool isTie = playerScore == opponentScore;
+            int p1Score = ScoreManager.Instance.P1Score;
+            int p2Score = ScoreManager.Instance.P2Score;
+            bool isTie = p1Score == p2Score;
             int scoreMargin = ScoreManager.Instance.GetScoreMargin();
             
             // Get statistics
-            int cardsPlayed = CardDropArea1.GetCardsPlayed();
-            int capturesMade = CardDropArea1.GetCapturesMade();
-            int longestChain = CardDropArea1.GetLongestChain();
+            int cardsPlayed = CardDropArea.GetCardsPlayed();
+            int capturesMade = CardDropArea.GetCapturesMade();
+            int longestChain = CardDropArea.GetLongestChain();
             
-            bool playerWon = playerScore > opponentScore;
+            bool p1Won = p1Score > p2Score;
             
             // Record statistics in GameStatsTracker
             if (GameStatsTracker.Instance != null)
             {
-                GameStatsTracker.Instance.RecordGameResult(playerWon, isTie, cardsPlayed, capturesMade, longestChain, scoreMargin);
+                GameStatsTracker.Instance.RecordGameResult(p1Won, isTie, cardsPlayed, capturesMade, longestChain, scoreMargin);
             }
             
-            Debug.Log($"[GameEndManager] Final Scores - Player: {playerScore}, Opponent: {opponentScore}, Margin: {scoreMargin}");
+            Debug.Log($"[GameEndManager] Final Scores - P1: {p1Score}, P2: {p2Score}, Margin: {scoreMargin}");
             Debug.Log($"[GameEndManager] Statistics - Cards Played: {cardsPlayed}, Captures Made: {capturesMade}, Longest Chain: {longestChain}");
             
             if (GameManager.Instance == null)
@@ -230,13 +230,13 @@ namespace CardGame.Managers
             }
             
             // Determine winner based on scores
-            if (playerScore > opponentScore)
+            if (p1Score > p2Score)
             {
-                Debug.Log("Player wins!");
+                Debug.Log("P1 wins!");
                 GameManager.Instance.ChangeState(GameState.Victory);
                 ShowWinnerUI(true, false, cardsPlayed, capturesMade, longestChain, scoreMargin);
             }
-            else if (opponentScore > playerScore)
+            else if (p2Score > p1Score)
             {
                 Debug.Log("Opponent wins!");
                 GameManager.Instance.ChangeState(GameState.Defeat);
@@ -298,7 +298,7 @@ namespace CardGame.Managers
         /// <summary>
         /// Gets the player deck manager (for external access if needed)
         /// </summary>
-        public NewDeckManager GetPlayerDeckManager()
+        public NewDeckManagerP1 GetPlayerDeckManager()
         {
             return playerDeckManager;
         }
@@ -306,7 +306,7 @@ namespace CardGame.Managers
         /// <summary>
         /// Gets the opponent deck manager (for external access if needed)
         /// </summary>
-        public NewDeckManagerOpp GetOpponentDeckManager()
+        public NewDeckManagerP2 GetOpponentDeckManager()
         {
             return opponentDeckManager;
         }

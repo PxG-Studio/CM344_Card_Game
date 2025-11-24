@@ -34,38 +34,38 @@ namespace CardGame.Tests
         }
 
         /// <summary>
-        /// Places a card on a drop area using AutomationAttemptDrop
+        /// Places a P1 card on a drop area using AutomationAttemptDrop
         /// </summary>
-        public static bool PlaceCardOnDropArea(CardMover cardMover, CardDropArea1 dropArea, bool bypassTurnCheck = true)
+        public static bool PlaceP1CardOnDropArea(CardMoverP1 cardMoverP1, CardDropArea dropArea, bool bypassTurnCheck = true)
         {
-            if (cardMover == null || dropArea == null) return false;
+            if (cardMoverP1 == null || dropArea == null) return false;
             
             Vector3 dropPosition = dropArea.transform.position;
-            return cardMover.AutomationAttemptDrop(dropPosition, bypassTurnCheck);
+            return cardMoverP1.AutomationAttemptDrop(dropPosition, bypassTurnCheck);
         }
 
         /// <summary>
-        /// Places an opponent card on a drop area
+        /// Places a P2 card on a drop area
         /// </summary>
-        public static bool PlaceOpponentCardOnDropArea(CardMoverOpp cardMoverOpp, CardDropArea1 dropArea, bool bypassTurnCheck = true)
+        public static bool PlaceP2CardOnDropArea(CardMoverP2 cardMoverP2, CardDropArea dropArea, bool bypassTurnCheck = true)
         {
-            if (cardMoverOpp == null || dropArea == null) return false;
+            if (cardMoverP2 == null || dropArea == null) return false;
             
             // Ensure collider is set before attempting drop (Unity might have called Start() and reset it)
-            EnsureColliderSet(cardMoverOpp);
+            EnsureColliderSet(cardMoverP2);
             
             Vector3 dropPosition = dropArea.transform.position;
-            return cardMoverOpp.AutomationAttemptDrop(dropPosition, bypassTurnCheck);
+            return cardMoverP2.AutomationAttemptDrop(dropPosition, bypassTurnCheck);
         }
         
         /// <summary>
-        /// Ensures the collider field is set on CardMoverOpp (Unity's Start() might reset it)
+        /// Ensures the collider field is set on CardMoverP2 (Unity's Start() might reset it)
         /// </summary>
-        private static void EnsureColliderSet(CardMoverOpp mover)
+        private static void EnsureColliderSet(CardMoverP2 mover)
         {
             if (mover == null) return;
             
-            var colField = typeof(CardMoverOpp).GetField("col", 
+            var colField = typeof(CardMoverP2).GetField("col", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (colField == null) return;
             
@@ -99,11 +99,11 @@ namespace CardGame.Tests
         /// <summary>
         /// Adds a card to a deck manager's hand using reflection
         /// </summary>
-        public static void AddCardToDeckManagerHand(NewDeckManager deckManager, NewCard card)
+        public static void AddCardToDeckManagerHand(NewDeckManagerP1 deckManager, NewCard card)
         {
             if (deckManager == null || card == null) return;
             
-            var handField = typeof(NewDeckManager).GetField("hand", 
+            var handField = typeof(NewDeckManagerP1).GetField("hand", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (handField != null)
             {
@@ -119,13 +119,13 @@ namespace CardGame.Tests
         }
         
         /// <summary>
-        /// Adds a card to an opponent deck manager's hand using reflection
+        /// Adds a card to a P2 deck manager's hand using reflection
         /// </summary>
-        public static void AddCardToDeckManagerHand(NewDeckManagerOpp deckManager, NewCard card)
+        public static void AddCardToDeckManagerHand(NewDeckManagerP2 deckManager, NewCard card)
         {
             if (deckManager == null || card == null) return;
             
-            var handField = typeof(NewDeckManagerOpp).GetField("hand", 
+            var handField = typeof(NewDeckManagerP2).GetField("hand", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (handField != null)
             {
@@ -181,14 +181,14 @@ namespace CardGame.Tests
         /// <summary>
         /// Gets the adjacent drop area in a specific direction
         /// </summary>
-        public static CardDropArea1 GetAdjacentDropArea(CardDropArea1 fromArea, string direction)
+        public static CardDropArea GetAdjacentDropArea(CardDropArea fromArea, string direction)
         {
-            CardDropArea1[] allAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] allAreas = Object.FindObjectsOfType<CardDropArea>();
             Vector3 fromPos = fromArea.transform.position;
             
             float searchDistance = 3.5f; // Slightly larger than adjacentCardDistance
             
-            foreach (CardDropArea1 area in allAreas)
+            foreach (CardDropArea area in allAreas)
             {
                 if (area == fromArea) continue;
                 
@@ -220,9 +220,9 @@ namespace CardGame.Tests
         }
 
         /// <summary>
-        /// Creates a CardMover GameObject with a test card
+        /// Creates a CardMoverP1 GameObject with a test card
         /// </summary>
-        public static CardMover CreateCardMoverWithCard(NewCard card, Vector3 position, bool isPlayerCard = true)
+        public static CardMoverP1 CreateCardMoverWithCard(NewCard card, Vector3 position, bool isPlayerCard = true)
         {
             // Find prefab or create GameObject
             GameObject cardPrefab = GameObject.Find("NewCardPrefab");
@@ -232,28 +232,28 @@ namespace CardGame.Tests
                 GameObject cardObj = new GameObject($"TestCard_{card.Data.cardName}");
                 cardObj.transform.position = position;
                 
-                // Add Collider2D FIRST (before CardMover so Start() can find it)
+                // Add Collider2D FIRST (before CardMoverP1 so Start() can find it)
                 Collider2D col = cardObj.AddComponent<BoxCollider2D>();
                 col.isTrigger = true;
                 col.enabled = true;
                 
-                CardMover cardMover = cardObj.AddComponent<CardMover>();
-                cardMover.SetCard(card);
+                CardMoverP1 cardMoverP1 = cardObj.AddComponent<CardMoverP1>();
+                cardMoverP1.SetCard(card);
                 
                 // Ensure Start() is called to initialize the col reference
-                var startMethod = typeof(CardMover).GetMethod("Start", 
+                var startMethod = typeof(CardMoverP1).GetMethod("Start", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 if (startMethod != null)
                 {
-                    startMethod.Invoke(cardMover, null);
+                    startMethod.Invoke(cardMoverP1, null);
                 }
                 
                 // Manually set collider reference if Start() didn't work
-                var colField = typeof(CardMover).GetField("col", 
+                var colField = typeof(CardMoverP1).GetField("col", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (colField != null && colField.GetValue(cardMover) == null)
+                if (colField != null && colField.GetValue(cardMoverP1) == null)
                 {
-                    colField.SetValue(cardMover, col);
+                    colField.SetValue(cardMoverP1, col);
                 }
                 
                 // Add NewCardUI component for capture/flip functionality
@@ -267,12 +267,12 @@ namespace CardGame.Tests
                 }
                 cardUI.Initialize(card);
                 
-                return cardMover;
+                return cardMoverP1;
             }
             
             // Use prefab if available
             GameObject cardInstance = Object.Instantiate(cardPrefab, position, Quaternion.identity);
-            CardMover mover = cardInstance.GetComponent<CardMover>();
+            CardMoverP1 mover = cardInstance.GetComponent<CardMoverP1>();
             if (mover != null)
             {
                 mover.SetCard(card);
@@ -292,7 +292,7 @@ namespace CardGame.Tests
                 }
                 
                 // Ensure Start() is called
-                var startMethod = typeof(CardMover).GetMethod("Start", 
+                var startMethod = typeof(CardMoverP1).GetMethod("Start", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 if (startMethod != null)
                 {
@@ -300,7 +300,7 @@ namespace CardGame.Tests
                 }
                 
                 // Manually set collider reference if Start() didn't work
-                var colField = typeof(CardMover).GetField("col", 
+                var colField = typeof(CardMoverP1).GetField("col", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 if (colField != null && colField.GetValue(mover) == null && prefabCol != null)
                 {
@@ -339,9 +339,9 @@ namespace CardGame.Tests
         }
 
         /// <summary>
-        /// Creates a CardMoverOpp GameObject with a test card
+        /// Creates a CardMoverP2 GameObject with a test card
         /// </summary>
-        public static CardMoverOpp CreateCardMoverOppWithCard(NewCard card, Vector3 position)
+        public static CardMoverP2 CreateCardMoverP2WithCard(NewCard card, Vector3 position)
         {
             GameObject cardPrefab = GameObject.Find("NewCardPrefabOpp");
             if (cardPrefab == null)
@@ -349,37 +349,37 @@ namespace CardGame.Tests
                 GameObject cardObj = new GameObject($"TestCardOpp_{card.Data.cardName}");
                 cardObj.transform.position = position;
                 
-                // Add Collider2D FIRST (before CardMoverOpp so Start() can find it)
+                // Add Collider2D FIRST (before CardMoverP2 so Start() can find it)
                 Collider2D col = cardObj.AddComponent<BoxCollider2D>();
                 col.isTrigger = true;
                 col.enabled = true;
                 
-                CardMoverOpp cardMover = cardObj.AddComponent<CardMoverOpp>();
-                cardMover.SetCard(card);
+                CardMoverP2 cardMoverP2 = cardObj.AddComponent<CardMoverP2>();
+                cardMoverP2.SetCard(card);
                 
                 // Ensure Start() is called to initialize the col reference
                 // In EditMode/PlayMode tests, Start() may not be called automatically
-                var startMethod = typeof(CardMoverOpp).GetMethod("Start", 
+                var startMethod = typeof(CardMoverP2).GetMethod("Start", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 if (startMethod != null)
                 {
-                    startMethod.Invoke(cardMover, null);
+                    startMethod.Invoke(cardMoverP2, null);
                 }
                 
                 // ALWAYS manually set collider reference to ensure it's set correctly
                 // Unity might call Start() again later, which could reset it to null
-                var colField = typeof(CardMoverOpp).GetField("col", 
+                var colField = typeof(CardMoverP2).GetField("col", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 if (colField != null)
                 {
                     // Force set it to the collider we created
-                    colField.SetValue(cardMover, col);
+                    colField.SetValue(cardMoverP2, col);
                     
                     // Verify it was set correctly
-                    var setCol = colField.GetValue(cardMover) as Collider2D;
+                    var setCol = colField.GetValue(cardMoverP2) as Collider2D;
                     if (setCol == null)
                     {
-                        Debug.LogError($"[CardTestHelper] Failed to set collider on CardMoverOpp for '{card.Data.cardName}'. " +
+                        Debug.LogError($"[CardTestHelper] Failed to set collider on CardMoverP2 for '{card.Data.cardName}'. " +
                             $"Collider exists: {col != null}, Field exists: {colField != null}");
                     }
                 }
@@ -395,11 +395,11 @@ namespace CardGame.Tests
                 }
                 cardUI.Initialize(card);
                 
-                return cardMover;
+                return cardMoverP2;
             }
             
             GameObject cardInstance = Object.Instantiate(cardPrefab, position, Quaternion.identity);
-            CardMoverOpp mover = cardInstance.GetComponent<CardMoverOpp>();
+            CardMoverP2 mover = cardInstance.GetComponent<CardMoverP2>();
             if (mover != null)
             {
                 mover.SetCard(card);
@@ -419,7 +419,7 @@ namespace CardGame.Tests
                 }
                 
                 // Ensure Start() is called
-                var startMethod = typeof(CardMoverOpp).GetMethod("Start", 
+                var startMethod = typeof(CardMoverP2).GetMethod("Start", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 if (startMethod != null)
                 {
@@ -428,7 +428,7 @@ namespace CardGame.Tests
                 
                 // ALWAYS manually set collider reference to ensure it's set correctly
                 // Unity might call Start() again later, which could reset it to null
-                var colField = typeof(CardMoverOpp).GetField("col", 
+                var colField = typeof(CardMoverP2).GetField("col", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 if (colField != null && prefabCol != null)
                 {
@@ -439,7 +439,7 @@ namespace CardGame.Tests
                     var setCol = colField.GetValue(mover) as Collider2D;
                     if (setCol == null)
                     {
-                        Debug.LogError($"[CardTestHelper] Failed to set collider on CardMoverOpp prefab instance for '{card.Data.cardName}'. " +
+                        Debug.LogError($"[CardTestHelper] Failed to set collider on CardMoverP2 prefab instance for '{card.Data.cardName}'. " +
                             $"Collider exists: {prefabCol != null}, Field exists: {colField != null}");
                     }
                 }
@@ -454,7 +454,7 @@ namespace CardGame.Tests
             else
             {
                 // If mover is null, create a new one with collider
-                mover = cardInstance.AddComponent<CardMoverOpp>();
+                mover = cardInstance.AddComponent<CardMoverP2>();
                 mover.SetCard(card);
                 
                 Collider2D col = cardInstance.GetComponent<Collider2D>();
@@ -466,7 +466,7 @@ namespace CardGame.Tests
                 }
                 
                 // Ensure Start() is called
-                var startMethod = typeof(CardMoverOpp).GetMethod("Start", 
+                var startMethod = typeof(CardMoverP2).GetMethod("Start", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 if (startMethod != null)
                 {
@@ -474,7 +474,7 @@ namespace CardGame.Tests
                 }
                 
                 // Manually set collider reference
-                var colField = typeof(CardMoverOpp).GetField("col", 
+                var colField = typeof(CardMoverP2).GetField("col", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 if (colField != null && colField.GetValue(mover) == null && col != null)
                 {
@@ -496,7 +496,7 @@ namespace CardGame.Tests
             }
             
             // Final verification: ensure collider is set
-            var finalColField = typeof(CardMoverOpp).GetField("col", 
+            var finalColField = typeof(CardMoverP2).GetField("col", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (finalColField != null && finalColField.GetValue(mover) == null)
             {
@@ -544,6 +544,7 @@ namespace CardGame.Tests
 
         /// <summary>
         /// Waits for coin toss to complete with improved timeout and error handling
+        /// Automatically makes a selection if none exists (for test environments)
         /// </summary>
         public static IEnumerator WaitForCoinTossToComplete(float timeout = 15f)
         {
@@ -568,6 +569,45 @@ namespace CardGame.Tests
                 yield break;
             }
             
+            // CRITICAL: If no selection has been made, automatically make one for testing
+            // This ensures the coin toss can proceed in test environments where there's no actual player input
+            if (!coinTossManager.HasSelection)
+            {
+                Debug.Log("[CardTestHelper] No coin toss selection made. Automatically selecting 'Heads' for Player 1 (test environment).");
+                coinTossManager.SetPlayerSelection(true, FateSide.Player); // Select heads for Player 1
+                
+                // Also trigger the selection in CoinTossUI if it exists
+                CoinTossUI coinTossUI = Object.FindObjectOfType<CoinTossUI>(true);
+                if (coinTossUI != null)
+                {
+                    // Get OnSelectionMade method via reflection to trigger selection flow
+                    var onSelectionMadeMethod = typeof(CoinTossUI).GetMethod("OnSelectionMade", 
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    
+                    if (onSelectionMadeMethod != null)
+                    {
+                        // Trigger selection (this activates coin image and starts animation)
+                        onSelectionMadeMethod.Invoke(coinTossUI, new object[] { true }); // Select heads
+                        Debug.Log("[CardTestHelper] Triggered coin toss selection via CoinTossUI.OnSelectionMade()");
+                    }
+                    else
+                    {
+                        // Fallback: manually start animation if selection method not accessible
+                        coinTossUI.StartCoinTossAnimation();
+                        Debug.Log("[CardTestHelper] Could not find OnSelectionMade method. Called StartCoinTossAnimation() directly.");
+                    }
+                }
+                else
+                {
+                    // If no UI exists, perform coin toss directly
+                    Debug.Log("[CardTestHelper] CoinTossUI not found. Performing coin toss directly via CoinTossManager.");
+                    coinTossManager.PerformCoinToss();
+                }
+                
+                yield return new WaitForEndOfFrame();
+                yield return null;
+            }
+            
             // Wait for coin toss to complete
             float elapsed = 0f;
             while (!coinTossManager.IsComplete && elapsed < timeout)
@@ -579,9 +619,21 @@ namespace CardGame.Tests
             if (!coinTossManager.IsComplete)
             {
                 Debug.LogWarning($"[CardTestHelper] Coin toss did not complete within {timeout} seconds. " +
-                    $"Game may have auto-started. Proceeding with test anyway.");
-                // Don't fail the test - coin toss may have completed but IsComplete flag not set yet
-                // or game may be in a different state
+                    $"HasSelection: {coinTossManager.HasSelection}, IsComplete: {coinTossManager.IsComplete}. " +
+                    $"Attempting to force completion...");
+                
+                // Final attempt: If still not complete, try to force it
+                if (coinTossManager.HasSelection && !coinTossManager.IsComplete)
+                {
+                    Debug.Log("[CardTestHelper] Selection exists but coin toss not complete. Performing coin toss directly...");
+                    coinTossManager.PerformCoinToss();
+                    yield return new WaitForSeconds(0.5f);
+                }
+                
+                if (!coinTossManager.IsComplete)
+                {
+                    Debug.LogWarning($"[CardTestHelper] Coin toss still not complete after force attempt. Proceeding with test anyway.");
+                }
             }
         }
 
@@ -735,7 +787,7 @@ namespace CardGame.Tests
             }
             
             // Reset game statistics
-            CardDropArea1.ResetGameStatistics();
+            CardDropArea.ResetGameStatistics();
             
             // Reset game state
             GameManager gameManager = GameManager.Instance;
@@ -768,7 +820,7 @@ namespace CardGame.Tests
         /// </summary>
         public static void ActivateAllTiles()
         {
-            CardDropArea1[] tiles = UnityEngine.Object.FindObjectsOfType<CardDropArea1>(true);
+            CardDropArea[] tiles = UnityEngine.Object.FindObjectsOfType<CardDropArea>(true);
             foreach (var tile in tiles)
             {
                 tile.gameObject.SetActive(true);
@@ -778,6 +830,129 @@ namespace CardGame.Tests
         /// <summary>
         /// Force-enable all tiles for P2 drop tests (alias for ActivateAllTiles)
         /// </summary>
+        /// <summary>
+        /// Clears all cards from the board (cards at z ≈ 0), preserving cards in hands (z = 90)
+        /// Also clears occupyingCard references and cardsPlayedThisTurn lists
+        /// </summary>
+        public static IEnumerator ClearBoard(float waitAfterClear = 0.5f)
+        {
+            Debug.Log($"[CardTestHelper] Starting board clearing...");
+            
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
+            
+            // Clear all CardDropArea occupyingCard references first
+            foreach (CardDropArea area in dropAreas)
+            {
+                if (area != null)
+                {
+                    // Use reflection to clear the occupyingCard field
+                    var occupyingCardField = typeof(CardDropArea).GetField("occupyingCard", 
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (occupyingCardField != null)
+                    {
+                        occupyingCardField.SetValue(area, null);
+                    }
+                    
+                    // Also clear cardsPlayedThisTurn
+                    var cardsPlayedField = typeof(CardDropArea).GetField("cardsPlayedThisTurn", 
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (cardsPlayedField != null)
+                    {
+                        var cardsPlayedList = cardsPlayedField.GetValue(area) as System.Collections.Generic.List<GameObject>;
+                        if (cardsPlayedList != null)
+                        {
+                            cardsPlayedList.Clear();
+                        }
+                    }
+                }
+            }
+            
+            // Now find and destroy all cards on board (z ≈ 0)
+            CardMoverP1[] allCardMovers = Object.FindObjectsOfType<CardMoverP1>();
+            CardMoverP2[] allCardMoverP2s = Object.FindObjectsOfType<CardMoverP2>();
+            
+            int cardsOnBoard = 0;
+            int cardsInHands = 0;
+            List<GameObject> cardsToDestroy = new List<GameObject>();
+            
+            // Collect cards on board to destroy
+            foreach (CardMoverP1 existingMover in allCardMovers)
+            {
+                if (existingMover != null && existingMover.gameObject != null)
+                {
+                    float zPos = existingMover.transform.position.z;
+                    if (Mathf.Abs(zPos) < 1f) // Cards on board have z ≈ 0
+                    {
+                        cardsOnBoard++;
+                        cardsToDestroy.Add(existingMover.gameObject);
+                    }
+                    else
+                    {
+                        cardsInHands++;
+                    }
+                }
+            }
+            
+            foreach (CardMoverP2 existingMoverP2 in allCardMoverP2s)
+            {
+                if (existingMoverP2 != null && existingMoverP2.gameObject != null)
+                {
+                    float zPos = existingMoverP2.transform.position.z;
+                    if (Mathf.Abs(zPos) < 1f) // Cards on board have z ≈ 0
+                    {
+                        cardsOnBoard++;
+                        cardsToDestroy.Add(existingMoverP2.gameObject);
+                    }
+                    else
+                    {
+                        cardsInHands++;
+                    }
+                }
+            }
+            
+            // Destroy all cards on board
+            foreach (GameObject cardObj in cardsToDestroy)
+            {
+                if (cardObj != null)
+                {
+                    Object.DestroyImmediate(cardObj);
+                }
+            }
+            
+            Debug.Log($"[CardTestHelper] Clearing board - Destroyed {cardsOnBoard} cards on board, {cardsInHands} cards in hands (preserved)");
+            
+            yield return new WaitForSeconds(waitAfterClear); // Allow time for cleanup
+            
+            // Verify board is clear (only check cards at z ≈ 0)
+            CardMoverP1[] remainingAll = Object.FindObjectsOfType<CardMoverP1>();
+            CardMoverP2[] remainingAllOpp = Object.FindObjectsOfType<CardMoverP2>();
+            
+            int remainingOnBoard = 0;
+            List<string> remainingCardNames = new List<string>();
+            foreach (CardMoverP1 mover in remainingAll)
+            {
+                if (mover != null && Mathf.Abs(mover.transform.position.z) < 1f)
+                {
+                    remainingOnBoard++;
+                    remainingCardNames.Add($"{mover.gameObject.name} at {mover.transform.position}");
+                }
+            }
+            foreach (CardMoverP2 moverP2 in remainingAllOpp)
+            {
+                if (moverP2 != null && Mathf.Abs(moverP2.transform.position.z) < 1f)
+                {
+                    remainingOnBoard++;
+                    remainingCardNames.Add($"{moverP2.gameObject.name} at {moverP2.transform.position}");
+                }
+            }
+            
+            Debug.Log($"[CardTestHelper] Board cleared - {remainingOnBoard} cards remaining on board (should be 0)");
+            if (remainingOnBoard > 0)
+            {
+                Debug.LogWarning($"[CardTestHelper] Remaining cards: {string.Join(", ", remainingCardNames)}");
+            }
+        }
+        
         public static void ForceEnableAllTiles()
         {
             ActivateAllTiles();

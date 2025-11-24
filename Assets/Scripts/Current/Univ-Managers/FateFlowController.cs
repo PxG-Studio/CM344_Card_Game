@@ -5,8 +5,8 @@ namespace CardGame.Managers
 {
     public enum FateSide
     {
-        Player,
-        Opponent
+        Player = 0, // P1
+        P2 = 1      // Renamed from Opponent for P1/P2 consistency
     }
 
     /// <summary>
@@ -63,7 +63,7 @@ namespace CardGame.Managers
 
         public void AdvanceFateFlow()
         {
-            FateSide next = CurrentFate == FateSide.Player ? FateSide.Opponent : FateSide.Player;
+            FateSide next = CurrentFate == FateSide.Player ? FateSide.P2 : FateSide.Player;
             SetFate(next);
         }
     }

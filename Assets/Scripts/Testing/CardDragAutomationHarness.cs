@@ -16,14 +16,14 @@ namespace CardGame.Testing
             [Tooltip("Label used in logs to identify the scenario.")]
             public string label = "Scenario";
 
-            [Tooltip("Player-side card to move. Leave null to use the opponent card slot instead.")]
-            public CardMover playerCard;
+            [Tooltip("P1 card to move. Leave null to use the P2 card slot instead.")]
+            public CardMoverP1 playerCard;
 
-            [Tooltip("Opponent-side card to move when playerCard is null.")]
-            public CardMoverOpp opponentCard;
+            [Tooltip("P2 card to move when playerCard is null.")]
+            public CardMoverP2 p2Card;
 
             [Tooltip("Target drop area the card should end up on.")]
-            public CardDropArea1 targetDropArea;
+            public CardDropArea targetDropArea;
 
             [Tooltip("Optional positional offset (world units) to apply before attempting the drop.")]
             public Vector3 positionOffset = Vector3.zero;
@@ -40,7 +40,7 @@ namespace CardGame.Testing
             public Object GetCardObject()
             {
                 if (playerCard != null) return playerCard;
-                if (opponentCard != null) return opponentCard;
+                if (p2Card != null) return p2Card;
                 return null;
             }
         }
@@ -128,9 +128,9 @@ namespace CardGame.Testing
             {
                 result = scenario.playerCard.AutomationAttemptDrop(dropPoint, scenario.bypassTurnGate);
             }
-            else if (scenario.opponentCard != null)
+            else if (scenario.p2Card != null)
             {
-                result = scenario.opponentCard.AutomationAttemptDrop(dropPoint, scenario.bypassTurnGate);
+                result = scenario.p2Card.AutomationAttemptDrop(dropPoint, scenario.bypassTurnGate);
             }
             else
             {

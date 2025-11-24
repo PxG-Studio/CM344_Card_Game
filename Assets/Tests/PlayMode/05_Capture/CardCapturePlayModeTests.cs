@@ -84,15 +84,18 @@ namespace CardGame.Tests
             yield return CardTestHelper.WaitForCoinTossToComplete();
             yield return new WaitForSeconds(1.0f);
             
+            // Clear board before test to prevent interference
+            yield return CardTestHelper.ClearBoard(0.5f);
+            
             // Get drop areas
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length >= 2, "Need at least 2 drop areas for capture test");
             
-            CardDropArea1 attackerArea = dropAreas[0];
-            CardDropArea1 defenderArea = dropAreas[1];
+            CardDropArea attackerArea = dropAreas[0];
+            CardDropArea defenderArea = dropAreas[1];
             
             // Ensure areas are adjacent (or find adjacent ones)
-            CardDropArea1 adjacentArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right");
+            CardDropArea adjacentArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right");
             if (adjacentArea != null)
             {
                 defenderArea = adjacentArea;
@@ -103,15 +106,15 @@ namespace CardGame.Tests
             NewCard defenderCard = CardTestHelper.CreateTestCard(3, 2, 3, 3, "Defender");
             
             // Add cards to deck manager hands
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 p2Deck = Object.FindObjectOfType<NewDeckManagerP2>();
             if (playerDeck != null)
             {
                 CardTestHelper.AddCardToDeckManagerHand(playerDeck, attackerCard);
             }
-            if (opponentDeck != null)
+            if (p2Deck != null)
             {
-                CardTestHelper.AddCardToDeckManagerHand(opponentDeck, defenderCard);
+                CardTestHelper.AddCardToDeckManagerHand(p2Deck, defenderCard);
             }
             
             // Set Player 1's turn
@@ -126,15 +129,15 @@ namespace CardGame.Tests
             int initialPlayerScore = CardTestHelper.GetPlayerScore(true);
             
             // Act: Place attacker card first
-            CardMover attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
-            bool attackerPlaced = CardTestHelper.PlaceCardOnDropArea(attackerMover, attackerArea, true);
+            CardMoverP1 attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
+            bool attackerPlaced = CardTestHelper.PlaceP1CardOnDropArea(attackerMover, attackerArea, true);
             Assert.IsTrue(attackerPlaced, "Attacker card should be placed successfully");
             yield return new WaitForSeconds(0.5f);
             
             // Place defender card (opponent card) adjacent to attacker
             // Helper now ensures collider exists automatically
-            CardMoverOpp defenderMover = CardTestHelper.CreateCardMoverOppWithCard(defenderCard, defenderArea.transform.position);
-            bool defenderPlaced = CardTestHelper.PlaceOpponentCardOnDropArea(defenderMover, defenderArea, true);
+            CardMoverP2 defenderMover = CardTestHelper.CreateCardMoverP2WithCard(defenderCard, defenderArea.transform.position);
+            bool defenderPlaced = CardTestHelper.PlaceP2CardOnDropArea(defenderMover, defenderArea, true);
             Assert.IsTrue(defenderPlaced, "Defender card should be placed successfully");
             
             // Wait for capture animation
@@ -159,26 +162,29 @@ namespace CardGame.Tests
             yield return CardTestHelper.WaitForCoinTossToComplete();
             yield return new WaitForSeconds(1.0f);
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            // Clear board before test to prevent interference
+            yield return CardTestHelper.ClearBoard(0.5f);
+            
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length >= 2, "Need at least 2 drop areas");
             
-            CardDropArea1 attackerArea = dropAreas[0];
-            CardDropArea1 defenderArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right") ?? dropAreas[1];
+            CardDropArea attackerArea = dropAreas[0];
+            CardDropArea defenderArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right") ?? dropAreas[1];
             
             // Create test cards: Attacker has lower right stat (2) than defender's left stat (5)
             NewCard attackerCard = CardTestHelper.CreateTestCard(3, 2, 3, 3, "WeakAttacker");
             NewCard defenderCard = CardTestHelper.CreateTestCard(3, 5, 3, 3, "StrongDefender");
             
             // Add cards to deck manager hands
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 p2Deck = Object.FindObjectOfType<NewDeckManagerP2>();
             if (playerDeck != null)
             {
                 CardTestHelper.AddCardToDeckManagerHand(playerDeck, attackerCard);
             }
-            if (opponentDeck != null)
+            if (p2Deck != null)
             {
-                CardTestHelper.AddCardToDeckManagerHand(opponentDeck, defenderCard);
+                CardTestHelper.AddCardToDeckManagerHand(p2Deck, defenderCard);
             }
             
             FateFlowController fateController = FateFlowController.Instance;
@@ -191,13 +197,13 @@ namespace CardGame.Tests
             int initialPlayerScore = CardTestHelper.GetPlayerScore(true);
             
             // Act: Place cards
-            CardMover attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
-            CardTestHelper.PlaceCardOnDropArea(attackerMover, attackerArea, true);
+            CardMoverP1 attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
+            CardTestHelper.PlaceP1CardOnDropArea(attackerMover, attackerArea, true);
             yield return new WaitForSeconds(0.5f);
             
             // Helper now ensures collider exists automatically
-            CardMoverOpp defenderMover = CardTestHelper.CreateCardMoverOppWithCard(defenderCard, defenderArea.transform.position);
-            CardTestHelper.PlaceOpponentCardOnDropArea(defenderMover, defenderArea, true);
+            CardMoverP2 defenderMover = CardTestHelper.CreateCardMoverP2WithCard(defenderCard, defenderArea.transform.position);
+            CardTestHelper.PlaceP2CardOnDropArea(defenderMover, defenderArea, true);
             yield return CardTestHelper.WaitForCaptureAnimations(3f);
             
             // Assert: Defender should NOT be captured (attacker's right 2 < defender's left 5)
@@ -219,26 +225,29 @@ namespace CardGame.Tests
             yield return CardTestHelper.WaitForCoinTossToComplete();
             yield return new WaitForSeconds(1.0f);
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            // Clear board before test to prevent interference
+            yield return CardTestHelper.ClearBoard(0.5f);
+            
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length >= 2, "Need at least 2 drop areas");
             
-            CardDropArea1 attackerArea = dropAreas[0];
-            CardDropArea1 defenderArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right") ?? dropAreas[1];
+            CardDropArea attackerArea = dropAreas[0];
+            CardDropArea defenderArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right") ?? dropAreas[1];
             
             // Create test cards: Equal stats (both right/left = 3)
             NewCard attackerCard = CardTestHelper.CreateTestCard(3, 3, 3, 3, "EqualAttacker");
             NewCard defenderCard = CardTestHelper.CreateTestCard(3, 3, 3, 3, "EqualDefender");
             
             // Add cards to deck manager hands
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 p2Deck = Object.FindObjectOfType<NewDeckManagerP2>();
             if (playerDeck != null)
             {
                 CardTestHelper.AddCardToDeckManagerHand(playerDeck, attackerCard);
             }
-            if (opponentDeck != null)
+            if (p2Deck != null)
             {
-                CardTestHelper.AddCardToDeckManagerHand(opponentDeck, defenderCard);
+                CardTestHelper.AddCardToDeckManagerHand(p2Deck, defenderCard);
             }
             
             FateFlowController fateController = FateFlowController.Instance;
@@ -251,13 +260,13 @@ namespace CardGame.Tests
             int initialPlayerScore = CardTestHelper.GetPlayerScore(true);
             
             // Act: Place cards
-            CardMover attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
-            CardTestHelper.PlaceCardOnDropArea(attackerMover, attackerArea, true);
+            CardMoverP1 attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
+            CardTestHelper.PlaceP1CardOnDropArea(attackerMover, attackerArea, true);
             yield return new WaitForSeconds(0.5f);
             
             // Helper now ensures collider exists automatically
-            CardMoverOpp defenderMover = CardTestHelper.CreateCardMoverOppWithCard(defenderCard, defenderArea.transform.position);
-            CardTestHelper.PlaceOpponentCardOnDropArea(defenderMover, defenderArea, true);
+            CardMoverP2 defenderMover = CardTestHelper.CreateCardMoverP2WithCard(defenderCard, defenderArea.transform.position);
+            CardTestHelper.PlaceP2CardOnDropArea(defenderMover, defenderArea, true);
             yield return CardTestHelper.WaitForCaptureAnimations(3f);
             
             // Assert: Defender should NOT be captured (equal stats: 3 == 3)
@@ -279,19 +288,19 @@ namespace CardGame.Tests
             yield return CardTestHelper.WaitForCoinTossToComplete();
             yield return new WaitForSeconds(1.0f);
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.AreEqual(16, dropAreas.Length, "Should have exactly 16 drop areas");
             
             // Find a corner/edge area (e.g., first area)
-            CardDropArea1 edgeArea = dropAreas[0];
-            Vector3 edgePos = edgeArea.transform.position;
+            CardDropArea edgeArea = dropAreas[0];
+            Vector3 edgeAreaPos = edgeArea.transform.position;
             
-            // Find a non-adjacent area (far away)
-            CardDropArea1 farArea = null;
+            // Find a non-adjacent area (far away) - ensure it's truly far
+            CardDropArea farArea = null;
             float maxDistance = 0f;
-            foreach (CardDropArea1 area in dropAreas)
+            foreach (CardDropArea area in dropAreas)
             {
-                float distance = Vector3.Distance(edgePos, area.transform.position);
+                float distance = Vector3.Distance(edgeAreaPos, area.transform.position);
                 if (distance > maxDistance && area != edgeArea)
                 {
                     maxDistance = distance;
@@ -300,45 +309,124 @@ namespace CardGame.Tests
             }
             
             Assert.IsNotNull(farArea, "Should find a far area for testing");
-            Assert.Greater(maxDistance, 3.5f, "Far area should be beyond adjacent distance");
+            Vector3 farAreaPos = farArea.transform.position;
             
-            // Create cards
+            // CRITICAL: Verify the areas are far enough apart (must be > 1.6f for strict adjacency check)
+            Assert.Greater(maxDistance, 3.5f, $"Far area should be beyond adjacent distance. Actual distance: {maxDistance:F3}");
+            Debug.Log($"[EdgePlacementTest] Edge area position: {edgeAreaPos}, Far area position: {farAreaPos}, Distance: {maxDistance:F3}");
+            
+            // Create cards with stats that ensure edgeCard would win if they were adjacent
+            // edgeCard: 3, 5, 3, 3 (top=5 is highest)
+            // farCard: 3, 2, 3, 3 (all stats lower, so edgeCard would win)
             NewCard edgeCard = CardTestHelper.CreateTestCard(3, 5, 3, 3, "EdgeCard");
             NewCard farCard = CardTestHelper.CreateTestCard(3, 2, 3, 3, "FarCard");
             
             // Add cards to deck manager hands
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
-            if (playerDeck != null)
-            {
-                CardTestHelper.AddCardToDeckManagerHand(playerDeck, edgeCard);
-            }
-            if (opponentDeck != null)
-            {
-                CardTestHelper.AddCardToDeckManagerHand(opponentDeck, farCard);
-            }
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 p2Deck = Object.FindObjectOfType<NewDeckManagerP2>();
+            Assert.IsNotNull(playerDeck, "Player deck should exist");
+            Assert.IsNotNull(p2Deck, "Opponent deck should exist");
+            
+            CardTestHelper.AddCardToDeckManagerHand(playerDeck, edgeCard);
+            CardTestHelper.AddCardToDeckManagerHand(p2Deck, farCard);
             
             FateFlowController fateController = FateFlowController.Instance;
-            if (fateController != null)
+            Assert.IsNotNull(fateController, "FateFlowController should exist");
+            fateController.SetFate(FateSide.Player);
+            yield return new WaitForSeconds(0.1f);
+            
+            // CRITICAL: Clear the board of any existing cards before placing test cards
+            // This ensures only our test cards exist and prevents interference from other cards
+            yield return CardTestHelper.ClearBoard(0.5f);
+            
+            // Verify board is clear after clearing
+            CardMoverP1[] remainingAll = Object.FindObjectsOfType<CardMoverP1>();
+            CardMoverP2[] remainingAllP2 = Object.FindObjectsOfType<CardMoverP2>();
+            
+            int remainingOnBoard = 0;
+            List<string> remainingCardNames = new List<string>();
+            foreach (CardMoverP1 mover in remainingAll)
             {
-                fateController.SetFate(FateSide.Player);
+                if (mover != null && Mathf.Abs(mover.transform.position.z) < 1f)
+                {
+                    remainingOnBoard++;
+                    remainingCardNames.Add($"{mover.gameObject.name} at {mover.transform.position}");
+                }
             }
-            yield return null;
+            foreach (CardMoverP2 moverP2 in remainingAllP2)
+            {
+                if (moverP2 != null && Mathf.Abs(moverP2.transform.position.z) < 1f)
+                {
+                    remainingOnBoard++;
+                    remainingCardNames.Add($"{moverP2.gameObject.name} at {moverP2.transform.position}");
+                }
+            }
             
-            // Act: Place cards far apart
-            CardMover edgeMover = CardTestHelper.CreateCardMoverWithCard(edgeCard, edgeArea.transform.position, true);
-            CardTestHelper.PlaceCardOnDropArea(edgeMover, edgeArea, true);
+            // CRITICAL: Assert that board is actually clear - test should fail if cards remain
+            Assert.AreEqual(0, remainingOnBoard, 
+                $"Board should be clear before placing test cards. Found {remainingOnBoard} cards remaining on board: {string.Join(", ", remainingCardNames)}");
+            
+            // Act: Place edge card first
+            CardMoverP1 edgeMover = CardTestHelper.CreateCardMoverWithCard(edgeCard, edgeAreaPos, true);
+            bool edgePlaced = CardTestHelper.PlaceP1CardOnDropArea(edgeMover, edgeArea, true);
+            Assert.IsTrue(edgePlaced, "Edge card should be placed successfully");
+            
+            // Verify edge card position after placement
             yield return new WaitForSeconds(0.5f);
+            Vector3 edgeCardPos = edgeMover.transform.position;
+            float edgeCardDistanceFromArea = Vector3.Distance(edgeCardPos, edgeAreaPos);
+            Debug.Log($"[EdgePlacementTest] Edge card placed at: {edgeCardPos}, Distance from edge area: {edgeCardDistanceFromArea:F3}");
+            Assert.Less(edgeCardDistanceFromArea, 0.5f, "Edge card should be snapped to edge area position");
             
-            // Create opponent card (helper now ensures collider exists)
-            CardMoverOpp farMover = CardTestHelper.CreateCardMoverOppWithCard(farCard, farArea.transform.position);
-            CardTestHelper.PlaceOpponentCardOnDropArea(farMover, farArea, true);
+            // Verify edge card is NOT captured initially
+            bool edgeCardInitiallyCaptured = CardTestHelper.IsCardCaptured(edgeMover.gameObject);
+            Assert.IsFalse(edgeCardInitiallyCaptured, "Edge card should not be captured when placed alone");
+            
+            // Act: Place far card
+            CardMoverP2 farMover = CardTestHelper.CreateCardMoverP2WithCard(farCard, farAreaPos);
+            bool farPlaced = CardTestHelper.PlaceP2CardOnDropArea(farMover, farArea, true);
+            Assert.IsTrue(farPlaced, "Far card should be placed successfully");
+            
+            // Verify far card position after placement
+            yield return new WaitForSeconds(0.3f);
+            Vector3 farCardPos = farMover.transform.position;
+            float farCardDistanceFromArea = Vector3.Distance(farCardPos, farAreaPos);
+            Debug.Log($"[EdgePlacementTest] Far card placed at: {farCardPos}, Distance from far area: {farCardDistanceFromArea:F3}");
+            Assert.Less(farCardDistanceFromArea, 0.5f, "Far card should be snapped to far area position");
+            
+            // CRITICAL: Verify actual distance between cards
+            float actualCardDistance = Vector3.Distance(edgeCardPos, farCardPos);
+            Debug.Log($"[EdgePlacementTest] Actual distance between cards: {actualCardDistance:F3} (edge area distance: {maxDistance:F3})");
+            Assert.Greater(actualCardDistance, 3.5f, $"Cards should be far apart. Actual distance: {actualCardDistance:F3}");
+            
+            // CRITICAL: Verify strict adjacency check would reject this
+            // The strict adjacency tolerance is 1.6f, so cards at 7.66 units should be rejected
+            const float strictAdjacencyTolerance = 1.6f;
+            bool wouldPassStrictAdjacency = actualCardDistance <= strictAdjacencyTolerance;
+            Assert.IsFalse(wouldPassStrictAdjacency, 
+                $"Cards at distance {actualCardDistance:F3} should NOT pass strict adjacency check (tolerance: {strictAdjacencyTolerance:F3})");
+            
+            // Wait for any capture animations to complete
             yield return CardTestHelper.WaitForCaptureAnimations(2f);
+            
+            // Additional wait to ensure all battle checks complete
+            yield return new WaitForSeconds(0.5f);
             
             // Assert: Far card should NOT be captured (not adjacent)
             bool farCardCaptured = CardTestHelper.IsCardCaptured(farMover.gameObject);
+            bool edgeCardCaptured = CardTestHelper.IsCardCaptured(edgeMover.gameObject);
+            
+            Debug.Log($"[EdgePlacementTest] Final state - Edge card captured: {edgeCardCaptured}, Far card captured: {farCardCaptured}");
+            Debug.Log($"[EdgePlacementTest] Card positions - Edge: {edgeCardPos}, Far: {farCardPos}, Distance: {actualCardDistance:F3}");
+            
+            // The far card should NOT be captured because it's too far away
             Assert.IsFalse(farCardCaptured, 
-                $"Card placed far away (distance: {maxDistance}) should NOT be captured - only adjacent cards battle");
+                $"Far card placed at distance {actualCardDistance:F3} (edge area distance: {maxDistance:F3}) should NOT be captured. " +
+                $"Strict adjacency tolerance is {strictAdjacencyTolerance:F3}, so cards > {strictAdjacencyTolerance:F3} units apart should never battle.");
+            
+            // Edge card should also not be captured (it has higher stats, so if they battled, far card would lose)
+            Assert.IsFalse(edgeCardCaptured, 
+                "Edge card should not be captured (it has higher stats than far card)");
         }
 
         [UnityTest]
@@ -348,15 +436,18 @@ namespace CardGame.Tests
             yield return CardTestHelper.WaitForCoinTossToComplete();
             yield return new WaitForSeconds(1.0f);
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            // Clear board before test to prevent interference
+            yield return CardTestHelper.ClearBoard(0.5f);
+            
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length >= 5, "Need at least 5 drop areas for multi-direction test");
             
             // Find a center area with adjacent areas in multiple directions
-            CardDropArea1 centerArea = dropAreas[7]; // Middle area
-            CardDropArea1 rightArea = CardTestHelper.GetAdjacentDropArea(centerArea, "right");
-            CardDropArea1 leftArea = CardTestHelper.GetAdjacentDropArea(centerArea, "left");
-            CardDropArea1 topArea = CardTestHelper.GetAdjacentDropArea(centerArea, "top");
-            CardDropArea1 bottomArea = CardTestHelper.GetAdjacentDropArea(centerArea, "down");
+            CardDropArea centerArea = dropAreas[7]; // Middle area
+            CardDropArea rightArea = CardTestHelper.GetAdjacentDropArea(centerArea, "right");
+            CardDropArea leftArea = CardTestHelper.GetAdjacentDropArea(centerArea, "left");
+            CardDropArea topArea = CardTestHelper.GetAdjacentDropArea(centerArea, "top");
+            CardDropArea bottomArea = CardTestHelper.GetAdjacentDropArea(centerArea, "down");
             
             // Create a strong center card that can capture in all directions
             NewCard centerCard = CardTestHelper.CreateTestCard(5, 5, 5, 5, "StrongCenter");
@@ -370,7 +461,7 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Opponent);
+                fateController.SetFate(FateSide.P2);
             }
             yield return null;
             
@@ -378,21 +469,21 @@ namespace CardGame.Tests
             int initialPlayerScore = CardTestHelper.GetPlayerScore(true);
             
             // Add test cards to deck manager's hand so they can be placed
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
+            NewDeckManagerP2 p2Deck = Object.FindObjectOfType<NewDeckManagerP2>();
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
             
-            if (opponentDeck == null || playerDeck == null)
+            if (p2Deck == null || playerDeck == null)
             {
                 Assert.Inconclusive("Deck managers not found for multi-direction capture test");
                 yield break;
             }
             
             // Add opponent cards to opponent deck's hand using reflection
-            var opponentHandField = typeof(NewDeckManagerOpp).GetField("hand", 
+            var opponentHandField = typeof(NewDeckManagerP2).GetField("hand", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (opponentHandField != null)
             {
-                var opponentHand = opponentHandField.GetValue(opponentDeck);
+                var opponentHand = opponentHandField.GetValue(p2Deck);
                 var addCardMethod = opponentHand.GetType().GetMethod("AddCard");
                 if (addCardMethod != null)
                 {
@@ -402,15 +493,15 @@ namespace CardGame.Tests
                     if (bottomArea != null) addCardMethod.Invoke(opponentHand, new object[] { bottomCard });
                     
                     // Trigger OnCardDrawn events so hand UI updates
-                    if (rightArea != null) opponentDeck.OnCardDrawn?.Invoke(rightCard);
-                    if (leftArea != null) opponentDeck.OnCardDrawn?.Invoke(leftCard);
-                    if (topArea != null) opponentDeck.OnCardDrawn?.Invoke(topCard);
-                    if (bottomArea != null) opponentDeck.OnCardDrawn?.Invoke(bottomCard);
+                    if (rightArea != null) p2Deck.OnCardDrawn?.Invoke(rightCard);
+                    if (leftArea != null) p2Deck.OnCardDrawn?.Invoke(leftCard);
+                    if (topArea != null) p2Deck.OnCardDrawn?.Invoke(topCard);
+                    if (bottomArea != null) p2Deck.OnCardDrawn?.Invoke(bottomCard);
                 }
             }
             
             // Add center card to player deck's hand using reflection
-            var playerHandField = typeof(NewDeckManager).GetField("hand", 
+            var playerHandField = typeof(NewDeckManagerP1).GetField("hand", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (playerHandField != null)
             {
@@ -425,19 +516,19 @@ namespace CardGame.Tests
             }
             
             // Ensure drop areas have deck manager references
-            var deckManagerOppField = typeof(CardDropArea1).GetField("deckManagerOpp", 
+            var deckManagerP2Field = typeof(CardDropArea).GetField("deckManagerP2", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var playCardOnDropField = typeof(CardDropArea1).GetField("playCardOnDrop", 
+            var playCardOnDropField = typeof(CardDropArea).GetField("playCardOnDrop", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
-            if (deckManagerOppField != null)
+            if (deckManagerP2Field != null)
             {
-                foreach (CardDropArea1 area in dropAreas)
+                foreach (CardDropArea area in dropAreas)
                 {
                     // Set deck manager if not already set
-                    if (deckManagerOppField.GetValue(area) == null)
+                    if (deckManagerP2Field.GetValue(area) == null)
                     {
-                        deckManagerOppField.SetValue(area, opponentDeck);
+                        deckManagerP2Field.SetValue(area, p2Deck);
                     }
                     
                     // Ensure playCardOnDrop is enabled
@@ -454,7 +545,7 @@ namespace CardGame.Tests
             // Helper now ensures collider exists automatically
             if (rightArea != null)
             {
-                CardMoverOpp rightMover = CardTestHelper.CreateCardMoverOppWithCard(rightCard, rightArea.transform.position);
+                CardMoverP2 rightMover = CardTestHelper.CreateCardMoverP2WithCard(rightCard, rightArea.transform.position);
                 // Ensure collider exists
                 if (rightMover != null)
                 {
@@ -463,15 +554,15 @@ namespace CardGame.Tests
                     {
                         col = rightMover.gameObject.AddComponent<BoxCollider2D>();
                         col.isTrigger = true;
-                        var colField = typeof(CardMoverOpp).GetField("col", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        var colField = typeof(CardMoverP2).GetField("col", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                         colField?.SetValue(rightMover, col);
                     }
                 }
-                CardTestHelper.PlaceOpponentCardOnDropArea(rightMover, rightArea, true);
+                CardTestHelper.PlaceP2CardOnDropArea(rightMover, rightArea, true);
             }
             if (leftArea != null)
             {
-                CardMoverOpp leftMover = CardTestHelper.CreateCardMoverOppWithCard(leftCard, leftArea.transform.position);
+                CardMoverP2 leftMover = CardTestHelper.CreateCardMoverP2WithCard(leftCard, leftArea.transform.position);
                 // Ensure collider exists
                 if (leftMover != null)
                 {
@@ -480,15 +571,15 @@ namespace CardGame.Tests
                     {
                         col = leftMover.gameObject.AddComponent<BoxCollider2D>();
                         col.isTrigger = true;
-                        var colField = typeof(CardMoverOpp).GetField("col", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        var colField = typeof(CardMoverP2).GetField("col", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                         colField?.SetValue(leftMover, col);
                     }
                 }
-                CardTestHelper.PlaceOpponentCardOnDropArea(leftMover, leftArea, true);
+                CardTestHelper.PlaceP2CardOnDropArea(leftMover, leftArea, true);
             }
             if (topArea != null)
             {
-                CardMoverOpp topMover = CardTestHelper.CreateCardMoverOppWithCard(topCard, topArea.transform.position);
+                CardMoverP2 topMover = CardTestHelper.CreateCardMoverP2WithCard(topCard, topArea.transform.position);
                 // Ensure collider exists
                 if (topMover != null)
                 {
@@ -497,15 +588,15 @@ namespace CardGame.Tests
                     {
                         col = topMover.gameObject.AddComponent<BoxCollider2D>();
                         col.isTrigger = true;
-                        var colField = typeof(CardMoverOpp).GetField("col", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        var colField = typeof(CardMoverP2).GetField("col", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                         colField?.SetValue(topMover, col);
                     }
                 }
-                CardTestHelper.PlaceOpponentCardOnDropArea(topMover, topArea, true);
+                CardTestHelper.PlaceP2CardOnDropArea(topMover, topArea, true);
             }
             if (bottomArea != null)
             {
-                CardMoverOpp bottomMover = CardTestHelper.CreateCardMoverOppWithCard(bottomCard, bottomArea.transform.position);
+                CardMoverP2 bottomMover = CardTestHelper.CreateCardMoverP2WithCard(bottomCard, bottomArea.transform.position);
                 // Ensure collider exists
                 if (bottomMover != null)
                 {
@@ -514,11 +605,11 @@ namespace CardGame.Tests
                     {
                         col = bottomMover.gameObject.AddComponent<BoxCollider2D>();
                         col.isTrigger = true;
-                        var colField = typeof(CardMoverOpp).GetField("col", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        var colField = typeof(CardMoverP2).GetField("col", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                         colField?.SetValue(bottomMover, col);
                     }
                 }
-                CardTestHelper.PlaceOpponentCardOnDropArea(bottomMover, bottomArea, true);
+                CardTestHelper.PlaceP2CardOnDropArea(bottomMover, bottomArea, true);
             }
             
             yield return new WaitForSeconds(0.5f);
@@ -530,8 +621,8 @@ namespace CardGame.Tests
             }
             yield return null;
             
-            CardMover centerMover = CardTestHelper.CreateCardMoverWithCard(centerCard, centerArea.transform.position, true);
-            CardTestHelper.PlaceCardOnDropArea(centerMover, centerArea, true);
+            CardMoverP1 centerMover = CardTestHelper.CreateCardMoverWithCard(centerCard, centerArea.transform.position, true);
+            CardTestHelper.PlaceP1CardOnDropArea(centerMover, centerArea, true);
             
             // Wait for all captures
             yield return CardTestHelper.WaitForCaptureAnimations(5f);
@@ -560,23 +651,23 @@ namespace CardGame.Tests
             yield return CardTestHelper.WaitForCoinTossToComplete();
             yield return new WaitForSeconds(1.0f);
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length >= 3, "Need at least 3 drop areas for chain test");
             
             // Create a chain: area1 (chain starter) -> area2 (weak card 1) -> area3 (weak card 2)
             // For chain capture, we need area1 adjacent to area2 OR area3
             // Both area2 and area3 should be adjacent to area1 for the chain to work
-            CardDropArea1 area1 = dropAreas[0];
-            CardDropArea1 area2 = null;
-            CardDropArea1 area3 = null;
+            CardDropArea area1 = dropAreas[0];
+            CardDropArea area2 = null;
+            CardDropArea area3 = null;
             
             // Find areas that are actually adjacent to area1 (orthogonal neighbors only)
             // Capture logic only checks orthogonal neighbors (same row or column), not diagonals
             float adjacentDistance = 3.1f; // adjacentCardDistance (3f) + small margin (0.1f)
-            List<CardDropArea1> adjacentToArea1 = new List<CardDropArea1>();
+            List<CardDropArea> adjacentToArea1 = new List<CardDropArea>();
             Vector3 area1Pos = area1.transform.position;
             
-            foreach (CardDropArea1 area in dropAreas)
+            foreach (CardDropArea area in dropAreas)
             {
                 if (area == area1) continue;
                 
@@ -611,7 +702,7 @@ namespace CardGame.Tests
             area3 = adjacentToArea1[1];
             
             // Get reflection field info for occupyingCard (used multiple times in this test)
-            var occupyingCardField = typeof(CardDropArea1).GetField("occupyingCard",
+            var occupyingCardField = typeof(CardDropArea).GetField("occupyingCard",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
             // Verify distances
@@ -630,39 +721,39 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Opponent);
+                fateController.SetFate(FateSide.P2);
             }
             yield return null;
             
             // Add test cards to deck manager's hand so they can be placed
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
+            NewDeckManagerP2 p2Deck = Object.FindObjectOfType<NewDeckManagerP2>();
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
             
-            if (opponentDeck == null || playerDeck == null)
+            if (p2Deck == null || playerDeck == null)
             {
                 Assert.Inconclusive("Deck managers not found for chain capture test");
                 yield break;
             }
             
             // Add weak cards to opponent deck's hand using reflection
-            var opponentHandField = typeof(NewDeckManagerOpp).GetField("hand", 
+            var opponentHandField = typeof(NewDeckManagerP2).GetField("hand", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (opponentHandField != null)
             {
-                var opponentHand = opponentHandField.GetValue(opponentDeck);
+                var opponentHand = opponentHandField.GetValue(p2Deck);
                 var addCardMethod = opponentHand.GetType().GetMethod("AddCard");
                 if (addCardMethod != null)
                 {
                     addCardMethod.Invoke(opponentHand, new object[] { weakCard1 });
                     addCardMethod.Invoke(opponentHand, new object[] { weakCard2 });
                     // Trigger OnCardDrawn event so hand UI updates
-                    opponentDeck.OnCardDrawn?.Invoke(weakCard1);
-                    opponentDeck.OnCardDrawn?.Invoke(weakCard2);
+                    p2Deck.OnCardDrawn?.Invoke(weakCard1);
+                    p2Deck.OnCardDrawn?.Invoke(weakCard2);
                 }
             }
             
             // Add chain starter to player deck's hand using reflection
-            var playerHandField = typeof(NewDeckManager).GetField("hand", 
+            var playerHandField = typeof(NewDeckManagerP1).GetField("hand", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (playerHandField != null)
             {
@@ -677,20 +768,20 @@ namespace CardGame.Tests
             }
             
             // Ensure drop areas have deck manager references
-            // CardDropArea1 auto-finds deckManagerOpp in Start(), but we need to ensure it's set
-            var deckManagerOppField = typeof(CardDropArea1).GetField("deckManagerOpp", 
+            // CardDropArea auto-finds deckManagerP2 in Start(), but we need to ensure it's set
+            var deckManagerP2Field = typeof(CardDropArea).GetField("deckManagerP2", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var playCardOnDropField = typeof(CardDropArea1).GetField("playCardOnDrop", 
+            var playCardOnDropField = typeof(CardDropArea).GetField("playCardOnDrop", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
-            if (deckManagerOppField != null)
+            if (deckManagerP2Field != null)
             {
-                foreach (CardDropArea1 area in dropAreas)
+                foreach (CardDropArea area in dropAreas)
                 {
                     // Set deck manager if not already set
-                    if (deckManagerOppField.GetValue(area) == null)
+                    if (deckManagerP2Field.GetValue(area) == null)
                     {
-                        deckManagerOppField.SetValue(area, opponentDeck);
+                        deckManagerP2Field.SetValue(area, p2Deck);
                     }
                     
                     // Ensure playCardOnDrop is enabled
@@ -702,8 +793,8 @@ namespace CardGame.Tests
             }
             
             // Verify cards are in hand
-            Assert.IsTrue(opponentDeck.Hand.Any(c => c == weakCard1), "Weak card 1 should be in opponent hand");
-            Assert.IsTrue(opponentDeck.Hand.Any(c => c == weakCard2), "Weak card 2 should be in opponent hand");
+            Assert.IsTrue(p2Deck.Hand.Any(c => c == weakCard1), "Weak card 1 should be in opponent hand");
+            Assert.IsTrue(p2Deck.Hand.Any(c => c == weakCard2), "Weak card 2 should be in opponent hand");
             Assert.IsTrue(playerDeck.Hand.Any(c => c == chainStarter), "Chain starter should be in player hand");
             
             yield return null;
@@ -712,17 +803,17 @@ namespace CardGame.Tests
             yield return null; // Wait a frame for hand to update
             
             // Double-check cards are in hand using the actual Hand property
-            bool weak1InHand = opponentDeck.Hand.Any(c => c == weakCard1);
-            bool weak2InHand = opponentDeck.Hand.Any(c => c == weakCard2);
+            bool weak1InHand = p2Deck.Hand.Any(c => c == weakCard1);
+            bool weak2InHand = p2Deck.Hand.Any(c => c == weakCard2);
             bool starterInHand = playerDeck.Hand.Any(c => c == chainStarter);
             
-            Assert.IsTrue(weak1InHand, $"Weak card 1 should be in opponent hand. Hand count: {opponentDeck.Hand.Count}");
-            Assert.IsTrue(weak2InHand, $"Weak card 2 should be in opponent hand. Hand count: {opponentDeck.Hand.Count}");
+            Assert.IsTrue(weak1InHand, $"Weak card 1 should be in opponent hand. Hand count: {p2Deck.Hand.Count}");
+            Assert.IsTrue(weak2InHand, $"Weak card 2 should be in opponent hand. Hand count: {p2Deck.Hand.Count}");
             Assert.IsTrue(starterInHand, $"Chain starter should be in player hand. Hand count: {playerDeck.Hand.Count}");
             
             // Place weak cards first (they're now in the hand)
             // Cards are created with correct stats via CreateTestCard
-            CardMoverOpp weak1Mover = CardTestHelper.CreateCardMoverOppWithCard(weakCard1, area2.transform.position);
+            CardMoverP2 weak1Mover = CardTestHelper.CreateCardMoverP2WithCard(weakCard1, area2.transform.position);
             Assert.IsNotNull(weak1Mover, "Weak1 mover should be created");
             Assert.IsNotNull(weak1Mover.Card, "Weak1 mover should have card reference");
             Assert.AreEqual(weakCard1, weak1Mover.Card, "Weak1 mover card should match weakCard1");
@@ -731,30 +822,30 @@ namespace CardGame.Tests
             Assert.IsTrue(weak1Mover.Card == weakCard1, "Card reference must be the exact same instance for hand.Contains() to work");
             
             // Verify area2 setup
-            var area2DeckManager = deckManagerOppField?.GetValue(area2) as NewDeckManagerOpp;
+            var area2DeckManager = deckManagerP2Field?.GetValue(area2) as NewDeckManagerP2;
             var area2PlayCardOnDrop = playCardOnDropField?.GetValue(area2);
-            Assert.IsNotNull(area2DeckManager, "Area2 should have deckManagerOpp");
+            Assert.IsNotNull(area2DeckManager, "Area2 should have deckManagerP2");
             Assert.IsTrue((bool)(area2PlayCardOnDrop ?? false), "Area2 should have playCardOnDrop enabled");
             
             // CRITICAL: Ensure the deck manager on the area is the same instance we added cards to
-            if (area2DeckManager != opponentDeck)
+            if (area2DeckManager != p2Deck)
             {
                 // Set it to the correct instance
-                deckManagerOppField?.SetValue(area2, opponentDeck);
-                area2DeckManager = opponentDeck;
-                Debug.LogWarning($"[Test] Area2 had different deckManagerOpp instance. Updated to match opponentDeck.");
+                deckManagerP2Field?.SetValue(area2, p2Deck);
+                area2DeckManager = p2Deck;
+                Debug.LogWarning($"[Test] Area2 had different deckManagerP2 instance. Updated to match p2Deck.");
             }
             
-            // Verify card is in hand using the area's deck manager (same check OnCardDropOpp uses)
+            // Verify card is in hand using the area's deck manager (same check OnCardDropP2 uses)
             bool weak1InAreaDeckHand = area2DeckManager.Hand.Contains(weak1Mover.Card);
             Assert.IsTrue(weak1InAreaDeckHand, $"Weak card 1 must be in area's deckManager hand using Contains(). " +
                 $"Card reference: {weak1Mover.Card != null}, " +
                 $"Card matches: {weak1Mover.Card == weakCard1}, " +
                 $"Hand Contains result: {weak1InAreaDeckHand}");
             
-            bool weak1Placed = CardTestHelper.PlaceOpponentCardOnDropArea(weak1Mover, area2, true);
+            bool weak1Placed = CardTestHelper.PlaceP2CardOnDropArea(weak1Mover, area2, true);
             Assert.IsTrue(weak1Placed, $"Weak card 1 should be placed on area2. " +
-                $"Card in hand: {opponentDeck.Hand.Any(c => c == weakCard1)}, " +
+                $"Card in hand: {p2Deck.Hand.Any(c => c == weakCard1)}, " +
                 $"DeckManagerOpp on area: {area2DeckManager != null}, " +
                 $"Card reference: {weak1Mover.Card != null}, " +
                 $"Card matches: {weak1Mover.Card == weakCard1}");
@@ -768,117 +859,117 @@ namespace CardGame.Tests
             // We need to switch it back to Opponent for the second card placement
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Opponent);
+                fateController.SetFate(FateSide.P2);
                 yield return null; // Wait for turn to update
                 
                 // Verify turn is correct
-                bool canActAfterFirstPlacement = fateController.CanAct(FateSide.Opponent);
+                bool canActAfterFirstPlacement = fateController.CanAct(FateSide.P2);
                 Assert.IsTrue(canActAfterFirstPlacement, $"Opponent should be able to act after first placement. " +
                     $"CurrentFate: {fateController.CurrentFate}, CanAct(Opponent): {canActAfterFirstPlacement}");
             }
             
-            CardMoverOpp weak2Mover = CardTestHelper.CreateCardMoverOppWithCard(weakCard2, area3.transform.position);
+            CardMoverP2 weak2Mover = CardTestHelper.CreateCardMoverP2WithCard(weakCard2, area3.transform.position);
             Assert.IsNotNull(weak2Mover, "Weak2 mover should be created");
             Assert.IsNotNull(weak2Mover.Card, "Weak2 mover should have card reference");
             Assert.AreEqual(weakCard2, weak2Mover.Card, "Weak2 mover card should match weakCard2");
             
             // Verify area3 setup
-            var area3DeckManager = deckManagerOppField?.GetValue(area3) as NewDeckManagerOpp;
+            var area3DeckManager = deckManagerP2Field?.GetValue(area3) as NewDeckManagerP2;
             var area3PlayCardOnDrop = playCardOnDropField?.GetValue(area3);
-            Assert.IsNotNull(area3DeckManager, "Area3 should have deckManagerOpp");
+            Assert.IsNotNull(area3DeckManager, "Area3 should have deckManagerP2");
             Assert.IsTrue((bool)(area3PlayCardOnDrop ?? false), "Area3 should have playCardOnDrop enabled");
             
             // CRITICAL: Ensure the deck manager on the area is the same instance we added cards to
-            if (area3DeckManager != opponentDeck)
+            if (area3DeckManager != p2Deck)
             {
                 // Set it to the correct instance
-                deckManagerOppField?.SetValue(area3, opponentDeck);
-                area3DeckManager = opponentDeck;
-                Debug.LogWarning($"[Test] Area3 had different deckManagerOpp instance. Updated to match opponentDeck.");
+                deckManagerP2Field?.SetValue(area3, p2Deck);
+                area3DeckManager = p2Deck;
+                Debug.LogWarning($"[Test] Area3 had different deckManagerP2 instance. Updated to match p2Deck.");
             }
             
             // Verify card is in hand before placement using the area's deck manager
             bool weak2InHandBefore = area3DeckManager.Hand.Contains(weakCard2);
             Assert.IsTrue(weak2InHandBefore, $"Weak card 2 must be in hand before placement (via area's deckManager). " +
                 $"Hand count: {area3DeckManager.Hand.Count}, " +
-                $"Card in hand (Any): {opponentDeck.Hand.Any(c => c == weakCard2)}, " +
+                $"Card in hand (Any): {p2Deck.Hand.Any(c => c == weakCard2)}, " +
                 $"Card in hand (Contains): {weak2InHandBefore}");
             
             // Verify card reference matches
             Assert.IsTrue(weak2Mover.Card == weakCard2, "Card reference must be the exact same instance");
             
-            // Verify the card is in the area's deck manager's hand using Contains (same check OnCardDropOpp uses)
+            // Verify the card is in the area's deck manager's hand using Contains (same check OnCardDropP2 uses)
             bool cardInAreaDeckHand = area3DeckManager.Hand.Contains(weak2Mover.Card);
-            Assert.IsTrue(cardInAreaDeckHand, $"Card must be in area's deckManager hand using Contains() (same check OnCardDropOpp uses). " +
+            Assert.IsTrue(cardInAreaDeckHand, $"Card must be in area's deckManager hand using Contains() (same check OnCardDropP2 uses). " +
                 $"Card reference: {weak2Mover.Card != null}, " +
                 $"Card matches: {weak2Mover.Card == weakCard2}, " +
                 $"Hand Contains result: {cardInAreaDeckHand}");
             
             // Verify turn is set correctly for opponent
             Assert.IsNotNull(fateController, "FateFlowController should exist");
-            bool canAct = fateController.CanAct(FateSide.Opponent);
+            bool canAct = fateController.CanAct(FateSide.P2);
             Assert.IsTrue(canAct, $"Opponent should be able to act. CurrentFate: {fateController.CurrentFate}, CanAct(Opponent): {canAct}");
             
-            // Verify CardMoverOpp OwnerSide is set correctly
-            var ownerSideField = typeof(CardMoverOpp).GetField("ownerSide", 
+            // Verify CardMoverP2 OwnerSide is set correctly
+            var ownerSideField = typeof(CardMoverP2).GetField("ownerSide", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (ownerSideField != null)
             {
                 var ownerSide = ownerSideField.GetValue(weak2Mover);
-                Assert.AreEqual(FateSide.Opponent, ownerSide, $"CardMoverOpp OwnerSide should be Opponent, but was {ownerSide}");
+                Assert.AreEqual(FateSide.P2, ownerSide, $"CardMoverP2 OwnerSide should be Opponent, but was {ownerSide}");
             }
             
             // Verify area can accept the card (check CanCardAct)
             var canCardActMethod = area3.GetType().GetMethod("CanCardAct", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            bool? areaCanAct = canCardActMethod?.Invoke(area3, new object[] { FateSide.Opponent }) as bool?;
+            bool? areaCanAct = canCardActMethod?.Invoke(area3, new object[] { FateSide.P2 }) as bool?;
             Assert.IsTrue(areaCanAct ?? true, $"Area3 should allow Opponent cards. CanCardAct(Opponent): {areaCanAct}");
             
             // Try placement via AutomationAttemptDrop first
-            bool weak2Placed = CardTestHelper.PlaceOpponentCardOnDropArea(weak2Mover, area3, true);
+            bool weak2Placed = CardTestHelper.PlaceP2CardOnDropArea(weak2Mover, area3, true);
             
-            // If placement returned true but area isn't occupied, OnCardDropOpp might have rejected it
-            // In that case, try calling OnCardDropOpp directly
+            // If placement returned true but area isn't occupied, OnCardDropP2 might have rejected it
+            // In that case, try calling OnCardDropP2 directly
             if (weak2Placed && !area3.IsOccupied)
             {
                 yield return null; // Wait a frame
                 
                 // Check if card was removed from hand (indicating it was played)
-                bool weak2InHandAfter = opponentDeck.Hand.Any(c => c == weakCard2);
+                bool weak2InHandAfter = p2Deck.Hand.Any(c => c == weakCard2);
                 
-                // If card is still in hand and not played, OnCardDropOpp rejected it
-                // Try calling OnCardDropOpp directly as a fallback
+                // If card is still in hand and not played, OnCardDropP2 rejected it
+                // Try calling OnCardDropP2 directly as a fallback
                 if (weak2InHandAfter && !weak2Mover.IsPlayed)
                 {
                     Debug.LogWarning($"[Test] Weak2 placement via AutomationAttemptDrop succeeded but card not placed. " +
-                        $"Trying direct OnCardDropOpp call. Card in hand: {weak2InHandAfter}, " +
+                        $"Trying direct OnCardDropP2 call. Card in hand: {weak2InHandAfter}, " +
                         $"IsPlayed: {weak2Mover.IsPlayed}, Area3 IsOccupied: {area3.IsOccupied}, " +
-                        $"CanAct: {fateController?.CanAct(FateSide.Opponent)}, " +
+                        $"CanAct: {fateController?.CanAct(FateSide.P2)}, " +
                         $"CurrentFate: {fateController?.CurrentFate}");
                     
                     // Ensure turn is correct
-                    if (fateController != null && !fateController.CanAct(FateSide.Opponent))
+                    if (fateController != null && !fateController.CanAct(FateSide.P2))
                     {
-                        fateController.SetFate(FateSide.Opponent);
+                        fateController.SetFate(FateSide.P2);
                         yield return null;
                     }
                     
                     // Position card at drop area
                     weak2Mover.transform.position = area3.transform.position;
                     
-                    // Verify all conditions are met before calling OnCardDropOpp
+                    // Verify all conditions are met before calling OnCardDropP2
                     bool cardStillInHand = area3DeckManager.Hand.Contains(weak2Mover.Card);
-                    bool turnIsCorrect = fateController?.CanAct(FateSide.Opponent) ?? true;
+                    bool turnIsCorrect = fateController?.CanAct(FateSide.P2) ?? true;
                     bool areaNotOccupied = !area3.IsOccupied;
                     
-                    Debug.LogWarning($"[Test] Before direct OnCardDropOpp call: " +
+                    Debug.LogWarning($"[Test] Before direct OnCardDropP2 call: " +
                         $"Card in hand: {cardStillInHand}, " +
                         $"Turn correct: {turnIsCorrect}, " +
                         $"Area not occupied: {areaNotOccupied}, " +
                         $"DeckManager on area: {area3DeckManager != null}");
                     
-                    // Call OnCardDropOpp directly
-                    area3.OnCardDropOpp(weak2Mover);
+                    // Call OnCardDropP2 directly
+                    area3.OnCardDropP2(weak2Mover);
                     
                     yield return new WaitForSeconds(0.5f);
                     
@@ -888,7 +979,7 @@ namespace CardGame.Tests
                         // Still not placed - manually place the card as a last resort
                         // This allows the test to proceed and validate chain capture logic
                         bool cardStillInHandAfter = area3DeckManager.Hand.Contains(weak2Mover.Card);
-                        Debug.LogWarning($"[Test] Direct OnCardDropOpp call failed. " +
+                        Debug.LogWarning($"[Test] Direct OnCardDropP2 call failed. " +
                             $"Card still in hand: {cardStillInHandAfter}, " +
                             $"IsPlayed: {weak2Mover.IsPlayed}, " +
                             $"IsOccupied: {area3.IsOccupied}. " +
@@ -898,7 +989,7 @@ namespace CardGame.Tests
                         if (cardStillInHandAfter && turnIsCorrect && areaNotOccupied && area3DeckManager != null)
                         {
                             // Remove card from hand
-                            var playCardMethod = typeof(NewDeckManagerOpp).GetMethod("PlayCard");
+                            var playCardMethod = typeof(NewDeckManagerP2).GetMethod("PlayCard");
                             if (playCardMethod != null)
                             {
                                 playCardMethod.Invoke(area3DeckManager, new object[] { weak2Mover.Card });
@@ -914,7 +1005,7 @@ namespace CardGame.Tests
                             }
                             
                             // Call CheckBoardOccupancy
-                            var checkBoardOccupancyMethod = typeof(CardDropArea1).GetMethod("CheckBoardOccupancy", 
+                            var checkBoardOccupancyMethod = typeof(CardDropArea).GetMethod("CheckBoardOccupancy", 
                                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                             checkBoardOccupancyMethod?.Invoke(area3, null);
                             
@@ -926,7 +1017,7 @@ namespace CardGame.Tests
             }
             
             Assert.IsTrue(weak2Placed, $"Weak card 2 should be placed on area3. " +
-                $"Card in hand: {opponentDeck.Hand.Any(c => c == weakCard2)}, " +
+                $"Card in hand: {p2Deck.Hand.Any(c => c == weakCard2)}, " +
                 $"DeckManagerOpp on area: {area3DeckManager != null}, " +
                 $"Card reference: {weak2Mover.Card != null}, " +
                 $"Card matches: {weak2Mover.Card == weakCard2}, " +
@@ -938,20 +1029,20 @@ namespace CardGame.Tests
             if (!area3.IsOccupied)
             {
                 // Check if the card was actually played (removed from hand)
-                bool weak2StillInHand = opponentDeck.Hand.Any(c => c == weakCard2);
+                bool weak2StillInHand = p2Deck.Hand.Any(c => c == weakCard2);
                 bool weak2IsPlayed = weak2Mover.IsPlayed;
                 
                 // If card is played but area isn't occupied, something went wrong
                 if (weak2IsPlayed && !weak2StillInHand)
                 {
                     Assert.Fail($"Weak card 2 was played (removed from hand, IsPlayed=true) but area3 is not occupied. " +
-                        $"This indicates OnCardDropOpp processed the card but didn't set occupyingCard.");
+                        $"This indicates OnCardDropP2 processed the card but didn't set occupyingCard.");
                 }
                 else if (!weak2IsPlayed && weak2StillInHand)
                 {
-                    // Card wasn't played - OnCardDropOpp rejected it
+                    // Card wasn't played - OnCardDropP2 rejected it
                     // Check why - likely the card isn't in the hand according to Contains()
-                    var deckManagerOnArea = deckManagerOppField?.GetValue(area3) as NewDeckManagerOpp;
+                    var deckManagerOnArea = deckManagerP2Field?.GetValue(area3) as NewDeckManagerP2;
                     if (deckManagerOnArea != null)
                     {
                         bool cardInHandViaContains = deckManagerOnArea.Hand.Contains(weakCard2);
@@ -961,7 +1052,7 @@ namespace CardGame.Tests
                             $"Card reference match: {weak2Mover.Card == weakCard2}, " +
                             $"Area3 IsOccupied: {area3.IsOccupied}, " +
                             $"IsPlayed: {weak2IsPlayed}. " +
-                            $"OnCardDropOpp likely rejected because Hand.Contains() returned false.");
+                            $"OnCardDropP2 likely rejected because Hand.Contains() returned false.");
                     }
                 }
             }
@@ -969,7 +1060,7 @@ namespace CardGame.Tests
             Assert.IsTrue(area3.IsOccupied, $"Area3 should be occupied after placing weak card 2. " +
                 $"IsOccupied: {area3.IsOccupied}, " +
                 $"IsPlayed: {weak2Mover.IsPlayed}, " +
-                $"Card in hand: {opponentDeck.Hand.Any(c => c == weakCard2)}");
+                $"Card in hand: {p2Deck.Hand.Any(c => c == weakCard2)}");
             
             // Switch to Player 1 and place chain starter
             if (fateController != null)
@@ -978,8 +1069,8 @@ namespace CardGame.Tests
             }
             yield return null;
             
-            CardMover starterMover = CardTestHelper.CreateCardMoverWithCard(chainStarter, area1.transform.position, true);
-            bool starterPlaced = CardTestHelper.PlaceCardOnDropArea(starterMover, area1, true);
+            CardMoverP1 starterMover = CardTestHelper.CreateCardMoverWithCard(chainStarter, area1.transform.position, true);
+            bool starterPlaced = CardTestHelper.PlaceP1CardOnDropArea(starterMover, area1, true);
             Assert.IsTrue(starterPlaced, "Chain starter should be placed on area1");
             yield return new WaitForSeconds(0.5f);
             
@@ -1073,11 +1164,11 @@ namespace CardGame.Tests
             Assert.IsTrue(area3.IsOccupied, "Area3 should be occupied (weak card 2)");
             
             // Verify chain capture logic exists
-            var checkBattlesMethod = typeof(CardDropArea1).GetMethod("CheckCardBattles", 
+            var checkBattlesMethod = typeof(CardDropArea).GetMethod("CheckCardBattlesP1", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var checkChainCaptureMethod = typeof(CardDropArea1).GetMethod("CheckChainCapture", 
+            var checkChainCaptureMethod = typeof(CardDropArea).GetMethod("CheckChainCapture", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var executeRippleFlipsMethod = typeof(CardDropArea1).GetMethod("ExecuteRippleFlips", 
+            var executeRippleFlipsMethod = typeof(CardDropArea).GetMethod("ExecuteRippleFlips", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
             Assert.IsNotNull(checkBattlesMethod, "CheckCardBattles method should exist for chain capture");
@@ -1140,7 +1231,7 @@ namespace CardGame.Tests
             yield return new WaitForSeconds(1.0f);
             
             // Create a long chain scenario
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length >= 5, "Need at least 5 drop areas");
             
             // This test validates that chain captures complete within reasonable time
@@ -1174,12 +1265,12 @@ namespace CardGame.Tests
             // This test validates that chain captures don't loop infinitely
             // by ensuring cards are only processed once per chain
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length >= 3, "Need at least 3 drop areas");
             
             // Create a scenario that could cause loops if not handled correctly
-            CardDropArea1 area1 = dropAreas[0];
-            CardDropArea1 area2 = CardTestHelper.GetAdjacentDropArea(area1, "right") ?? dropAreas[1];
+            CardDropArea area1 = dropAreas[0];
+            CardDropArea area2 = CardTestHelper.GetAdjacentDropArea(area1, "right") ?? dropAreas[1];
             
             if (area2 == null)
             {
@@ -1191,30 +1282,30 @@ namespace CardGame.Tests
             NewCard card2 = CardTestHelper.CreateTestCard(3, 2, 3, 3, "Card2");
             
             // Add test cards to deck manager's hand so they can be placed
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
+            NewDeckManagerP2 p2Deck = Object.FindObjectOfType<NewDeckManagerP2>();
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
             
-            if (opponentDeck == null || playerDeck == null)
+            if (p2Deck == null || playerDeck == null)
             {
                 Assert.Inconclusive("Deck managers not found for loop test");
                 yield break;
             }
             
             // Add cards to deck manager's hand using reflection
-            var opponentHandField = typeof(NewDeckManagerOpp).GetField("hand", 
+            var opponentHandField = typeof(NewDeckManagerP2).GetField("hand", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (opponentHandField != null)
             {
-                var opponentHand = opponentHandField.GetValue(opponentDeck);
+                var opponentHand = opponentHandField.GetValue(p2Deck);
                 var addCardMethod = opponentHand.GetType().GetMethod("AddCard");
                 if (addCardMethod != null)
                 {
                     addCardMethod.Invoke(opponentHand, new object[] { card2 });
-                    opponentDeck.OnCardDrawn?.Invoke(card2);
+                    p2Deck.OnCardDrawn?.Invoke(card2);
                 }
             }
             
-            var playerHandField = typeof(NewDeckManager).GetField("hand", 
+            var playerHandField = typeof(NewDeckManagerP1).GetField("hand", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (playerHandField != null)
             {
@@ -1228,18 +1319,18 @@ namespace CardGame.Tests
             }
             
             // Ensure drop areas have deck manager references
-            var deckManagerOppField = typeof(CardDropArea1).GetField("deckManagerOpp", 
+            var deckManagerP2Field = typeof(CardDropArea).GetField("deckManagerP2", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var playCardOnDropField = typeof(CardDropArea1).GetField("playCardOnDrop", 
+            var playCardOnDropField = typeof(CardDropArea).GetField("playCardOnDrop", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
-            if (deckManagerOppField != null)
+            if (deckManagerP2Field != null)
             {
-                foreach (CardDropArea1 area in dropAreas)
+                foreach (CardDropArea area in dropAreas)
                 {
-                    if (deckManagerOppField.GetValue(area) == null)
+                    if (deckManagerP2Field.GetValue(area) == null)
                     {
-                        deckManagerOppField.SetValue(area, opponentDeck);
+                        deckManagerP2Field.SetValue(area, p2Deck);
                     }
                     if (playCardOnDropField != null && playCardOnDropField.GetValue(area).Equals(false))
                     {
@@ -1258,19 +1349,19 @@ namespace CardGame.Tests
             yield return null;
             
             // Place cards
-            CardMover mover1 = CardTestHelper.CreateCardMoverWithCard(card1, area1.transform.position, true);
-            CardTestHelper.PlaceCardOnDropArea(mover1, area1, true);
+            CardMoverP1 mover1 = CardTestHelper.CreateCardMoverWithCard(card1, area1.transform.position, true);
+            CardTestHelper.PlaceP1CardOnDropArea(mover1, area1, true);
             yield return new WaitForSeconds(0.5f);
             
             // Switch to opponent turn for second card
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Opponent);
+                fateController.SetFate(FateSide.P2);
             }
             yield return null;
             
-            CardMoverOpp mover2 = CardTestHelper.CreateCardMoverOppWithCard(card2, area2.transform.position);
-            CardTestHelper.PlaceOpponentCardOnDropArea(mover2, area2, true);
+            CardMoverP2 mover2 = CardTestHelper.CreateCardMoverP2WithCard(card2, area2.transform.position);
+            CardTestHelper.PlaceP2CardOnDropArea(mover2, area2, true);
             
             // Wait for capture with timeout
             float timeout = 5f;

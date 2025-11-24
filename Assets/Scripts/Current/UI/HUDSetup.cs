@@ -335,8 +335,8 @@ namespace CardGame.UI
             TurnIndicatorUI p2TurnIndicator = FindOrCreateTurnIndicator(p2Panel, "TurnIndicator", false);
             
             // Find deck managers
-            NewDeckManager player1DeckManager = FindObjectOfType<NewDeckManager>();
-            NewDeckManagerOpp player2DeckManager = FindObjectOfType<NewDeckManagerOpp>();
+            NewDeckManagerP1 player1DeckManager = FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 player2DeckManager = FindObjectOfType<NewDeckManagerP2>();
             
             // Use reflection to set the private serialized fields
             var hudType = typeof(HUDManager);

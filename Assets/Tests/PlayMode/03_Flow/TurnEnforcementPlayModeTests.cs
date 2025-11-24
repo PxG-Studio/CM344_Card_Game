@@ -79,7 +79,7 @@ namespace CardGame.Tests
             Assert.IsNotNull(fateController, "FateFlowController should exist");
             
             // Set to Player 2's turn
-            fateController.SetFate(FateSide.Opponent);
+            fateController.SetFate(FateSide.P2);
             yield return null;
             
             // Verify Player 1 cannot act
@@ -87,7 +87,7 @@ namespace CardGame.Tests
             Assert.IsFalse(canPlayer1Act, "Player 1 should not be able to act during Player 2's turn");
             
             // Verify Player 2 can act
-            bool canPlayer2Act = fateController.CanAct(FateSide.Opponent);
+            bool canPlayer2Act = fateController.CanAct(FateSide.P2);
             Assert.IsTrue(canPlayer2Act, "Player 2 should be able to act during their turn");
         }
 
@@ -105,7 +105,7 @@ namespace CardGame.Tests
             yield return null;
             
             // Verify Player 2 cannot act
-            bool canPlayer2Act = fateController.CanAct(FateSide.Opponent);
+            bool canPlayer2Act = fateController.CanAct(FateSide.P2);
             Assert.IsFalse(canPlayer2Act, "Player 2 should not be able to act during Player 1's turn");
             
             // Verify Player 1 can act
@@ -135,7 +135,7 @@ namespace CardGame.Tests
                 "Turn should switch after AdvanceFateFlow()");
             
             // Verify it switched to the opposite side
-            FateSide expectedFate = initialFate == FateSide.Player ? FateSide.Opponent : FateSide.Player;
+            FateSide expectedFate = initialFate == FateSide.Player ? FateSide.P2 : FateSide.Player;
             Assert.AreEqual(expectedFate, fateController.CurrentFate, 
                 "Turn should switch to opposite side");
         }
@@ -162,10 +162,10 @@ namespace CardGame.Tests
                 "FateFlowController should reflect Player's turn");
             
             // Switch to Opponent
-            fateController.SetFate(FateSide.Opponent);
+            fateController.SetFate(FateSide.P2);
             yield return null;
             
-            Assert.AreEqual(FateSide.Opponent, fateController.CurrentFate, 
+            Assert.AreEqual(FateSide.P2, fateController.CurrentFate, 
                 "FateFlowController should reflect Opponent's turn");
         }
 
@@ -245,7 +245,7 @@ namespace CardGame.Tests
             // After 5 advances from Player, should be back to Player (even number of switches)
             // Actually, 5 advances means: Player -> Opponent -> Player -> Opponent -> Player -> Opponent
             // So after 5, it should be Opponent
-            FateSide expectedFate = FateSide.Opponent;
+            FateSide expectedFate = FateSide.P2;
             Assert.AreEqual(expectedFate, fateController.CurrentFate, 
                 "Turn should alternate correctly without double-turn conditions");
         }
@@ -277,7 +277,7 @@ namespace CardGame.Tests
                 FateSide after = fateController.CurrentFate;
                 
                 // Assert: Each advance should switch to opposite side
-                FateSide expected = before == FateSide.Player ? FateSide.Opponent : FateSide.Player;
+                FateSide expected = before == FateSide.Player ? FateSide.P2 : FateSide.Player;
                 Assert.AreEqual(expected, after, 
                     $"Turn {i + 1}: Should switch from {before} to {expected}, but got {after}");
             }

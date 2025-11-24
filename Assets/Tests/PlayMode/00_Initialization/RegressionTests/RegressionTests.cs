@@ -87,19 +87,19 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Opponent);
+                fateController.SetFate(FateSide.P2);
             }
             yield return null;
             
             // Get Player 2 cards
-            CardMoverOpp[] player2Cards = Object.FindObjectsOfType<CardMoverOpp>(true);
+            CardMoverP2[] player2Cards = Object.FindObjectsOfType<CardMoverP2>(true);
             if (player2Cards.Length == 0)
             {
                 Assert.Inconclusive("No Player 2 cards found for drag test");
                 yield break;
             }
             
-            CardMoverOpp testCard = player2Cards[0];
+            CardMoverP2 testCard = player2Cards[0];
             
             // Verify card has collider (required for drag)
             Collider2D col = testCard.GetComponent<Collider2D>();
@@ -110,12 +110,12 @@ namespace CardGame.Tests
             Assert.IsFalse(testCard.IsPlayed, "Test card should not be played");
             
             // Verify CanInteract works (turn check)
-            bool canInteract = fateController != null && fateController.CanAct(FateSide.Opponent);
+            bool canInteract = fateController != null && fateController.CanAct(FateSide.P2);
             Assert.IsTrue(canInteract, "Player 2 should be able to interact during their turn");
             
             // Verify GetMousePositionInWorldSpace method exists and works
-            var getMouseMethod = typeof(CardMoverOpp).GetMethod("GetMousePositionInWorldSpace");
-            Assert.IsNotNull(getMouseMethod, "CardMoverOpp should have GetMousePositionInWorldSpace method");
+            var getMouseMethod = typeof(CardMoverP2).GetMethod("GetMousePositionInWorldSpace");
+            Assert.IsNotNull(getMouseMethod, "CardMoverP2 should have GetMousePositionInWorldSpace method");
             
             // Test that method can be called (doesn't throw exception)
             Vector3 mousePos = (Vector3)getMouseMethod.Invoke(testCard, null);
@@ -135,17 +135,17 @@ namespace CardGame.Tests
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Opponent);
+                fateController.SetFate(FateSide.P2);
             }
             yield return null;
             
             // Get drop areas
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length > 0, "Drop areas should exist");
             
             // Find empty drop area
-            CardDropArea1 emptyArea = null;
-            foreach (CardDropArea1 area in dropAreas)
+            CardDropArea emptyArea = null;
+            foreach (CardDropArea area in dropAreas)
             {
                 if (!area.IsOccupied)
                 {
@@ -164,20 +164,20 @@ namespace CardGame.Tests
             NewCard testCard = CardTestHelper.CreateTestCard(3, 3, 3, 3, "Player2TestCard");
             
             // Add card to opponent deck manager's hand
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
+            NewDeckManagerP2 opponentDeck = Object.FindObjectOfType<NewDeckManagerP2>();
             if (opponentDeck != null)
             {
                 CardTestHelper.AddCardToDeckManagerHand(opponentDeck, testCard);
             }
             
-            CardMoverOpp cardMover = CardTestHelper.CreateCardMoverOppWithCard(testCard, emptyArea.transform.position);
+            CardMoverP2 cardMoverP2 = CardTestHelper.CreateCardMoverP2WithCard(testCard, emptyArea.transform.position);
             
-            // Verify OnCardDropOpp method exists on drop area
-            var onCardDropOppMethod = typeof(CardDropArea1).GetMethod("OnCardDropOpp");
-            Assert.IsNotNull(onCardDropOppMethod, "CardDropArea1 should have OnCardDropOpp method");
+            // Verify OnCardDropP2 method exists on drop area
+            var onCardDropOppMethod = typeof(CardDropArea).GetMethod("OnCardDropP2");
+            Assert.IsNotNull(onCardDropOppMethod, "CardDropArea should have OnCardDropP2 method");
             
             // Attempt drop
-            bool dropResult = CardTestHelper.PlaceOpponentCardOnDropArea(cardMover, emptyArea, false);
+            bool dropResult = CardTestHelper.PlaceP2CardOnDropArea(cardMoverP2, emptyArea, false);
             
             // Assert: Drop should succeed
             Assert.IsTrue(dropResult, 
@@ -240,8 +240,8 @@ namespace CardGame.Tests
             yield return new WaitForSeconds(1.0f);
             
             // Get hand UI
-            NewHandUI handUI = Object.FindObjectOfType<NewHandUI>();
-            NewDeckManager deckManager = handUI?.DeckManager;
+            NewHandP1UI handUI = Object.FindObjectOfType<NewHandP1UI>();
+            NewDeckManagerP1 deckManager = handUI?.DeckManager;
             if (handUI == null || deckManager == null || deckManager.Hand == null || deckManager.Hand.Count == 0)
             {
                 Assert.Inconclusive("No cards in hand for drag prevention test");
@@ -249,9 +249,9 @@ namespace CardGame.Tests
             }
             
             // Place a card on board
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
-            CardDropArea1 emptyArea = null;
-            foreach (CardDropArea1 area in dropAreas)
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
+            CardDropArea emptyArea = null;
+            foreach (CardDropArea area in dropAreas)
             {
                 if (!area.IsOccupied)
                 {
@@ -296,15 +296,15 @@ namespace CardGame.Tests
             yield return null;
             
             // Place card on board
-            CardMover cardMover = cardUI.GetComponentInParent<CardMover>();
-            if (cardMover == null)
+            CardMoverP1 CardMoverP1 = cardUI.GetComponentInParent<CardMoverP1>();
+            if (CardMoverP1 == null)
             {
-                cardMover = cardUI.GetComponent<CardMover>();
+                CardMoverP1 = cardUI.GetComponent<CardMoverP1>();
             }
             
-            if (cardMover != null)
+            if (CardMoverP1 != null)
             {
-                bool placed = CardTestHelper.PlaceCardOnDropArea(cardMover, emptyArea, false);
+                bool placed = CardTestHelper.PlaceP1CardOnDropArea(CardMoverP1, emptyArea, false);
                 Assert.IsTrue(placed, "Card should be placed on board");
                 yield return new WaitForSeconds(0.5f);
                 
@@ -327,12 +327,12 @@ namespace CardGame.Tests
             yield return CardTestHelper.WaitForCoinTossToComplete();
             yield return new WaitForSeconds(1.0f);
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length > 0, "Drop areas should exist");
             
             // Find an occupied area (or create one)
-            CardDropArea1 occupiedArea = null;
-            foreach (CardDropArea1 area in dropAreas)
+            CardDropArea occupiedArea = null;
+            foreach (CardDropArea area in dropAreas)
             {
                 if (area.IsOccupied)
                 {
@@ -344,11 +344,11 @@ namespace CardGame.Tests
             // If no occupied area, place a card first
             if (occupiedArea == null && dropAreas.Length > 0)
             {
-                CardDropArea1 testArea = dropAreas[0];
+                CardDropArea testArea = dropAreas[0];
                 NewCard testCard = CardTestHelper.CreateTestCard(3, 3, 3, 3, "Occupier");
                 
                 // Add card to player deck manager's hand
-                NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
+                NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
                 if (playerDeck != null)
                 {
                     CardTestHelper.AddCardToDeckManagerHand(playerDeck, testCard);
@@ -361,8 +361,8 @@ namespace CardGame.Tests
                 }
                 yield return null;
                 
-                CardMover testMover = CardTestHelper.CreateCardMoverWithCard(testCard, testArea.transform.position, true);
-                CardTestHelper.PlaceCardOnDropArea(testMover, testArea, true);
+                CardMoverP1 testMover = CardTestHelper.CreateCardMoverWithCard(testCard, testArea.transform.position, true);
+                CardTestHelper.PlaceP1CardOnDropArea(testMover, testArea, true);
                 yield return new WaitForSeconds(0.5f);
                 
                 if (testArea.IsOccupied)
@@ -377,16 +377,16 @@ namespace CardGame.Tests
                 NewCard secondCard = CardTestHelper.CreateTestCard(3, 3, 3, 3, "SecondCard");
                 
                 // Add card to player deck manager's hand
-                NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
+                NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
                 if (playerDeck != null)
                 {
                     CardTestHelper.AddCardToDeckManagerHand(playerDeck, secondCard);
                 }
                 
-                CardMover secondMover = CardTestHelper.CreateCardMoverWithCard(secondCard, occupiedArea.transform.position, true);
+                CardMoverP1 secondMover = CardTestHelper.CreateCardMoverWithCard(secondCard, occupiedArea.transform.position, true);
                 
                 // Attempt drop
-                bool dropResult = CardTestHelper.PlaceCardOnDropArea(secondMover, occupiedArea, true);
+                bool dropResult = CardTestHelper.PlaceP1CardOnDropArea(secondMover, occupiedArea, true);
                 
                 // Assert: Drop should fail (area is occupied)
                 Assert.IsFalse(dropResult, 

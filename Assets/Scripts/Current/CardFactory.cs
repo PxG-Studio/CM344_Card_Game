@@ -94,7 +94,7 @@ namespace CardGame.Factories
         /// Used when placing a UI card onto the board.
         /// </summary>
         /// <param name="card">The card data</param>
-        /// <param name="prefab">The board card prefab (should have CardMover component)</param>
+        /// <param name="prefab">The board card prefab (should have CardMoverP1 or CardMoverP2 component)</param>
         /// <param name="position">World position to place the card</param>
         /// <returns>Initialized board card GameObject</returns>
         public static GameObject CreateBoardCard(NewCard card, GameObject prefab, Vector3 position)
@@ -118,40 +118,40 @@ namespace CardGame.Factories
                 #endif
             }
             
-            // [CardFront] Support both CardMover (Player 1) and CardMoverOpp (Player 2)
-            // Check for CardMoverOpp first (opponent cards), then CardMover (player cards)
-            CardMoverOpp cardMoverOpp = boardCard.GetComponent<CardMoverOpp>();
-            if (cardMoverOpp == null)
+            // [CardFront] Support both CardMover (P1) and CardMoverP2 (P2)
+            // Check for CardMoverP2 first (P2 cards), then CardMover (P1 cards)
+            CardMoverP2 cardMoverP2 = boardCard.GetComponent<CardMoverP2>();
+            if (cardMoverP2 == null)
             {
-                cardMoverOpp = boardCard.GetComponentInChildren<CardMoverOpp>();
+                cardMoverP2 = boardCard.GetComponentInChildren<CardMoverP2>();
             }
             
-            if (cardMoverOpp != null)
+            if (cardMoverP2 != null)
             {
-                // Opponent card - use CardMoverOpp (Player 2)
-                cardMoverOpp.SetCard(card);
-                cardMoverOpp.RefreshHomePosition();
-                Debug.Log($"[CardFactory] Created board card '{card.Data.cardName}' with CardMoverOpp (opponent card)");
+                // P2 card - use CardMoverP2
+                cardMoverP2.SetCard(card);
+                cardMoverP2.RefreshHomePosition();
+                Debug.Log($"[CardFactory] Created board card '{card.Data.cardName}' with CardMoverP2 (P2 card)");
             }
             else
             {
-                // Player card - use CardMover (Player 1)
-                CardMover cardMover = boardCard.GetComponent<CardMover>();
+                // P1 card - use CardMoverP1
+                CardMoverP1 cardMover = boardCard.GetComponent<CardMoverP1>();
                 if (cardMover == null)
                 {
-                    cardMover = boardCard.GetComponentInChildren<CardMover>();
+                    cardMover = boardCard.GetComponentInChildren<CardMoverP1>();
                 }
                 
                 if (cardMover != null)
                 {
                     cardMover.SetCard(card);
                     cardMover.RefreshHomePosition();
-                    Debug.Log($"[CardFactory] Created board card '{card.Data.cardName}' with CardMover (player card)");
+                    Debug.Log($"[CardFactory] Created board card '{card.Data.cardName}' with CardMoverP1 (P1 card)");
                 }
                 else
                 {
                     // Neither component found - log warning
-                    Debug.LogWarning($"[CardFactory] Board card prefab '{prefab.name}' has neither CardMover nor CardMoverOpp component. Card may not be draggable. Please add the appropriate mover component to the prefab.");
+                    Debug.LogWarning($"[CardFactory] Board card prefab '{prefab.name}' has neither CardMoverP1 (P1) nor CardMoverP2 (P2) component. Card may not be draggable. Please add the appropriate mover component to the prefab.");
                 }
             }
             

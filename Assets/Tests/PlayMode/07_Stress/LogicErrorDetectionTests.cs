@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -78,19 +79,19 @@ namespace CardGame.Tests
             yield return CardTestHelper.WaitForCoinTossToComplete();
             yield return new WaitForSeconds(1.0f);
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length >= 2, "Need at least 2 drop areas");
             
-            CardDropArea1 attackerArea = dropAreas[0];
-            CardDropArea1 defenderArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right") ?? dropAreas[1];
+            CardDropArea attackerArea = dropAreas[0];
+            CardDropArea defenderArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right") ?? dropAreas[1];
             
             // Create cards with known stats: Attacker right=7, Defender left=3
             NewCard attackerCard = CardTestHelper.CreateTestCard(3, 7, 3, 3, "StrongAttacker");
             NewCard defenderCard = CardTestHelper.CreateTestCard(3, 3, 3, 3, "WeakDefender");
             
             // Add cards to deck manager hands
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 opponentDeck = Object.FindObjectOfType<NewDeckManagerP2>();
             if (playerDeck != null)
             {
                 CardTestHelper.AddCardToDeckManagerHand(playerDeck, attackerCard);
@@ -114,12 +115,12 @@ namespace CardGame.Tests
             yield return null;
             
             // Place cards
-            CardMover attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
-            CardTestHelper.PlaceCardOnDropArea(attackerMover, attackerArea, true);
+            CardMoverP1 attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
+            CardTestHelper.PlaceP1CardOnDropArea(attackerMover, attackerArea, true);
             yield return new WaitForSeconds(0.5f);
             
-            CardMoverOpp defenderMover = CardTestHelper.CreateCardMoverOppWithCard(defenderCard, defenderArea.transform.position);
-            CardTestHelper.PlaceOpponentCardOnDropArea(defenderMover, defenderArea, true);
+            CardMoverP2 defenderMover = CardTestHelper.CreateCardMoverP2WithCard(defenderCard, defenderArea.transform.position);
+            CardTestHelper.PlaceP2CardOnDropArea(defenderMover, defenderArea, true);
             yield return CardTestHelper.WaitForCaptureAnimations(3f);
             
             // LOGIC ASSERTION: Capture MUST occur when attacker > defender
@@ -136,19 +137,20 @@ namespace CardGame.Tests
             yield return CardTestHelper.WaitForCoinTossToComplete();
             yield return new WaitForSeconds(1.0f);
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length >= 2, "Need at least 2 drop areas");
             
-            CardDropArea1 attackerArea = dropAreas[0];
-            CardDropArea1 defenderArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right") ?? dropAreas[1];
+            CardDropArea attackerArea = dropAreas[0];
+            CardDropArea defenderArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right") ?? dropAreas[1];
             
             // Create cards: Attacker right=2, Defender left=8
-            NewCard attackerCard = CardTestHelper.CreateTestCard(3, 2, 3, 3, "WeakAttacker");
-            NewCard defenderCard = CardTestHelper.CreateTestCard(3, 8, 3, 3, "StrongDefender");
+            // CreateTestCard parameters: (top, right, down, left)
+            NewCard attackerCard = CardTestHelper.CreateTestCard(3, 2, 3, 3, "WeakAttacker"); // right=2
+            NewCard defenderCard = CardTestHelper.CreateTestCard(3, 3, 3, 8, "StrongDefender"); // left=8
             
             // Add cards to deck manager hands
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 opponentDeck = Object.FindObjectOfType<NewDeckManagerP2>();
             if (playerDeck != null)
             {
                 CardTestHelper.AddCardToDeckManagerHand(playerDeck, attackerCard);
@@ -170,19 +172,78 @@ namespace CardGame.Tests
             }
             yield return null;
             
-            CardMover attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
-            CardTestHelper.PlaceCardOnDropArea(attackerMover, attackerArea, true);
+            CardMoverP1 attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
+            CardTestHelper.PlaceP1CardOnDropArea(attackerMover, attackerArea, true);
             yield return new WaitForSeconds(0.5f);
             
-            CardMoverOpp defenderMover = CardTestHelper.CreateCardMoverOppWithCard(defenderCard, defenderArea.transform.position);
-            CardTestHelper.PlaceOpponentCardOnDropArea(defenderMover, defenderArea, true);
-            yield return CardTestHelper.WaitForCaptureAnimations(3f);
+            // Ensure defender is placed exactly adjacent to attacker (to the right, for horizontal battle)
+            Vector3 attackerPosition = attackerMover.transform.position;
+            Vector3 defenderPosition = attackerPosition + Vector3.right * 1.5f; // 1.5 units to the right for strict adjacency
             
-            // LOGIC ASSERTION: Capture MUST NOT occur when defender > attacker
+            CardMoverP2 defenderMover = CardTestHelper.CreateCardMoverP2WithCard(defenderCard, defenderPosition);
+            
+            // Find the closest drop area to the defender position, or use the originally selected one
+            CardDropArea closestDefenderArea = defenderArea;
+            float minDistance = Vector3.Distance(defenderPosition, defenderArea.transform.position);
+            foreach (var area in dropAreas)
+            {
+                float dist = Vector3.Distance(defenderPosition, area.transform.position);
+                if (dist < minDistance && dist < 2.0f) // Within reasonable range
+                {
+                    minDistance = dist;
+                    closestDefenderArea = area;
+                }
+            }
+            
+            CardTestHelper.PlaceP2CardOnDropArea(defenderMover, closestDefenderArea, true);
+            
+            // Manually adjust defender position if needed to ensure strict adjacency
+            float actualDistance = Vector3.Distance(attackerMover.transform.position, defenderMover.transform.position);
+            const float strictAdjacencyTolerance = 1.6f;
+            bool positionAdjusted = false;
+            if (actualDistance > strictAdjacencyTolerance)
+            {
+                Debug.Log($"[LogicError_CaptureCalculation_DefenderHigher_ShouldNotCapture] Adjusting defender position. Distance: {actualDistance:F3}, Target: {defenderPosition}");
+                defenderMover.transform.position = attackerPosition + Vector3.right * 1.5f;
+                positionAdjusted = true;
+                yield return new WaitForEndOfFrame();
+            }
+            
+            // Always manually trigger battle check for the defender (Player 2) to ensure battle logic runs
+            // This ensures the battle check happens with the final card positions
+                // Note: CheckCardBattles is for P1 cards, CheckCardBattlesP2 is for P2 cards
+                MethodInfo checkBattlesP2Method = typeof(CardDropArea).GetMethod("CheckCardBattlesP2", BindingFlags.NonPublic | BindingFlags.Instance);
+                
+                if (checkBattlesP2Method != null && closestDefenderArea != null)
+                {
+                    Debug.Log($"[LogicError_CaptureCalculation_DefenderHigher_ShouldNotCapture] Manually triggering CheckCardBattlesP2 for defender (P2). " +
+                        $"Defender left stat: {defenderCard.CurrentLeftStat}, Attacker right stat: {attackerCard.CurrentRightStat}. " +
+                        $"Expected: Defender wins (8 > 2), so attacker should be flipped, NOT defender.");
+                    checkBattlesP2Method.Invoke(closestDefenderArea, new object[] { defenderMover, defenderCard });
+                yield return new WaitForEndOfFrame();
+            }
+            
+            // Wait for any capture animations to complete
+            yield return CardTestHelper.WaitForCaptureAnimations(5f);
+            
+            // Verify cards are actually adjacent
+            float finalDistance = Vector3.Distance(attackerMover.transform.position, defenderMover.transform.position);
+            Debug.Log($"[LogicError_CaptureCalculation_DefenderHigher_ShouldNotCapture] Final distance between cards: {finalDistance:F3}");
+            
+            // Check which cards were captured for debugging
+            bool attackerCaptured = CardTestHelper.IsCardCaptured(attackerMover.gameObject);
             bool defenderCaptured = CardTestHelper.IsCardCaptured(defenderMover.gameObject);
+            
+            Debug.Log($"[LogicError_CaptureCalculation_DefenderHigher_ShouldNotCapture] Capture status - Attacker captured: {attackerCaptured}, Defender captured: {defenderCaptured}");
+            Debug.Log($"[LogicError_CaptureCalculation_DefenderHigher_ShouldNotCapture] Expected: Defender wins (8 > 2), so Attacker should be captured=True, Defender should be captured=False");
+            
+            // LOGIC ASSERTION: Capture MUST NOT occur for defender when defender > attacker
+            // The attacker's right (2) faces the defender's left (8), so defender wins
+            // Therefore, the defender should NOT be captured (attacker should be captured instead)
             Assert.IsFalse(defenderCaptured, 
                 $"LOGIC ERROR: Defender should NOT be captured when attacker stat ({attackerCard.CurrentRightStat}) < defender stat ({defenderCard.CurrentLeftStat}). " +
-                $"This is a logic error if capture occurred.");
+                $"Distance between cards: {finalDistance:F3}. Attacker captured: {attackerCaptured}, Defender captured: {defenderCaptured}. " +
+                $"This is a logic error - the defender has higher stat so should win, not be captured.");
         }
 
         [UnityTest]
@@ -197,18 +258,18 @@ namespace CardGame.Tests
             
             int initialPlayerScore = scoreManager.PlayerScore;
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length >= 2, "Need at least 2 drop areas");
             
-            CardDropArea1 attackerArea = dropAreas[0];
-            CardDropArea1 defenderArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right") ?? dropAreas[1];
+            CardDropArea attackerArea = dropAreas[0];
+            CardDropArea defenderArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right") ?? dropAreas[1];
             
             NewCard attackerCard = CardTestHelper.CreateTestCard(3, 6, 3, 3, "Attacker");
             NewCard defenderCard = CardTestHelper.CreateTestCard(3, 2, 3, 3, "Defender");
             
             // Add cards to deck manager hands
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 opponentDeck = Object.FindObjectOfType<NewDeckManagerP2>();
             if (playerDeck != null)
             {
                 CardTestHelper.AddCardToDeckManagerHand(playerDeck, attackerCard);
@@ -226,12 +287,12 @@ namespace CardGame.Tests
             yield return null;
             
             // Place cards to trigger capture
-            CardMover attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
-            CardTestHelper.PlaceCardOnDropArea(attackerMover, attackerArea, true);
+            CardMoverP1 attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
+            CardTestHelper.PlaceP1CardOnDropArea(attackerMover, attackerArea, true);
             yield return new WaitForSeconds(0.5f);
             
-            CardMoverOpp defenderMover = CardTestHelper.CreateCardMoverOppWithCard(defenderCard, defenderArea.transform.position);
-            CardTestHelper.PlaceOpponentCardOnDropArea(defenderMover, defenderArea, true);
+            CardMoverP2 defenderMover = CardTestHelper.CreateCardMoverP2WithCard(defenderCard, defenderArea.transform.position);
+            CardTestHelper.PlaceP2CardOnDropArea(defenderMover, defenderArea, true);
             yield return CardTestHelper.WaitForCaptureAnimations(3f);
             
             // Verify capture occurred
@@ -258,7 +319,7 @@ namespace CardGame.Tests
             
             // Get initial turn
             FateSide initialTurn = fateController.CurrentFate;
-            FateSide expectedNextTurn = initialTurn == FateSide.Player ? FateSide.Opponent : FateSide.Player;
+            FateSide expectedNextTurn = initialTurn == FateSide.Player ? FateSide.P2 : FateSide.Player;
             
             // Switch turn
             fateController.AdvanceFateFlow();
@@ -296,7 +357,7 @@ namespace CardGame.Tests
             
             // LOGIC ASSERTION: Only Player 1 should be able to act
             bool player1CanAct = fateController.CanAct(FateSide.Player);
-            bool player2CanAct = fateController.CanAct(FateSide.Opponent);
+            bool player2CanAct = fateController.CanAct(FateSide.P2);
             
             Assert.IsTrue(player1CanAct, 
                 "LOGIC ERROR: Player 1 should be able to act during Player 1's turn");
@@ -304,12 +365,12 @@ namespace CardGame.Tests
                 "LOGIC ERROR: Player 2 should NOT be able to act during Player 1's turn");
             
             // Switch to Player 2's turn
-            fateController.SetFate(FateSide.Opponent);
+            fateController.SetFate(FateSide.P2);
             yield return null;
             
             // LOGIC ASSERTION: Only Player 2 should be able to act
             player1CanAct = fateController.CanAct(FateSide.Player);
-            player2CanAct = fateController.CanAct(FateSide.Opponent);
+            player2CanAct = fateController.CanAct(FateSide.P2);
             
             Assert.IsFalse(player1CanAct, 
                 "LOGIC ERROR: Player 1 should NOT be able to act during Player 2's turn");
@@ -324,10 +385,10 @@ namespace CardGame.Tests
             yield return CardTestHelper.WaitForCoinTossToComplete();
             yield return new WaitForSeconds(1.0f);
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length > 0, "Need at least one drop area");
             
-            CardDropArea1 testArea = dropAreas[0];
+            CardDropArea testArea = dropAreas[0];
             
             // Initially should be unoccupied
             Assert.IsFalse(testArea.IsOccupied, 
@@ -343,8 +404,8 @@ namespace CardGame.Tests
             }
             yield return null;
             
-            CardMover cardMover = CardTestHelper.CreateCardMoverWithCard(testCard, testArea.transform.position, true);
-            bool placed = CardTestHelper.PlaceCardOnDropArea(cardMover, testArea, false);
+            CardMoverP1 CardMoverP1 = CardTestHelper.CreateCardMoverWithCard(testCard, testArea.transform.position, true);
+            bool placed = CardTestHelper.PlaceP1CardOnDropArea(CardMoverP1, testArea, false);
             Assert.IsTrue(placed, "Card should be placed");
             yield return new WaitForSeconds(0.5f);
             
@@ -361,11 +422,11 @@ namespace CardGame.Tests
             yield return CardTestHelper.WaitForCoinTossToComplete();
             yield return new WaitForSeconds(1.0f);
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length >= 2, "Need at least 2 drop areas");
             
-            CardDropArea1 attackerArea = dropAreas[0];
-            CardDropArea1 defenderArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right") ?? dropAreas[1];
+            CardDropArea attackerArea = dropAreas[0];
+            CardDropArea defenderArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right") ?? dropAreas[1];
             
             // Create cards with EQUAL stats: Both right/left = 5
             NewCard attackerCard = CardTestHelper.CreateTestCard(5, 5, 5, 5, "EqualAttacker");
@@ -381,12 +442,12 @@ namespace CardGame.Tests
             }
             yield return null;
             
-            CardMover attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
-            CardTestHelper.PlaceCardOnDropArea(attackerMover, attackerArea, true);
+            CardMoverP1 attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
+            CardTestHelper.PlaceP1CardOnDropArea(attackerMover, attackerArea, true);
             yield return new WaitForSeconds(0.5f);
             
-            CardMoverOpp defenderMover = CardTestHelper.CreateCardMoverOppWithCard(defenderCard, defenderArea.transform.position);
-            CardTestHelper.PlaceOpponentCardOnDropArea(defenderMover, defenderArea, true);
+            CardMoverP2 defenderMover = CardTestHelper.CreateCardMoverP2WithCard(defenderCard, defenderArea.transform.position);
+            CardTestHelper.PlaceP2CardOnDropArea(defenderMover, defenderArea, true);
             yield return CardTestHelper.WaitForCaptureAnimations(3f);
             
             // LOGIC ASSERTION: Capture MUST NOT occur when stats are equal

@@ -85,9 +85,9 @@ namespace CardGame.UI
         public void ShowGameEnd(bool playerWon, bool isTie)
         {
             // Legacy overload - collect statistics from trackers
-            int cardsPlayed = CardDropArea1.GetCardsPlayed();
-            int capturesMade = CardDropArea1.GetCapturesMade();
-            int longestChain = CardDropArea1.GetLongestChain();
+            int cardsPlayed = CardDropArea.GetCardsPlayed();
+            int capturesMade = CardDropArea.GetCapturesMade();
+            int longestChain = CardDropArea.GetLongestChain();
             int scoreMargin = 0;
             if (ScoreManager.Instance != null)
             {
@@ -119,12 +119,12 @@ namespace CardGame.UI
             endGamePanel.SetActive(true);
             
             // Get final scores
-            int playerScore = 0;
-            int opponentScore = 0;
+            int p1Score = 0;
+            int p2Score = 0;
             if (ScoreManager.Instance != null)
             {
-                playerScore = ScoreManager.Instance.PlayerScore;
-                opponentScore = ScoreManager.Instance.OpponentScore;
+                p1Score = ScoreManager.Instance.P1Score;
+                p2Score = ScoreManager.Instance.P2Score;
             }
             
             // Update winner text (larger size)
@@ -138,13 +138,13 @@ namespace CardGame.UI
                 }
                 else if (playerWon)
                 {
-                    winnerText.text = "PLAYER 1 WINS!";
+                    winnerText.text = "P1 WINS!";
                     winnerText.color = victoryColor;
                     winnerText.fontSize = 72;
                 }
                 else
                 {
-                    winnerText.text = "PLAYER 2 WINS!";
+                    winnerText.text = "P2 WINS!";
                     winnerText.color = defeatColor;
                     winnerText.fontSize = 72;
                 }
@@ -154,7 +154,7 @@ namespace CardGame.UI
             string marginText = scoreMargin > 0 ? $"+{scoreMargin}" : scoreMargin < 0 ? $"{scoreMargin}" : "0";
             if (finalScoreText != null)
             {
-                finalScoreText.text = $"Final Score\nPlayer 1: {playerScore}  |  Player 2: {opponentScore}\nMargin: {marginText}";
+                finalScoreText.text = $"Final Score\nP1: {p1Score}  |  P2: {p2Score}\nMargin: {marginText}";
             }
             
             // Update statistics text (with null safety)

@@ -74,13 +74,13 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            Assert.IsNotNull(playerDeck, "NewDeckManager should exist");
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            Assert.IsNotNull(playerDeck, "NewDeckManagerP1 should exist");
             
             // Note: Unity's Random doesn't support seeding in the same way, but we can verify
             // that ShuffleDeck() method exists and can be called
-            var shuffleMethod = typeof(NewDeckManager).GetMethod("ShuffleDeck");
-            Assert.IsNotNull(shuffleMethod, "NewDeckManager should have ShuffleDeck method");
+            var shuffleMethod = typeof(NewDeckManagerP1).GetMethod("ShuffleDeck");
+            Assert.IsNotNull(shuffleMethod, "NewDeckManagerP1 should have ShuffleDeck method");
             
             // Initialize deck and shuffle
             playerDeck.InitializeDeck();
@@ -96,11 +96,11 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 opponentDeck = Object.FindObjectOfType<NewDeckManagerP2>();
             
-            Assert.IsNotNull(playerDeck, "NewDeckManager should exist");
-            Assert.IsNotNull(opponentDeck, "NewDeckManagerOpp should exist");
+            Assert.IsNotNull(playerDeck, "NewDeckManagerP1 should exist");
+            Assert.IsNotNull(opponentDeck, "NewDeckManagerP2 should exist");
             
             // Wait for cards to be drawn (after coin toss completes)
             yield return new WaitForSeconds(3.0f);
@@ -114,8 +114,8 @@ namespace CardGame.Tests
             Assert.GreaterOrEqual(opponentHandCount, 0, "Opponent hand should exist (may be empty initially)");
             
             // Verify DrawCards method exists
-            var drawCardsMethod = typeof(NewDeckManager).GetMethod("DrawCards");
-            Assert.IsNotNull(drawCardsMethod, "NewDeckManager should have DrawCards method");
+            var drawCardsMethod = typeof(NewDeckManagerP1).GetMethod("DrawCards");
+            Assert.IsNotNull(drawCardsMethod, "NewDeckManagerP1 should have DrawCards method");
         }
 
         [UnityTest]
@@ -124,8 +124,8 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            Assert.IsNotNull(playerDeck, "NewDeckManager should exist");
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            Assert.IsNotNull(playerDeck, "NewDeckManagerP1 should exist");
             
             // Initialize deck
             playerDeck.InitializeDeck();
@@ -152,8 +152,8 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            Assert.IsNotNull(playerDeck, "NewDeckManager should exist");
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            Assert.IsNotNull(playerDeck, "NewDeckManagerP1 should exist");
             
             // Initialize and draw cards
             playerDeck.InitializeDeck();
@@ -175,8 +175,8 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            Assert.IsNotNull(playerDeck, "NewDeckManager should exist");
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            Assert.IsNotNull(playerDeck, "NewDeckManagerP1 should exist");
             
             // Initialize deck
             playerDeck.InitializeDeck();
@@ -208,8 +208,8 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            Assert.IsNotNull(playerDeck, "NewDeckManager should exist");
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            Assert.IsNotNull(playerDeck, "NewDeckManagerP1 should exist");
             
             // Initialize deck and draw cards
             playerDeck.InitializeDeck();

@@ -71,26 +71,26 @@ namespace CardGame.Testing
                 Debug.LogError("❌ Test 2 FAILED: GameEndManager not found! Create a GameObject with GameEndManager component.");
             }
             
-            // Test 3: CardDropArea1 can find managers
-            CardDropArea1[] dropAreas = FindObjectsOfType<CardDropArea1>();
+            // Test 3: CardDropArea can find managers
+            CardDropArea[] dropAreas = FindObjectsOfType<CardDropArea>();
             cardDropAreaFound = dropAreas.Length > 0;
             
             if (cardDropAreaFound)
             {
                 if (logTestResults)
                 {
-                    Debug.Log($"✅ Test 3 PASSED: Found {dropAreas.Length} CardDropArea1 component(s)");
+                    Debug.Log($"✅ Test 3 PASSED: Found {dropAreas.Length} CardDropArea component(s)");
                 }
                 
-                // Check if they can find managers (this will be logged by CardDropArea1 itself)
-                foreach (CardDropArea1 area in dropAreas)
+                // Check if they can find managers (this will be logged by CardDropArea itself)
+                foreach (CardDropArea area in dropAreas)
                 {
                     // The warnings will appear in console if managers aren't found
                 }
             }
             else
             {
-                Debug.LogWarning("⚠️ Test 3 WARNING: No CardDropArea1 components found in scene");
+                Debug.LogWarning("⚠️ Test 3 WARNING: No CardDropArea components found in scene");
             }
             
             // Test 4: GameManager exists
@@ -162,18 +162,18 @@ namespace CardGame.Testing
                 Debug.Log("--- Testing Chain Capture Logic ---");
             }
             
-            // Verify CheckChainCapture method exists in CardDropArea1
-            CardDropArea1 dropArea = FindObjectOfType<CardDropArea1>();
+            // Verify CheckChainCapture method exists in CardDropArea
+            CardDropArea dropArea = FindObjectOfType<CardDropArea>();
             if (dropArea != null)
             {
                 if (logTestResults)
                 {
-                    Debug.Log("✅ Chain Capture: CardDropArea1 found - chain capture methods should be available");
+                    Debug.Log("✅ Chain Capture: CardDropArea found - chain capture methods should be available");
                 }
             }
             else
             {
-                Debug.LogWarning("⚠️ Chain Capture: CardDropArea1 not found - cannot verify chain capture");
+                Debug.LogWarning("⚠️ Chain Capture: CardDropArea not found - cannot verify chain capture");
             }
             
             if (logTestResults)

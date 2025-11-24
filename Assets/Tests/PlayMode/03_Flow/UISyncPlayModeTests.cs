@@ -170,7 +170,7 @@ namespace CardGame.Tests
             
             // Act: Switch turn
             FateSide initialFate = fateController.CurrentFate;
-            FateSide newFate = initialFate == FateSide.Player ? FateSide.Opponent : FateSide.Player;
+            FateSide newFate = initialFate == FateSide.Player ? FateSide.P2 : FateSide.Player;
             
             fateController.SetFate(newFate);
             yield return null; // Wait one frame for UI update
@@ -193,8 +193,8 @@ namespace CardGame.Tests
             yield return new WaitForSeconds(1.0f);
             
             // Get a card from hand
-            NewHandUI handUI = Object.FindObjectOfType<NewHandUI>();
-            NewDeckManager deckManager = handUI?.DeckManager;
+            NewHandP1UI handUI = Object.FindObjectOfType<NewHandP1UI>();
+            NewDeckManagerP1 deckManager = handUI?.DeckManager;
             if (handUI == null || deckManager == null || deckManager.Hand == null || deckManager.Hand.Count == 0)
             {
                 Assert.Inconclusive("No cards in Player 1 hand for hover test");
@@ -242,16 +242,16 @@ namespace CardGame.Tests
             yield return CardTestHelper.WaitForCoinTossToComplete();
             yield return new WaitForSeconds(1.0f);
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
-            Assert.IsTrue(dropAreas.Length > 0, "CardDropArea1 instances should exist");
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
+            Assert.IsTrue(dropAreas.Length > 0, "CardDropArea instances should exist");
             
             // Create test cards for battle
             CardGame.Core.NewCard attackerCard = CardTestHelper.CreateTestCard(3, 5, 3, 3, "Attacker");
             CardGame.Core.NewCard defenderCard = CardTestHelper.CreateTestCard(3, 2, 3, 3, "Defender");
             
             // Add cards to deck manager hands
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 opponentDeck = Object.FindObjectOfType<NewDeckManagerP2>();
             if (playerDeck != null)
             {
                 CardTestHelper.AddCardToDeckManagerHand(playerDeck, attackerCard);
@@ -261,8 +261,8 @@ namespace CardGame.Tests
                 CardTestHelper.AddCardToDeckManagerHand(opponentDeck, defenderCard);
             }
             
-            CardDropArea1 area1 = dropAreas[0];
-            CardDropArea1 area2 = CardTestHelper.GetAdjacentDropArea(area1, "right") ?? dropAreas[1];
+            CardDropArea area1 = dropAreas[0];
+            CardDropArea area2 = CardTestHelper.GetAdjacentDropArea(area1, "right") ?? dropAreas[1];
             
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
@@ -272,19 +272,19 @@ namespace CardGame.Tests
             yield return null;
             
             // Get initial capture count
-            int initialCaptures = CardDropArea1.GetCapturesMade();
+            int initialCaptures = CardDropArea.GetCapturesMade();
             
             // Act: Place cards to trigger battle comparison
-            CardMover attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, area1.transform.position, true);
-            CardTestHelper.PlaceCardOnDropArea(attackerMover, area1, true);
+            CardMoverP1 attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, area1.transform.position, true);
+            CardTestHelper.PlaceP1CardOnDropArea(attackerMover, area1, true);
             yield return new WaitForSeconds(0.5f);
             
-            CardMoverOpp defenderMover = CardTestHelper.CreateCardMoverOppWithCard(defenderCard, area2.transform.position);
-            CardTestHelper.PlaceOpponentCardOnDropArea(defenderMover, area2, true);
+            CardMoverP2 defenderMover = CardTestHelper.CreateCardMoverP2WithCard(defenderCard, area2.transform.position);
+            CardTestHelper.PlaceP2CardOnDropArea(defenderMover, area2, true);
             yield return CardTestHelper.WaitForCaptureAnimations(3f);
             
             // Assert: Battle comparison should have occurred (capture should happen)
-            int newCaptures = CardDropArea1.GetCapturesMade();
+            int newCaptures = CardDropArea.GetCapturesMade();
             bool defenderCaptured = CardTestHelper.IsCardCaptured(defenderMover.gameObject);
             
             Assert.IsTrue(defenderCaptured || newCaptures > initialCaptures, 

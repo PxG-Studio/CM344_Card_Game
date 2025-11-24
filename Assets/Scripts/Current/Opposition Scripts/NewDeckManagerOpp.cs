@@ -6,9 +6,9 @@ using NewCardData;
 namespace CardGame.Managers
 {
     /// <summary>
-    /// Manages the player's deck, hand, and discard pile for NewCard system
+    /// Manages P2's deck, hand, and discard pile for NewCard system
     /// </summary>
-    public class NewDeckManagerOpp : MonoBehaviour
+    public class NewDeckManagerP2 : MonoBehaviour
     {
         [Header("Deck Configuration")]
         [SerializeField] private List<NewCardData.NewCardData> startingDeck = new List<NewCardData.NewCardData>();

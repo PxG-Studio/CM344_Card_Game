@@ -74,19 +74,19 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 p2Deck = Object.FindObjectOfType<NewDeckManagerP2>();
             
-            Assert.IsNotNull(playerDeck, "NewDeckManager should exist");
-            Assert.IsNotNull(opponentDeck, "NewDeckManagerOpp should exist");
+            Assert.IsNotNull(playerDeck, "NewDeckManagerP1 should exist");
+            Assert.IsNotNull(p2Deck, "NewDeckManagerP2 should exist");
             
             // Assert: Hands should be independent (different instances)
-            Assert.AreNotSame(playerDeck.Hand, opponentDeck.Hand, 
+            Assert.AreNotSame(playerDeck.Hand, p2Deck.Hand, 
                 "Player and opponent should have independent hand instances");
             
             // Verify hand counts can differ
             int playerHandCount = playerDeck.Hand.Count;
-            int opponentHandCount = opponentDeck.Hand.Count;
+            int p2HandCount = p2Deck.Hand.Count;
             
             // Hands may have different counts (independent)
             Assert.IsTrue(true, "Both players have independent hands (can have different card counts)");
@@ -98,19 +98,19 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 p2Deck = Object.FindObjectOfType<NewDeckManagerP2>();
             
-            Assert.IsNotNull(playerDeck, "NewDeckManager should exist");
-            Assert.IsNotNull(opponentDeck, "NewDeckManagerOpp should exist");
+            Assert.IsNotNull(playerDeck, "NewDeckManagerP1 should exist");
+            Assert.IsNotNull(p2Deck, "NewDeckManagerP2 should exist");
             
             // Assert: Decks should be independent (different instances)
-            Assert.AreNotSame(playerDeck, opponentDeck, 
+            Assert.AreNotSame(playerDeck, p2Deck, 
                 "Player and opponent should have independent deck manager instances");
             
             // Verify draw pile counts can differ
             int playerDrawPileCount = playerDeck.DrawPileCount;
-            int opponentDrawPileCount = opponentDeck.DrawPileCount;
+            int p2DrawPileCount = p2Deck.DrawPileCount;
             
             // Draw piles may have different counts (independent)
             Assert.IsTrue(true, "Both players use independent decks (can have different draw pile counts)");
@@ -122,33 +122,33 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 p2Deck = Object.FindObjectOfType<NewDeckManagerP2>();
             
-            Assert.IsNotNull(playerDeck, "NewDeckManager should exist");
-            Assert.IsNotNull(opponentDeck, "NewDeckManagerOpp should exist");
+            Assert.IsNotNull(playerDeck, "NewDeckManagerP1 should exist");
+            Assert.IsNotNull(p2Deck, "NewDeckManagerP2 should exist");
             
             // Initialize decks
             playerDeck.InitializeDeck();
-            opponentDeck.InitializeDeck();
+            p2Deck.InitializeDeck();
             yield return null;
             
             // Draw cards from each deck
             playerDeck.DrawCards(2);
-            opponentDeck.DrawCards(2);
+            p2Deck.DrawCards(2);
             yield return null;
             
             // Assert: Cards in each hand should be independent instances
             // Even if they reference the same NewCardData ScriptableObject,
             // the NewCard instances should be separate
-            if (playerDeck.Hand.Count > 0 && opponentDeck.Hand.Count > 0)
+            if (playerDeck.Hand.Count > 0 && p2Deck.Hand.Count > 0)
             {
                 NewCard playerCard = playerDeck.Hand[0];
-                NewCard opponentCard = opponentDeck.Hand[0];
+                NewCard p2Card = p2Deck.Hand[0];
                 
                 // Cards should be different instances (even if same data)
-                Assert.AreNotSame(playerCard, opponentCard, 
-                    "Player and opponent cards should be independent instances");
+                Assert.AreNotSame(playerCard, p2Card, 
+                    "Player and P2 cards should be independent instances");
             }
             
             Assert.IsTrue(true, "No shared ScriptableObject state between players (independent card instances)");
@@ -181,7 +181,7 @@ namespace CardGame.Tests
                 FateSide after = fateController.CurrentFate;
                 
                 // Assert: Each advance should switch to opposite side
-                FateSide expected = before == FateSide.Player ? FateSide.Opponent : FateSide.Player;
+                FateSide expected = before == FateSide.Player ? FateSide.P2 : FateSide.Player;
                 Assert.AreEqual(expected, after, 
                     $"Turn {i + 1}: Should alternate from {before} to {expected}, got {after}");
             }

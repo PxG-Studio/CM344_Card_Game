@@ -64,7 +64,7 @@ namespace CardGame.Tests
             yield return CardTestHelper.WaitForCoinTossToComplete();
             yield return new WaitForSeconds(1.0f);
             
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
             Assert.IsNotNull(playerDeck, "Player 1 DeckManager should exist");
             
             // Initialize deck
@@ -82,16 +82,16 @@ namespace CardGame.Tests
             yield return CardTestHelper.WaitForCoinTossToComplete();
             yield return new WaitForSeconds(1.0f);
             
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
-            Assert.IsNotNull(opponentDeck, "Player 2/Opponent DeckManager should exist");
+            NewDeckManagerP2 p2Deck = Object.FindObjectOfType<NewDeckManagerP2>();
+            Assert.IsNotNull(p2Deck, "Player 2 DeckManager should exist");
             
             // Initialize deck
-            opponentDeck.InitializeDeck();
+            p2Deck.InitializeDeck();
             yield return null;
             
             // Assert: Deck should have cards after initialization
-            Assert.Greater(opponentDeck.DrawPileCount, 0, 
-                $"Player 2 deck should have cards after initialization. DrawPileCount: {opponentDeck.DrawPileCount}");
+            Assert.Greater(p2Deck.DrawPileCount, 0, 
+                $"Player 2 deck should have cards after initialization. DrawPileCount: {p2Deck.DrawPileCount}");
         }
 
         [UnityTest]
@@ -99,7 +99,7 @@ namespace CardGame.Tests
         {
             yield return new WaitForSeconds(0.5f);
             
-            NewHandUI handUI = Object.FindObjectOfType<NewHandUI>();
+            NewHandP1UI handUI = Object.FindObjectOfType<NewHandP1UI>();
             Assert.IsNotNull(handUI, "Player 1 HandUI should exist");
         }
 
@@ -108,12 +108,12 @@ namespace CardGame.Tests
         {
             yield return new WaitForSeconds(0.5f);
             
-            NewHandOppUI handOppUI = Object.FindObjectOfType<NewHandOppUI>();
-            Assert.IsNotNull(handOppUI, "Player 2/Opponent HandOppUI should exist");
+            NewHandP2UI p2HandUI = Object.FindObjectOfType<NewHandP2UI>();
+            Assert.IsNotNull(p2HandUI, "Player 2 HandP2UI should exist");
         }
 
         [UnityTest]
-        public IEnumerator All_DropAreas_Have_CardDropArea1_Component()
+        public IEnumerator All_DropAreas_Have_CardDropArea_Component()
         {
             yield return new WaitForSeconds(0.5f);
             
@@ -122,8 +122,8 @@ namespace CardGame.Tests
                 GameObject dropArea = GameObject.Find($"DropArea{i}");
                 Assert.IsNotNull(dropArea, $"DropArea{i} should exist");
                 
-                CardDropArea1 dropAreaComponent = dropArea.GetComponent<CardDropArea1>();
-                Assert.IsNotNull(dropAreaComponent, $"DropArea{i} should have CardDropArea1 component");
+                CardDropArea dropAreaComponent = dropArea.GetComponent<CardDropArea>();
+                Assert.IsNotNull(dropAreaComponent, $"DropArea{i} should have CardDropArea component");
                 
                 // Verify collider exists and is trigger
                 Collider2D collider = dropArea.GetComponent<Collider2D>();
@@ -147,15 +147,15 @@ namespace CardGame.Tests
             yield return new WaitForSeconds(2.0f);
             
             // Assert: Cards should be in hands after coin toss
-            NewDeckManager playerDeck = Object.FindObjectOfType<NewDeckManager>();
-            NewDeckManagerOpp opponentDeck = Object.FindObjectOfType<NewDeckManagerOpp>();
+            NewDeckManagerP1 playerDeck = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 p2Deck = Object.FindObjectOfType<NewDeckManagerP2>();
             
-            if (playerDeck != null && opponentDeck != null)
+            if (playerDeck != null && p2Deck != null)
             {
                 // At least one player should have cards (depending on game initialization)
-                int totalCards = playerDeck.Hand.Count + opponentDeck.Hand.Count;
+                int totalCards = playerDeck.Hand.Count + p2Deck.Hand.Count;
                 Assert.GreaterOrEqual(totalCards, 0, 
-                    $"Cards should be drawn after coin toss. Player 1: {playerDeck.Hand.Count}, Player 2: {opponentDeck.Hand.Count}");
+                    $"Cards should be drawn after coin toss. Player 1: {playerDeck.Hand.Count}, Player 2: {p2Deck.Hand.Count}");
             }
         }
 
@@ -190,14 +190,14 @@ namespace CardGame.Tests
             yield return new WaitForSeconds(1.0f);
             
             // Get hand UIs
-            NewHandUI handUI = Object.FindObjectOfType<NewHandUI>();
-            NewHandOppUI handOppUI = Object.FindObjectOfType<NewHandOppUI>();
+            NewHandP1UI handUI = Object.FindObjectOfType<NewHandP1UI>();
+            NewHandP2UI p2HandUI = Object.FindObjectOfType<NewHandP2UI>();
             
             Assert.IsNotNull(handUI, "Player 1 HandUI should exist");
-            Assert.IsNotNull(handOppUI, "Player 2 HandOppUI should exist");
+            Assert.IsNotNull(p2HandUI, "Player 2 HandP2UI should exist");
             
             // Get a card from hand and place it on board
-            NewDeckManager deckManager = handUI.DeckManager;
+            NewDeckManagerP1 deckManager = handUI.DeckManager;
             if (deckManager != null && deckManager.Hand != null && deckManager.Hand.Count > 0)
             {
                 NewCard testCard = deckManager.Hand[0];
@@ -216,21 +216,21 @@ namespace CardGame.Tests
                 
                 if (cardUI != null)
                 {
-                    // Find CardMover for this card
-                    CardMover cardMover = cardUI.GetComponentInParent<CardMover>();
-                    if (cardMover == null)
+                    // Find CardMoverP1 for this card
+                    CardMoverP1 CardMoverP1 = cardUI.GetComponentInParent<CardMoverP1>();
+                    if (CardMoverP1 == null)
                     {
-                        cardMover = cardUI.GetComponent<CardMover>();
+                        CardMoverP1 = cardUI.GetComponent<CardMoverP1>();
                     }
                     
-                    if (cardMover != null)
+                    if (CardMoverP1 != null)
                     {
                         // Place card on board
-                        CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+                        CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
                         if (dropAreas.Length > 0)
                         {
-                            CardDropArea1 emptyArea = null;
-                            foreach (CardDropArea1 area in dropAreas)
+                            CardDropArea emptyArea = null;
+                            foreach (CardDropArea area in dropAreas)
                             {
                                 if (!area.IsOccupied)
                                 {
@@ -250,7 +250,7 @@ namespace CardGame.Tests
                                 yield return null;
                                 
                                 // Place card
-                                bool placed = CardTestHelper.PlaceCardOnDropArea(cardMover, emptyArea, false);
+                                bool placed = CardTestHelper.PlaceP1CardOnDropArea(CardMoverP1, emptyArea, false);
                                 Assert.IsTrue(placed, "Card should be placed on board");
                                 yield return new WaitForSeconds(0.5f);
                                 
@@ -260,7 +260,7 @@ namespace CardGame.Tests
                                     "Card placed on board should no longer be in hand (GetCardForUI should return null)");
                                 
                                 // Assert: Card should be marked as played
-                                Assert.IsTrue(cardMover.IsPlayed, 
+                                Assert.IsTrue(CardMoverP1.IsPlayed, 
                                     "Card on board should be marked as played (IsPlayed = true)");
                             }
                         }
@@ -276,14 +276,14 @@ namespace CardGame.Tests
             yield return new WaitForSeconds(1.0f);
             
             // Get hand UIs
-            NewHandUI handUI = Object.FindObjectOfType<NewHandUI>();
-            NewHandOppUI handOppUI = Object.FindObjectOfType<NewHandOppUI>();
+            NewHandP1UI handUI = Object.FindObjectOfType<NewHandP1UI>();
+            NewHandP2UI p2HandUI = Object.FindObjectOfType<NewHandP2UI>();
             
             Assert.IsNotNull(handUI, "Player 1 HandUI should exist");
-            Assert.IsNotNull(handOppUI, "Player 2 HandOppUI should exist");
+            Assert.IsNotNull(p2HandUI, "Player 2 HandP2UI should exist");
             
             // Verify GetCardForUI methods work correctly
-            NewDeckManager deckManager = handUI?.DeckManager;
+            NewDeckManagerP1 deckManager = handUI?.DeckManager;
             if (deckManager != null && deckManager.Hand != null && deckManager.Hand.Count > 0)
             {
                 // Get a card from hand
@@ -310,11 +310,11 @@ namespace CardGame.Tests
                 }
             }
             
-            NewDeckManagerOpp opponentDeck = handOppUI?.DeckManager;
-            if (opponentDeck != null && opponentDeck.Hand != null && opponentDeck.Hand.Count > 0)
+            NewDeckManagerP2 p2Deck = p2HandUI?.DeckManager;
+            if (p2Deck != null && p2Deck.Hand != null && p2Deck.Hand.Count > 0)
             {
                 // Same test for Player 2
-                NewCard testCard = opponentDeck.Hand[0];
+                NewCard testCard = p2Deck.Hand[0];
                 
                 NewCardUI[] cardUIs = Object.FindObjectsOfType<NewCardUI>(true);
                 NewCardUI matchingUI = null;
@@ -329,7 +329,7 @@ namespace CardGame.Tests
                 
                 if (matchingUI != null)
                 {
-                    NewCard foundCard = handOppUI.GetCardForUI(matchingUI);
+                    NewCard foundCard = p2HandUI.GetCardForUI(matchingUI);
                     Assert.AreEqual(testCard, foundCard, 
                         "GetCardForUI should return the correct card for Player 2 card UI in hand");
                 }
@@ -342,8 +342,8 @@ namespace CardGame.Tests
             yield return CardTestHelper.WaitForCoinTossToComplete();
             yield return new WaitForSeconds(1.0f);
             
-            // Get all CardDropArea1 components
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            // Get all CardDropArea components
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsNotNull(dropAreas, "Drop areas should exist");
             Assert.IsTrue(dropAreas.Length > 0, "At least one drop area should exist");
             
@@ -356,7 +356,7 @@ namespace CardGame.Tests
                     occupiedCount++;
                     
                     // Get the occupying card
-                    var occupyingCardField = typeof(CardDropArea1).GetField("occupyingCard", 
+                    var occupyingCardField = typeof(CardDropArea).GetField("occupyingCard", 
                         System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                     
                     if (occupyingCardField != null)
@@ -365,8 +365,8 @@ namespace CardGame.Tests
                         if (occupyingCardObj != null)
                         {
                             // Verify card on board cannot be in hand
-                            NewHandUI handUI = Object.FindObjectOfType<NewHandUI>();
-                            NewHandOppUI handOppUI = Object.FindObjectOfType<NewHandOppUI>();
+                            NewHandP1UI handUI = Object.FindObjectOfType<NewHandP1UI>();
+                            NewHandP2UI p2HandUI = Object.FindObjectOfType<NewHandP2UI>();
                             
                             NewCardUI cardUI = occupyingCardObj.GetComponent<NewCardUI>();
                             if (cardUI == null)
@@ -384,9 +384,9 @@ namespace CardGame.Tests
                                         $"Card on board at {dropArea.name} should not be in Player 1 hand");
                                 }
                                 
-                                if (handOppUI != null)
+                                if (p2HandUI != null)
                                 {
-                                    NewCard cardInHand = handOppUI.GetCardForUI(cardUI);
+                                    NewCard cardInHand = p2HandUI.GetCardForUI(cardUI);
                                     Assert.IsNull(cardInHand, 
                                         $"Card on board at {dropArea.name} should not be in Player 2 hand");
                                 }
@@ -406,7 +406,7 @@ namespace CardGame.Tests
             yield return new WaitForSeconds(1.0f);
             
             // Get drop areas
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsNotNull(dropAreas, "Drop areas should exist");
             Assert.AreEqual(16, dropAreas.Length, "Should have exactly 16 drop areas");
             

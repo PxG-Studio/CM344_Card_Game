@@ -74,16 +74,16 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            // Verify CardMover has ReturnToStartPosition method
-            var returnMethod = typeof(CardMover).GetMethod("ReturnToStartPosition");
-            Assert.IsNotNull(returnMethod, "CardMover should have ReturnToStartPosition method");
+            // Verify CardMoverP1 has ReturnToStartPosition method
+            var returnMethod = typeof(CardMoverP1).GetMethod("ReturnToStartPosition");
+            Assert.IsNotNull(returnMethod, "CardMoverP1 should have ReturnToStartPosition method");
             
-            // Verify CardDropArea1 calls ReturnToStartPosition on invalid drops
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
-            Assert.IsTrue(dropAreas.Length > 0, "CardDropArea1 instances should exist");
+            // Verify CardDropArea calls ReturnToStartPosition on invalid drops
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
+            Assert.IsTrue(dropAreas.Length > 0, "CardDropArea instances should exist");
             
-            // CardDropArea1.OnCardDrop calls ReturnToStartPosition when card is not in hand or tile is occupied
-            Assert.IsTrue(true, "CardDropArea1 returns cards to hand on invalid drop");
+            // CardDropArea.OnCardDrop calls ReturnToStartPosition when card is not in hand or tile is occupied
+            Assert.IsTrue(true, "CardDropArea returns cards to hand on invalid drop");
         }
 
         [UnityTest]
@@ -92,15 +92,15 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
-            Assert.IsTrue(dropAreas.Length > 0, "CardDropArea1 instances should exist");
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
+            Assert.IsTrue(dropAreas.Length > 0, "CardDropArea instances should exist");
             
             // Verify IsOccupied property exists
-            var isOccupiedProperty = typeof(CardDropArea1).GetProperty("IsOccupied");
-            Assert.IsNotNull(isOccupiedProperty, "CardDropArea1 should have IsOccupied property");
+            var isOccupiedProperty = typeof(CardDropArea).GetProperty("IsOccupied");
+            Assert.IsNotNull(isOccupiedProperty, "CardDropArea should have IsOccupied property");
             
             // When a card is returned due to invalid drop, IsOccupied should remain false
-            // CardDropArea1 only sets occupyingCard when card is successfully placed
+            // CardDropArea only sets occupyingCard when card is successfully placed
             Assert.IsTrue(true, "Invalid drops do not occupy tiles (IsOccupied remains false)");
         }
 
@@ -110,13 +110,13 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            // Verify CardMover has ReturnToStartPosition method
-            var returnMethod = typeof(CardMover).GetMethod("ReturnToStartPosition");
-            Assert.IsNotNull(returnMethod, "CardMover should have ReturnToStartPosition method");
+            // Verify CardMoverP1 has ReturnToStartPosition method
+            var returnMethod = typeof(CardMoverP1).GetMethod("ReturnToStartPosition");
+            Assert.IsNotNull(returnMethod, "CardMoverP1 should have ReturnToStartPosition method");
             
             // Verify RefreshHomePosition method exists
-            var refreshMethod = typeof(CardMover).GetMethod("RefreshHomePosition");
-            Assert.IsNotNull(refreshMethod, "CardMover should have RefreshHomePosition method");
+            var refreshMethod = typeof(CardMoverP1).GetMethod("RefreshHomePosition");
+            Assert.IsNotNull(refreshMethod, "CardMoverP1 should have RefreshHomePosition method");
             
             // ReturnToStartPosition sets transform.position = startDragPosition
             // This restores the card to its original position
@@ -129,16 +129,16 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            // Verify CardMover tracks startDragPosition
-            var startDragPositionField = typeof(CardMover).GetField("startDragPosition", 
+            // Verify CardMoverP1 tracks startDragPosition
+            var startDragPositionField = typeof(CardMoverP1).GetField("startDragPosition", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            Assert.IsNotNull(startDragPositionField, "CardMover should track startDragPosition");
+            Assert.IsNotNull(startDragPositionField, "CardMoverP1 should track startDragPosition");
             
             // Verify ReturnToStartPosition resets position
-            var returnMethod = typeof(CardMover).GetMethod("ReturnToStartPosition");
-            Assert.IsNotNull(returnMethod, "CardMover should have ReturnToStartPosition method");
+            var returnMethod = typeof(CardMoverP1).GetMethod("ReturnToStartPosition");
+            Assert.IsNotNull(returnMethod, "CardMoverP1 should have ReturnToStartPosition method");
             
-            // CardDropArea1.ApplyCardScale is called on valid placement, but not on invalid
+            // CardDropArea.ApplyCardScale is called on valid placement, but not on invalid
             // So scale should remain unchanged on invalid drop
             Assert.IsTrue(true, "Card scale and position reset correctly on invalid drop");
         }
@@ -149,16 +149,16 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
-            Assert.IsTrue(dropAreas.Length > 0, "CardDropArea1 instances should exist");
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
+            Assert.IsTrue(dropAreas.Length > 0, "CardDropArea instances should exist");
             
             // Verify IsOccupied property
-            var isOccupiedProperty = typeof(CardDropArea1).GetProperty("IsOccupied");
-            Assert.IsNotNull(isOccupiedProperty, "CardDropArea1 should have IsOccupied property");
+            var isOccupiedProperty = typeof(CardDropArea).GetProperty("IsOccupied");
+            Assert.IsNotNull(isOccupiedProperty, "CardDropArea should have IsOccupied property");
             
             // When ReturnToStartPosition is called, occupyingCard should not be set
             // Only successful placements set occupyingCard
-            foreach (CardDropArea1 dropArea in dropAreas)
+            foreach (CardDropArea dropArea in dropAreas)
             {
                 // Check if drop area is unoccupied (should be at start)
                 bool isOccupied = dropArea.IsOccupied;

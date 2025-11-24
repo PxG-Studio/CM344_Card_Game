@@ -614,23 +614,23 @@ namespace CardGame.UI
             // Check if card is in player's hand or was played by player
             if (cardUI != null && cardUI.Card != null)
             {
-                NewDeckManager playerDeckManager = FindObjectOfType<NewDeckManager>();
+                NewDeckManagerP1 playerDeckManager = FindObjectOfType<NewDeckManagerP1>();
                 if (playerDeckManager != null && playerDeckManager.Hand.Contains(cardUI.Card))
                 {
                     return true; // Card is in player's hand
                 }
                 
-                // Check if it's a CardMover (player card) vs CardMoverOpp (opponent card)
+                // Check if it's a CardMover (P1) vs CardMoverP2 (P2)
                 //CardMover cardMover = GetComponent<CardMover>();
                
                 //if (cardMover != null)
                 if (frontContainer.CompareTag("p1"))
                 {
-                    return true; // Player card
+                    return true; // P1 card
                 }
                 
-                //CardMoverOpp cardMoverOpp = GetComponent<CardMoverOpp>();
-                //if (cardMoverOpp != null)
+                //CardMoverP2 cardMoverP2 = GetComponent<CardMoverP2>();
+                //if (cardMoverP2 != null)
                 if (frontContainer.CompareTag("p2"))
                 {
                     return false; // Opponent card

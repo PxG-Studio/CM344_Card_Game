@@ -9,7 +9,7 @@ namespace CardGame.UI
     /// <summary>
     /// Manages the visual representation of the player's hand with NewCard
     /// </summary>
-    public class NewHandUI : MonoBehaviour
+    public class NewHandP1UI : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private NewCardUI cardPrefab;
@@ -22,7 +22,7 @@ namespace CardGame.UI
         [SerializeField] private float rotationAngle = 5f;
         
         private List<NewCardUI> cardUIList = new List<NewCardUI>();
-        private NewDeckManager deckManager;
+        private NewDeckManagerP1 deckManager;
         
         // [CardFront] Static cache for prefab reference (fallback if serialized reference is lost)
         private static NewCardUI staticCardPrefab;
@@ -30,7 +30,7 @@ namespace CardGame.UI
         /// <summary>
         /// [CardFront] Hub property: Exposes deck manager for Hub connections
         /// </summary>
-        public NewDeckManager DeckManager => deckManager;
+        public NewDeckManagerP1 DeckManager => deckManager;
         
         /// <summary>
         /// Gets the card associated with a specific card UI instance.
@@ -137,7 +137,7 @@ namespace CardGame.UI
         
         private void Start()
         {
-            deckManager = FindObjectOfType<NewDeckManager>();
+            deckManager = FindObjectOfType<NewDeckManagerP1>();
             
             if (deckManager != null)
             {
@@ -272,9 +272,9 @@ namespace CardGame.UI
             {
                 cardUIList.Remove(cardUIToRemove);
                 
-                // Only destroy if it's a UI card (NewCardUI), not a 2D board card (CardMover)
-                // CardMover cards should stay on the board when played
-                CardMover cardMover = cardUIToRemove.GetComponent<CardMover>();
+                // Only destroy if it's a UI card (NewCardUI), not a 2D board card (CardMoverP1)
+                // CardMoverP1 cards should stay on the board when played
+                CardMoverP1 cardMover = cardUIToRemove.GetComponent<CardMoverP1>();
                 if (cardMover == null)
                 {
                     // It's a UI card, safe to destroy

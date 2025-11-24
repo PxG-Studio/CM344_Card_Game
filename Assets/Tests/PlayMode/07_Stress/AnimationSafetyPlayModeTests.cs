@@ -117,11 +117,11 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            // Verify CardDropArea1.OnCardDrop places card before checking battles
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
-            Assert.IsTrue(dropAreas.Length > 0, "CardDropArea1 instances should exist");
+            // Verify CardDropArea.OnCardDrop places card before checking battles
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
+            Assert.IsTrue(dropAreas.Length > 0, "CardDropArea instances should exist");
             
-            // CardDropArea1.OnCardDrop:
+            // CardDropArea.OnCardDrop:
             // 1. Places card (sets occupyingCard)
             // 2. Then calls CheckCardBattles
             // This ensures card is placed before capture logic runs

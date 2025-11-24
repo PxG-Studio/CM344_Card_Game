@@ -27,14 +27,14 @@ namespace CardGame.Managers
         public int StartingHandSize => startingHandSize;
 
         /// <summary>
-        /// Check if Player 2 (Opponent) can interact based on current turn state.
-        /// Uses FateFlowController to determine if it's Player 2's turn.
+        /// Check if P2 can interact based on current turn state.
+        /// Uses FateFlowController to determine if it's P2's turn.
         /// </summary>
         public bool CanPlayer2Interact()
         {
             if (FateFlowController.Instance != null)
             {
-                return FateFlowController.Instance.CanAct(FateSide.Opponent);
+                return FateFlowController.Instance.CanAct(FateSide.P2);
             }
             // Fallback: check if game state allows interaction
             return currentState == GameState.PlayerTurn || currentState == GameState.Preparing;
@@ -44,7 +44,7 @@ namespace CardGame.Managers
         public System.Action<GameState> OnGameStateChanged;
         public System.Action OnTurnStarted;
         public System.Action OnTurnEnded;
-        public System.Action<CardDropArea1, NewCard> OnCardPlaced;
+        public System.Action<CardDropArea, NewCard> OnCardPlaced;
         
         private void Awake()
         {
@@ -115,16 +115,16 @@ namespace CardGame.Managers
             Debug.Log("Preparing game...");
             
             // [CardFront] Reset statistics for new game (if not already reset by ResetGameState)
-            if (CardDropArea1.GetCardsPlayed() > 0)
+            if (CardDropArea.GetCardsPlayed() > 0)
             {
-                CardDropArea1.ResetGameStatistics();
+                CardDropArea.ResetGameStatistics();
             }
             
             // Reset managers for new game (if not already reset by ResetGameState)
             if (ScoreManager.Instance != null)
             {
                 // Only reset if scores are not already zero (avoid duplicate reset during rematch)
-                if (ScoreManager.Instance.PlayerScore > 0 || ScoreManager.Instance.OpponentScore > 0)
+                if (ScoreManager.Instance.P1Score > 0 || ScoreManager.Instance.P2Score > 0)
                 {
                     ScoreManager.Instance.ResetScores();
                 }
@@ -366,7 +366,7 @@ namespace CardGame.Managers
             // Will be implemented based on specific game rules
         }
         
-        public void NotifyCardPlaced(CardDropArea1 tile, NewCard card)
+        public void NotifyCardPlaced(CardDropArea tile, NewCard card)
         {
             OnCardPlaced?.Invoke(tile, card);
         }
@@ -395,8 +395,8 @@ namespace CardGame.Managers
                 Debug.LogWarning("[GameManager] GameStatsTracker.Instance is null. Statistics may not reset properly.");
             }
             
-            // Reset statistics in CardDropArea1
-            CardDropArea1.ResetGameStatistics();
+            // Reset statistics in CardDropArea
+            CardDropArea.ResetGameStatistics();
             
             // Reset ScoreManager
             if (ScoreManager.Instance != null)
@@ -410,17 +410,18 @@ namespace CardGame.Managers
                 GameEndManager.Instance.Reset();
             }
             
-            // Clear board - remove all cards from CardDropArea1 instances
+            // Clear board - remove all cards from CardDropArea instances
+            // This also resets all CardDropArea instances (clears occupying card references and turn tracking)
             ClearBoard();
             
             // Reset deck managers
-            NewDeckManager playerDeck = FindObjectOfType<NewDeckManager>();
+            NewDeckManagerP1 playerDeck = FindObjectOfType<NewDeckManagerP1>();
             if (playerDeck != null)
             {
                 playerDeck.InitializeDeck();
             }
             
-            NewDeckManagerOpp opponentDeck = FindObjectOfType<NewDeckManagerOpp>();
+            NewDeckManagerP2 opponentDeck = FindObjectOfType<NewDeckManagerP2>();
             if (opponentDeck != null)
             {
                 opponentDeck.InitializeDeck();
@@ -461,15 +462,15 @@ namespace CardGame.Managers
             // Wait for a short delay to ensure all managers are reset
             yield return new UnityEngine.WaitForSeconds(0.3f);
             
-            // Check if NewCardSystemTester exists and draw initial cards
-            CardGame.Testing.NewCardSystemTester tester = FindObjectOfType<CardGame.Testing.NewCardSystemTester>();
+            // Check if NewCardSystemP1Tester exists and draw initial cards
+            CardGame.Testing.NewCardSystemP1Tester tester = FindObjectOfType<CardGame.Testing.NewCardSystemP1Tester>();
             if (tester != null)
             {
                 tester.DrawInitialCards();
             }
             
-            // Also draw for opponent
-            CardGame.Testing.NewCardSystemOpposition oppTester = FindObjectOfType<CardGame.Testing.NewCardSystemOpposition>();
+            // Also draw for P2
+            CardGame.Testing.NewCardSystemP2 oppTester = FindObjectOfType<CardGame.Testing.NewCardSystemP2>();
             if (oppTester != null)
             {
                 oppTester.DrawInitialCards();
@@ -479,64 +480,84 @@ namespace CardGame.Managers
         }
         
         /// <summary>
-        /// Clears all cards from the board (removes from CardDropArea1 instances)
+        /// Clears all cards from the board (removes from CardDropArea instances)
         /// </summary>
         private void ClearBoard()
         {
-            // Find all CardMover and CardMoverOpp GameObjects (these are the cards on the board)
-            // Cards in hand are in the UI containers, not on the board
-            CardMover[] allCardMovers = FindObjectsOfType<CardMover>();
-            CardMoverOpp[] allCardMoverOpps = FindObjectsOfType<CardMoverOpp>();
-            
+            CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>();
+            HashSet<GameObject> cardsToDestroy = new HashSet<GameObject>();
             int removedCount = 0;
             
-            // Remove all card movers (board cards)
-            foreach (CardMover mover in allCardMovers)
+            // First pass: Collect all cards that are occupying CardDropArea instances
+            foreach (CardDropArea dropArea in allDropAreas)
+            {
+                if (dropArea != null && dropArea.IsOccupied)
+                {
+                    GameObject occupyingCard = dropArea.GetOccupyingCard();
+                    if (occupyingCard != null)
+                    {
+                        cardsToDestroy.Add(occupyingCard);
+                    }
+                }
+            }
+            
+            // Second pass: Also find cards on board by position (z ≈ 0) that aren't in hands
+            // This catches any cards that might not be properly tracked in occupyingCard
+            CardMoverP1[] allCardMovers = FindObjectsOfType<CardMoverP1>();
+            CardMoverP2[] allCardMoverP2s = FindObjectsOfType<CardMoverP2>();
+            
+            foreach (CardMoverP1 mover in allCardMovers)
             {
                 if (mover != null && mover.gameObject != null)
                 {
-                    // Check if card is played (on board) vs in hand
-                    // Cards in hand are children of hand containers
-                    if (mover.gameObject.transform.parent == null || 
-                        mover.gameObject.transform.parent.GetComponent<CardGame.UI.NewHandUI>() == null)
+                    // Check if card is on board (z ≈ 0) and not in hand
+                    bool isOnBoard = Mathf.Abs(mover.transform.position.z) < 1f;
+                    bool isInHand = mover.gameObject.transform.parent != null && 
+                                   mover.gameObject.transform.parent.GetComponent<CardGame.UI.NewHandP1UI>() != null;
+                    
+                    if (isOnBoard && !isInHand)
                     {
-                        Destroy(mover.gameObject);
-                        removedCount++;
+                        cardsToDestroy.Add(mover.gameObject);
                     }
                 }
             }
             
-            foreach (CardMoverOpp moverOpp in allCardMoverOpps)
+            foreach (CardMoverP2 moverP2 in allCardMoverP2s)
             {
-                if (moverOpp != null && moverOpp.gameObject != null)
+                if (moverP2 != null && moverP2.gameObject != null)
                 {
-                    // Check if card is played (on board) vs in hand
-                    if (moverOpp.gameObject.transform.parent == null || 
-                        moverOpp.gameObject.transform.parent.GetComponent<CardGame.UI.NewHandOppUI>() == null)
+                    // Check if card is on board (z ≈ 0) and not in hand
+                    bool isOnBoard = Mathf.Abs(moverP2.transform.position.z) < 1f;
+                    bool isInHand = moverP2.gameObject.transform.parent != null && 
+                                   moverP2.gameObject.transform.parent.GetComponent<CardGame.UI.NewHandP2UI>() != null;
+                    
+                    if (isOnBoard && !isInHand)
                     {
-                        Destroy(moverOpp.gameObject);
-                        removedCount++;
+                        cardsToDestroy.Add(moverP2.gameObject);
                     }
                 }
             }
             
-            // Clear all CardDropArea1 occupying card references
-            CardDropArea1[] allDropAreas = FindObjectsOfType<CardDropArea1>();
-            foreach (CardDropArea1 dropArea in allDropAreas)
+            // Destroy all collected cards
+            foreach (GameObject cardToDestroy in cardsToDestroy)
+            {
+                if (cardToDestroy != null)
+                {
+                    Destroy(cardToDestroy);
+                    removedCount++;
+                }
+            }
+            
+            // Finally, reset all CardDropArea instances to clear occupying card references
+            foreach (CardDropArea dropArea in allDropAreas)
             {
                 if (dropArea != null)
                 {
-                    // Clear the occupying card reference using reflection
-                    var occupyingCardField = typeof(CardDropArea1).GetField("occupyingCard",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    if (occupyingCardField != null)
-                    {
-                        occupyingCardField.SetValue(dropArea, null);
-                    }
+                    dropArea.ResetForNewGame();
                 }
             }
             
-            Debug.Log($"[GameManager] Cleared board - removed {removedCount} card(s) from board");
+            Debug.Log($"[GameManager] Cleared board - removed {removedCount} card(s) from board and reset {allDropAreas.Length} CardDropArea instance(s)");
         }
         
         /// <summary>
@@ -545,19 +566,39 @@ namespace CardGame.Managers
         private void ClearHands()
         {
             // Find hand UI managers and use their ClearHand methods
-            CardGame.UI.NewHandUI playerHand = FindObjectOfType<CardGame.UI.NewHandUI>();
+            CardGame.UI.NewHandP1UI playerHand = FindObjectOfType<CardGame.UI.NewHandP1UI>();
             if (playerHand != null)
             {
                 playerHand.ClearHand();
             }
             
-            CardGame.UI.NewHandOppUI opponentHand = FindObjectOfType<CardGame.UI.NewHandOppUI>();
+            CardGame.UI.NewHandP2UI opponentHand = FindObjectOfType<CardGame.UI.NewHandP2UI>();
             if (opponentHand != null)
             {
                 opponentHand.ClearHand();
             }
             
             Debug.Log("[GameManager] Cleared hands");
+        }
+        
+        /// <summary>
+        /// Resets all CardDropArea instances for a new game
+        /// </summary>
+        private void ResetAllCardDropAreas()
+        {
+            CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>();
+            int resetCount = 0;
+            
+            foreach (CardDropArea dropArea in allDropAreas)
+            {
+                if (dropArea != null)
+                {
+                    dropArea.ResetForNewGame();
+                    resetCount++;
+                }
+            }
+            
+            Debug.Log($"[GameManager] Reset {resetCount} CardDropArea instance(s) for new game");
         }
     }
     

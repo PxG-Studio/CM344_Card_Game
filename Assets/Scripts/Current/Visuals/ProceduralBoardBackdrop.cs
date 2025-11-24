@@ -26,9 +26,11 @@ namespace CardGame.Visuals
         [SerializeField] private Color reflectionColor = new Color(0.741f, 0.949f, 0.890f, 0.4f);
 
         [Header("Depth")]
-        [SerializeField] private Vector2 shadowOffset = new Vector2(0.16f, -0.22f);
-        [SerializeField] private Color shadowColor = new Color(0f, 0f, 0f, 0.35f);
+        [SerializeField] private Vector2 shadowOffset = new Vector2(0.25f, -0.35f); // Increased offset for more pronounced hover effect
+        [SerializeField] private Color shadowColor = new Color(0f, 0f, 0f, 0.5f); // Darker shadow for better depth perception
         [SerializeField] private int sortingOrder = -100;
+        [SerializeField] private bool enableHoverEffect = true; // Enable/disable hover effect
+        [SerializeField] private float hoverShadowBlur = 1.2f; // Shadow blur multiplier for softer edges
 
         private SpriteRenderer boardRenderer;
         private SpriteRenderer shadowRenderer;
@@ -70,7 +72,7 @@ namespace CardGame.Visuals
         {
             EnsureRenderers();
 
-            List<CardDropArea1> dropAreas = FindDropAreas();
+            List<CardDropArea> dropAreas = FindDropAreas();
             if (dropAreas.Count == 0)
             {
                 return;
@@ -84,7 +86,13 @@ namespace CardGame.Visuals
 
             Vector2 boardSize = new Vector2(bounds.size.x + padding * 2f, bounds.size.y + padding * 2f);
 
-            transform.localPosition = bounds.center;
+            // Slight elevation for hover effect (move board up slightly)
+            Vector3 boardPosition = bounds.center;
+            if (enableHoverEffect)
+            {
+                boardPosition.z = -0.01f; // Slight elevation to enhance hover perception
+            }
+            transform.localPosition = boardPosition;
             transform.localRotation = Quaternion.identity;
             transform.localScale = Vector3.one;
 
@@ -96,9 +104,21 @@ namespace CardGame.Visuals
             float ppu = targetWidth / boardSize.x;
             ApplySprite(targetWidth, targetHeight, ppu);
 
-            shadowRenderer.transform.localPosition = new Vector3(shadowOffset.x, shadowOffset.y, 0f);
-            shadowRenderer.transform.localScale = Vector3.one;
-            shadowRenderer.sortingOrder = sortingOrder - 1;
+            // Apply hover effect with enhanced shadow
+            if (enableHoverEffect)
+            {
+                shadowRenderer.transform.localPosition = new Vector3(shadowOffset.x, shadowOffset.y, 0f);
+                shadowRenderer.transform.localScale = Vector3.one * hoverShadowBlur; // Slightly larger for blur effect
+                shadowRenderer.sortingOrder = sortingOrder - 1;
+                shadowRenderer.color = shadowColor;
+            }
+            else
+            {
+                shadowRenderer.transform.localPosition = new Vector3(shadowOffset.x, shadowOffset.y, 0f);
+                shadowRenderer.transform.localScale = Vector3.one;
+                shadowRenderer.sortingOrder = sortingOrder - 1;
+                shadowRenderer.color = shadowColor;
+            }
         }
 
         private void EnsureRenderers()
@@ -131,11 +151,11 @@ namespace CardGame.Visuals
             }
         }
 
-        private List<CardDropArea1> FindDropAreas()
+        private List<CardDropArea> FindDropAreas()
         {
-            List<CardDropArea1> results = new List<CardDropArea1>();
+            List<CardDropArea> results = new List<CardDropArea>();
             Transform root = transform.parent != null ? transform.parent : transform;
-            var areas = root.GetComponentsInChildren<CardDropArea1>(true);
+            var areas = root.GetComponentsInChildren<CardDropArea>(true);
             if (areas != null && areas.Length > 0)
             {
                 results.AddRange(areas);

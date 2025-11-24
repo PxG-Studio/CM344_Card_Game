@@ -5,66 +5,82 @@ using CardGame.Core;
 namespace CardGame.Managers
 {
     /// <summary>
-    /// Manages scoring for player and opponent based on captured cards
+    /// Manages scoring for P1 and P2 based on captured cards
     /// </summary>
     public class ScoreManager : MonoBehaviour
     {
         public static ScoreManager Instance { get; private set; }
         
-        private int playerScore = 0;
-        private int opponentScore = 0;
+        private int p1Score = 0;
+        private int p2Score = 0;
         
-        public int PlayerScore => playerScore;
-        public int OpponentScore => opponentScore;
+        public int P1Score => p1Score; // P1 score
+        [System.Obsolete("Use P1Score instead. This property will be removed in a future version.")]
+        public int PlayerScore => p1Score; // Legacy property - use P1Score instead (P1 score)
+        public int P2Score => p2Score; // P2 score
+        [System.Obsolete("Use P2Score instead. This property will be removed in a future version.")]
+        public int OpponentScore => p2Score; // Legacy property - use P2Score instead
         
         // Event triggered when score changes
         public System.Action<bool, int> OnScoreChanged; // (isPlayer, newScore)
         
         // Event for UI updates (both scores at once)
-        public System.Action<int, int> OnScoreUpdated; // (playerScore, opponentScore)
+        public System.Action<int, int> OnScoreUpdated; // (p1Score, p2Score)
         
         private void Awake()
         {
+            // CRITICAL: Ensure only one ScoreManager instance exists
             if (Instance != null && Instance != this)
             {
+                Debug.LogWarning($"[ScoreManager] Duplicate ScoreManager detected on '{gameObject.name}'. Destroying duplicate. Existing instance: '{Instance.gameObject.name}'");
                 Destroy(gameObject);
                 return;
             }
             
             Instance = this;
+            Debug.Log($"[ScoreManager] ✓ ScoreManager instance initialized on '{gameObject.name}' (InstanceID: {GetInstanceID()})");
+        }
+        
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+                Debug.Log("[ScoreManager] Instance cleared on destroy");
+            }
         }
         
         /// <summary>
         /// Adds a point to the specified player's score
         /// </summary>
-        /// <param name="isPlayer">True for player, false for opponent</param>
+        /// <param name="isPlayer">True for P1, false for P2</param>
         public void AddScore(bool isPlayer)
         {
             if (isPlayer)
             {
-                playerScore++;
-                OnScoreChanged?.Invoke(true, playerScore);
-                Debug.Log($"Player score: {playerScore}");
+                p1Score++;
+                OnScoreChanged?.Invoke(true, p1Score);
+                Debug.Log($"Player score: {p1Score}");
             }
             else
             {
-                opponentScore++;
-                OnScoreChanged?.Invoke(false, opponentScore);
-                Debug.Log($"Opponent score: {opponentScore}");
+                p2Score++;
+                OnScoreChanged?.Invoke(false, p2Score);
+                Debug.Log($"P2 score: {p2Score}");
             }
             
             // Invoke combined score update event
-            OnScoreUpdated?.Invoke(playerScore, opponentScore);
+            OnScoreUpdated?.Invoke(p1Score, p2Score);
         }
         
         /// <summary>
         /// Gets the score for the specified player
         /// </summary>
-        /// <param name="isPlayer">True for player, false for opponent</param>
+        /// <param name="isPlayer">True for P1, false for P2</param>
         /// <returns>The player's score</returns>
         public int GetScore(bool isPlayer)
         {
-            return isPlayer ? playerScore : opponentScore;
+            return isPlayer ? p1Score : p2Score;
         }
         
         /// <summary>
@@ -72,20 +88,20 @@ namespace CardGame.Managers
         /// </summary>
         public void ResetScores()
         {
-            playerScore = 0;
-            opponentScore = 0;
-            OnScoreChanged?.Invoke(true, playerScore);
-            OnScoreChanged?.Invoke(false, opponentScore);
-            OnScoreUpdated?.Invoke(playerScore, opponentScore);
+            p1Score = 0;
+            p2Score = 0;
+            OnScoreChanged?.Invoke(true, p1Score);
+            OnScoreChanged?.Invoke(false, p2Score);
+            OnScoreUpdated?.Invoke(p1Score, p2Score);
             Debug.Log("Scores reset");
         }
         
         /// <summary>
-        /// Gets the score margin (positive = player leads, negative = opponent leads)
+        /// Gets the score margin (positive = P1 leads, negative = P2 leads)
         /// </summary>
         public int GetScoreMargin()
         {
-            return playerScore - opponentScore;
+            return p1Score - p2Score;
         }
         
         /// <summary>
@@ -93,25 +109,25 @@ namespace CardGame.Managers
         /// </summary>
         public void RecalculateScores()
         {
-            playerScore = 0;
-            opponentScore = 0;
+            p1Score = 0;
+            p2Score = 0;
             
-            // Find all CardDropArea1 instances (should be 16 total spaces on the board)
-            CardDropArea1[] allDropAreas = FindObjectsOfType<CardDropArea1>();
+            // Find all CardDropArea instances (should be 16 total spaces on the board)
+            CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>();
             
             if (allDropAreas == null || allDropAreas.Length == 0)
             {
-                Debug.LogWarning("[ScoreManager] No CardDropArea1 instances found! Cannot calculate scores.");
-                OnScoreChanged?.Invoke(true, playerScore);
-                OnScoreChanged?.Invoke(false, opponentScore);
-                OnScoreUpdated?.Invoke(playerScore, opponentScore);
+                Debug.LogWarning("[ScoreManager] No CardDropArea instances found! Cannot calculate scores.");
+                OnScoreChanged?.Invoke(true, p1Score);
+                OnScoreChanged?.Invoke(false, p2Score);
+                OnScoreUpdated?.Invoke(p1Score, p2Score);
                 return;
             }
             
-            Debug.Log($"[ScoreManager] Found {allDropAreas.Length} CardDropArea1 instances. Calculating scores based on spaces controlled...");
+            Debug.Log($"[ScoreManager] Found {allDropAreas.Length} CardDropArea instances. Calculating scores based on spaces controlled...");
             
             // Count spaces controlled by each player
-            foreach (CardDropArea1 dropArea in allDropAreas)
+            foreach (CardDropArea dropArea in allDropAreas)
             {
                 if (dropArea == null) continue;
                 
@@ -124,12 +140,12 @@ namespace CardGame.Managers
                 
                 // Get the occupying card
                 // Use reflection to access the private 'occupyingCard' field
-                var occupyingCardField = typeof(CardDropArea1).GetField("occupyingCard",
+                var occupyingCardField = typeof(CardDropArea).GetField("occupyingCard",
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 
                 if (occupyingCardField == null)
                 {
-                    Debug.LogWarning($"[ScoreManager] Could not access 'occupyingCard' field on CardDropArea1 '{dropArea.gameObject.name}'. Skipping.");
+                    Debug.LogWarning($"[ScoreManager] Could not access 'occupyingCard' field on CardDropArea '{dropArea.gameObject.name}'. Skipping.");
                     continue;
                 }
                 
@@ -146,22 +162,22 @@ namespace CardGame.Managers
                 
                 if (isPlayerControlled)
                 {
-                    playerScore++;
+                    p1Score++;
                 }
                 else
                 {
-                    opponentScore++;
+                    p2Score++;
                 }
             }
             
             int totalSpaces = allDropAreas.Length;
-            int emptySpaces = totalSpaces - playerScore - opponentScore;
+            int emptySpaces = totalSpaces - p1Score - p2Score;
             
-            OnScoreChanged?.Invoke(true, playerScore);
-            OnScoreChanged?.Invoke(false, opponentScore);
-            OnScoreUpdated?.Invoke(playerScore, opponentScore);
+            OnScoreChanged?.Invoke(true, p1Score);
+            OnScoreChanged?.Invoke(false, p2Score);
+            OnScoreUpdated?.Invoke(p1Score, p2Score);
             
-            Debug.Log($"[ScoreManager] Recalculated scores based on {totalSpaces} spaces: Player controls {playerScore}/{totalSpaces}, Opponent controls {opponentScore}/{totalSpaces}, Empty: {emptySpaces}/{totalSpaces}");
+            Debug.Log($"[ScoreManager] Recalculated scores based on {totalSpaces} spaces: P1 controls {p1Score}/{totalSpaces}, P2 controls {p2Score}/{totalSpaces}, Empty: {emptySpaces}/{totalSpaces}");
         }
         
         /// <summary>
@@ -209,15 +225,15 @@ namespace CardGame.Managers
                     
                     // Check if it's a capture color (not default white/transparent)
                     Color playerColor = new Color(1f, 0.5f, 0f, 1f); // Orange
-                    Color opponentColor = new Color(0f, 0.8f, 0f, 1f); // Green
+                    Color p2Color = new Color(0f, 0.8f, 0f, 1f); // P2 capture color (green)
                     
                     float colorTolerance = 0.1f;
                     if ((Mathf.Abs(borderColor.r - playerColor.r) < colorTolerance &&
                          Mathf.Abs(borderColor.g - playerColor.g) < colorTolerance &&
                          Mathf.Abs(borderColor.b - playerColor.b) < colorTolerance) ||
-                        (Mathf.Abs(borderColor.r - opponentColor.r) < colorTolerance &&
-                         Mathf.Abs(borderColor.g - opponentColor.g) < colorTolerance &&
-                         Mathf.Abs(borderColor.b - opponentColor.b) < colorTolerance))
+                        (Mathf.Abs(borderColor.r - p2Color.r) < colorTolerance &&
+                         Mathf.Abs(borderColor.g - p2Color.g) < colorTolerance &&
+                         Mathf.Abs(borderColor.b - p2Color.b) < colorTolerance))
                     {
                         return true;
                     }
@@ -247,9 +263,9 @@ namespace CardGame.Managers
             if (cardUI == null)
             {
                 // Fallback: check component type
-                CardMover mover = cardObject.GetComponent<CardMover>();
+                CardMoverP1 mover = cardObject.GetComponent<CardMoverP1>();
                 if (mover != null) return true;
-                CardMoverOpp moverOpp = cardObject.GetComponent<CardMoverOpp>();
+                CardMoverP2 moverOpp = cardObject.GetComponent<CardMoverP2>();
                 if (moverOpp != null) return false;
                 return true;
             }
@@ -279,7 +295,7 @@ namespace CardGame.Managers
                     }
                     
                     Color playerColor = new Color(1f, 0.5f, 0f, 1f); // Orange
-                    Color opponentColor = new Color(0f, 0.8f, 0f, 1f); // Green
+                    Color p2Color = new Color(0f, 0.8f, 0f, 1f); // P2 capture color (green)
                     
                     float colorTolerance = 0.1f;
                     if (Mathf.Abs(borderColor.r - playerColor.r) < colorTolerance &&
@@ -289,9 +305,9 @@ namespace CardGame.Managers
                         return true;
                     }
                     
-                    if (Mathf.Abs(borderColor.r - opponentColor.r) < colorTolerance &&
-                        Mathf.Abs(borderColor.g - opponentColor.g) < colorTolerance &&
-                        Mathf.Abs(borderColor.b - opponentColor.b) < colorTolerance)
+                    if (Mathf.Abs(borderColor.r - p2Color.r) < colorTolerance &&
+                        Mathf.Abs(borderColor.g - p2Color.g) < colorTolerance &&
+                        Mathf.Abs(borderColor.b - p2Color.b) < colorTolerance)
                     {
                         return false;
                     }
@@ -299,9 +315,9 @@ namespace CardGame.Managers
             }
             
             // Default: check component type
-            CardMover defaultMover = cardObject.GetComponent<CardMover>();
+            CardMoverP1 defaultMover = cardObject.GetComponent<CardMoverP1>();
             if (defaultMover != null) return true;
-            CardMoverOpp defaultMoverOpp = cardObject.GetComponent<CardMoverOpp>();
+            CardMoverP2 defaultMoverOpp = cardObject.GetComponent<CardMoverP2>();
             if (defaultMoverOpp != null) return false;
             
             return true;

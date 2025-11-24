@@ -171,7 +171,7 @@ namespace CardGame.Tests
             yield return new WaitForSeconds(0.1f);
             
             Assert.IsTrue(coinTossManager.IsComplete, "Coin toss should be complete after PerformCoinToss");
-            Assert.IsTrue(result == FateSide.Player || result == FateSide.Opponent, 
+            Assert.IsTrue(result == FateSide.Player || result == FateSide.P2, 
                 "Coin toss result should be either Player or Opponent");
             Assert.AreEqual(result, coinTossManager.GetStartingPlayer(), 
                 "GetStartingPlayer should return the same result");

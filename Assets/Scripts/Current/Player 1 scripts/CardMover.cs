@@ -5,7 +5,7 @@ using CardGame.Core;
 using CardGame.UI;
 using CardGame.Managers;
 
-public class CardMover : MonoBehaviour
+public class CardMoverP1 : MonoBehaviour
 {
     private Collider2D col;
     private Vector3 startDragPosition;
@@ -92,7 +92,7 @@ public class CardMover : MonoBehaviour
         
         // Try to find card by name matching with NewDeckManager
         // This is a fallback for 2D cards that don't have NewCardUI
-        CardGame.Managers.NewDeckManager deckManager = FindObjectOfType<CardGame.Managers.NewDeckManager>();
+        CardGame.Managers.NewDeckManagerP1 deckManager = FindObjectOfType<CardGame.Managers.NewDeckManagerP1>();
         if (deckManager != null && deckManager.Hand != null && deckManager.Hand.Count > 0)
         {
             // Try to match by GameObject name or some identifier
@@ -390,14 +390,14 @@ public class CardMover : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[CardMover] AttemptDrop: No collider found at position {transform.position}. CardDropArea1 objects may be missing Collider2D components or in different layer/physics space.");
+            Debug.LogWarning($"[CardMover] AttemptDrop: No collider found at position {transform.position}. CardDropArea objects may be missing Collider2D components or in different layer/physics space.");
             
-            // [CardFront] Diagnostic: Find all CardDropArea1 objects and log their positions
-            CardDropArea1[] allDropAreas = FindObjectsOfType<CardDropArea1>(true);
+            // [CardFront] Diagnostic: Find all CardDropArea objects and log their positions
+            CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>(true);
             if (allDropAreas.Length > 0)
             {
-                Debug.Log($"[CardMover] AttemptDrop: Found {allDropAreas.Length} CardDropArea1 object(s) in scene:");
-                foreach (CardDropArea1 dropArea in allDropAreas)
+                Debug.Log($"[CardMover] AttemptDrop: Found {allDropAreas.Length} CardDropArea object(s) in scene:");
+                foreach (CardDropArea dropArea in allDropAreas)
                 {
                     Collider2D dropCol = dropArea.GetComponent<Collider2D>();
                     float distance = Vector3.Distance(transform.position, dropArea.transform.position);
@@ -406,7 +406,7 @@ public class CardMover : MonoBehaviour
             }
             else
             {
-                Debug.LogError("[CardMover] AttemptDrop: No CardDropArea1 objects found in scene! Cards cannot be placed on board.");
+                Debug.LogError("[CardMover] AttemptDrop: No CardDropArea objects found in scene! Cards cannot be placed on board.");
             }
         }
 

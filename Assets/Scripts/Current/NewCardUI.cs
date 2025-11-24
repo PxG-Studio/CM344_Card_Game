@@ -49,7 +49,7 @@ namespace CardGame.UI
         [SerializeField] private bool allowDrag = true;
         
         [Header("Captured Colors")]
-        [SerializeField] private Color playerCapturedColor = new Color(1f, 0.5f, 0f, 1f); // Orange for player's cards (matches card border orange)
+        [SerializeField] private Color playerCapturedColor = new Color(1f, 128f/255f, 0f, 1f); // Orange #FF8000 for player's cards (matches card border orange)
         [SerializeField] private Color opponentCapturedColor = new Color(0f, 0.8f, 0f, 1f); // Green for opponent's captured cards
         
         public Color PlayerCapturedColor => playerCapturedColor;
@@ -540,8 +540,8 @@ namespace CardGame.UI
                     // Only warn if it's actually in a hand container (should have been initialized)
                     Transform parent = transform.parent;
                     bool inHandContainer = parent != null && 
-                        (parent.GetComponent<CardGame.UI.NewHandUI>() != null || 
-                         parent.GetComponent<CardGame.UI.NewHandOppUI>() != null);
+                        (parent.GetComponent<CardGame.UI.NewHandP1UI>() != null || 
+                         parent.GetComponent<CardGame.UI.NewHandP2UI>() != null);
                     
                     if (!inHandContainer)
                     {
@@ -563,27 +563,27 @@ namespace CardGame.UI
                 // Silently ignore for prefab assets and uninitialized instances not in hands
                 
                 // [CardFront] Try to find card from hand UIs as last resort (using GetComponentInParent for Hub connection)
-                CardGame.UI.NewHandUI parentHandUI = GetComponentInParent<CardGame.UI.NewHandUI>();
+                CardGame.UI.NewHandP1UI parentHandUI = GetComponentInParent<CardGame.UI.NewHandP1UI>();
                 if (parentHandUI != null)
                 {
                     NewCard foundCard = parentHandUI.GetCardForUI(this);
                     if (foundCard != null)
                     {
                         card = foundCard;
-                        Debug.Log($"[NewCardUI] Found and set card in Start() from parent NewHandUI: {card.Data.cardName}");
+                        Debug.Log($"[NewCardUI] Found and set card in Start() from parent NewHandP1UI: {card.Data.cardName}");
                     }
                 }
                 
                 if (card == null)
                 {
-                    CardGame.UI.NewHandOppUI parentHandOppUI = GetComponentInParent<CardGame.UI.NewHandOppUI>();
+                    CardGame.UI.NewHandP2UI parentHandOppUI = GetComponentInParent<CardGame.UI.NewHandP2UI>();
                     if (parentHandOppUI != null)
                     {
                         NewCard foundCard = parentHandOppUI.GetCardForUI(this);
                         if (foundCard != null)
                         {
                             card = foundCard;
-                            Debug.Log($"[NewCardUI] Found and set card in Start() from parent NewHandOppUI: {card.Data.cardName}");
+                            Debug.Log($"[NewCardUI] Found and set card in Start() from parent NewHandP2UI: {card.Data.cardName}");
                         }
                     }
                 }
@@ -594,27 +594,27 @@ namespace CardGame.UI
                 {
                     #if UNITY_EDITOR
                     // Only in Editor - this is a last resort recovery
-                    CardGame.UI.NewHandUI handUI = FindObjectOfType<CardGame.UI.NewHandUI>();
+                    CardGame.UI.NewHandP1UI handUI = FindObjectOfType<CardGame.UI.NewHandP1UI>();
                     if (handUI != null)
                     {
                         NewCard foundCard = handUI.GetCardForUI(this);
                         if (foundCard != null)
                         {
                             card = foundCard;
-                            Debug.Log($"[NewCardUI] Found and set card in Start() from scene NewHandUI (fallback): {card.Data.cardName}");
+                            Debug.Log($"[NewCardUI] Found and set card in Start() from scene NewHandP1UI (fallback): {card.Data.cardName}");
                         }
                     }
                     
                     if (card == null)
                     {
-                        CardGame.UI.NewHandOppUI handOppUI = FindObjectOfType<CardGame.UI.NewHandOppUI>();
-                        if (handOppUI != null)
+                        CardGame.UI.NewHandP2UI handP2UI = FindObjectOfType<CardGame.UI.NewHandP2UI>();
+                        if (handP2UI != null)
                         {
-                            NewCard foundCard = handOppUI.GetCardForUI(this);
+                            NewCard foundCard = handP2UI.GetCardForUI(this);
                             if (foundCard != null)
                             {
                                 card = foundCard;
-                                Debug.Log($"[NewCardUI] Found and set card in Start() from scene NewHandOppUI (fallback): {card.Data.cardName}");
+                                Debug.Log($"[NewCardUI] Found and set card in Start() from scene NewHandP2UI (fallback): {card.Data.cardName}");
                             }
                         }
                     }
@@ -817,10 +817,29 @@ namespace CardGame.UI
            bool isOpponentCard = IsOpponentCard();
            if (isOpponentCard)
            {
+               // [CardFront] Check if CardMoverP2 is present - if so, let it handle the drag instead
+               // This prevents conflicts between CardMoverP2 (OnMouseDown) and NewCardUI (OnBeginDrag)
+               CardMoverP2 cardMoverP2 = GetComponent<CardMoverP2>();
+               if (cardMoverP2 == null)
+               {
+                   cardMoverP2 = GetComponentInChildren<CardMoverP2>();
+               }
+               if (cardMoverP2 == null)
+               {
+                   cardMoverP2 = GetComponentInParent<CardMoverP2>();
+               }
+               
+               if (cardMoverP2 != null)
+               {
+                   // CardMoverP2 handles opponent card dragging via OnMouseDown - don't interfere
+                   Debug.Log($"[NewCardUI] Opponent card '{gameObject.name}' drag handled by CardMoverP2 - skipping NewCardUI drag handling to prevent conflicts.");
+                   return;
+               }
+               
                // [CardFront] Allow opponent cards to drag when it's the opponent's turn
                // Check if it's currently the opponent's turn using FateFlowController
                bool canOpponentAct = CardGame.Managers.FateFlowController.Instance != null && 
-                                     CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.Opponent);
+                                     CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.P2);
                
                if (!canOpponentAct)
                {
@@ -842,7 +861,7 @@ namespace CardGame.UI
            
            if (IsPlayerCard())
            {
-               CardGame.UI.NewHandUI handUI = GetComponentInParent<CardGame.UI.NewHandUI>();
+               CardGame.UI.NewHandP1UI handUI = GetComponentInParent<CardGame.UI.NewHandP1UI>();
                if (handUI != null)
                {
                    NewCard handCard = handUI.GetCardForUI(this);
@@ -851,10 +870,10 @@ namespace CardGame.UI
            }
            else if (IsOpponentCard())
            {
-               CardGame.UI.NewHandOppUI handOppUI = GetComponentInParent<CardGame.UI.NewHandOppUI>();
-               if (handOppUI != null)
+               CardGame.UI.NewHandP2UI handP2UI = GetComponentInParent<CardGame.UI.NewHandP2UI>();
+               if (handP2UI != null)
                {
-                   NewCard handCard = handOppUI.GetCardForUI(this);
+                   NewCard handCard = handP2UI.GetCardForUI(this);
                    isCardInHand = (handCard != null && handCard == card);
                }
            }
@@ -866,7 +885,7 @@ namespace CardGame.UI
            }
             
             // [CardFront] CardFront Architecture: Use Hub connections instead of FindObjectOfType()
-            // Recover card reference if lost using parent Hub (NewHandUI/NewHandOppUI)
+            // Recover card reference if lost using parent Hub (NewHandP1UI/NewHandP2UI)
             if (card == null)
             {
                 // Strategy 1: Check Card property (should match field)
@@ -879,8 +898,8 @@ namespace CardGame.UI
                 {
                     // Strategy 2: Use Hub connection via GetComponentInParent (no FindObjectOfType!)
                     // Check parent hierarchy for HandUI Hub connection
-                    CardGame.UI.NewHandUI handUI = GetComponentInParent<CardGame.UI.NewHandUI>();
-                    CardGame.UI.NewHandOppUI handOppUI = GetComponentInParent<CardGame.UI.NewHandOppUI>();
+                    CardGame.UI.NewHandP1UI handUI = GetComponentInParent<CardGame.UI.NewHandP1UI>();
+                    CardGame.UI.NewHandP2UI handP2UI = GetComponentInParent<CardGame.UI.NewHandP2UI>();
                     
                     if (handUI != null)
                     {
@@ -891,9 +910,9 @@ namespace CardGame.UI
                             Debug.Log($"[NewCardUI] Recovered card from parent HandUI Hub: {card.Data.cardName}");
                         }
                     }
-                    else if (handOppUI != null)
+                    else if (handP2UI != null)
                     {
-                        NewCard foundCard = handOppUI.GetCardForUI(this);
+                        NewCard foundCard = handP2UI.GetCardForUI(this);
                         if (foundCard != null)
                         {
                             card = foundCard;
@@ -906,8 +925,8 @@ namespace CardGame.UI
                     {
                         // Check parent again (might not have found HandUI in GetComponentInParent if structure is different)
                         Transform parent = transform.parent;
-                        handUI = parent.GetComponentInParent<CardGame.UI.NewHandUI>();
-                        handOppUI = parent.GetComponentInParent<CardGame.UI.NewHandOppUI>();
+                        handUI = parent.GetComponentInParent<CardGame.UI.NewHandP1UI>();
+                        handP2UI = parent.GetComponentInParent<CardGame.UI.NewHandP2UI>();
                         
                         if (handUI != null)
                         {
@@ -921,12 +940,12 @@ namespace CardGame.UI
                                 }
                             }
                         }
-                        else if (handOppUI != null)
+                        else if (handP2UI != null)
                         {
                             int siblingIndex = transform.GetSiblingIndex();
-                            if (siblingIndex >= 0 && siblingIndex < handOppUI.GetCardCount())
+                            if (siblingIndex >= 0 && siblingIndex < handP2UI.GetCardCount())
                             {
-                                card = handOppUI.GetCardForUIByIndex(siblingIndex);
+                                card = handP2UI.GetCardForUIByIndex(siblingIndex);
                                 if (card != null)
                                 {
                                     Debug.Log($"[NewCardUI] Recovered card by sibling index from HandOppUI Hub: {card.Data.cardName}");
@@ -939,8 +958,8 @@ namespace CardGame.UI
                     // This is a fallback when the card reference is lost but the card is still in hand
                     if (card == null)
                     {
-                        // Try to find NewHandOppUI and match by GameObject instance
-                        NewHandOppUI sceneHandOppUI = FindObjectOfType<NewHandOppUI>();
+                        // Try to find NewHandP2UI and match by GameObject instance
+                        NewHandP2UI sceneHandOppUI = FindObjectOfType<NewHandP2UI>();
                         if (sceneHandOppUI != null)
                         {
                             // Use the Hub's GetCardForUI method which has multiple fallback strategies
@@ -952,10 +971,10 @@ namespace CardGame.UI
                             }
                         }
                         
-                        // Also try NewHandUI for player cards
+                        // Also try NewHandP1UI for player cards
                         if (card == null)
                         {
-                            NewHandUI sceneHandUI = FindObjectOfType<NewHandUI>();
+                            NewHandP1UI sceneHandUI = FindObjectOfType<NewHandP1UI>();
                             if (sceneHandUI != null)
                             {
                                 NewCard foundCard = sceneHandUI.GetCardForUI(this);
@@ -983,7 +1002,7 @@ namespace CardGame.UI
                 
                 Debug.LogError($"[NewCardUI] CRITICAL: Card reference lost. GameObject: {gameObject.name}, InstanceID: {GetInstanceID()}. Cannot start drag.");
                 Debug.LogError($"[NewCardUI] This indicates Initialize() was not called or card field was cleared. Check CardFactory.");
-                Debug.LogError($"[NewCardUI] Recovery strategies failed. Parent: {(transform.parent != null ? transform.parent.name : "null")}, IsOpponentCard: {isOpponentCard}, HasHandOppUI: {(GetComponentInParent<NewHandOppUI>() != null ? "Yes" : "No")}");
+                Debug.LogError($"[NewCardUI] Recovery strategies failed. Parent: {(transform.parent != null ? transform.parent.name : "null")}, IsOpponentCard: {isOpponentCard}, HasHandOppUI: {(GetComponentInParent<NewHandP2UI>() != null ? "Yes" : "No")}");
                 return;
             }
             
@@ -994,7 +1013,7 @@ namespace CardGame.UI
             {
                 // Determine which side this card belongs to
                 CardGame.Managers.FateSide cardSide = isOpponentCard ? 
-                    CardGame.Managers.FateSide.Opponent : 
+                    CardGame.Managers.FateSide.P2 : 
                     CardGame.Managers.FateSide.Player;
                 
                 bool canAct = CardGame.Managers.FateFlowController.Instance.CanAct(cardSide);
@@ -1026,6 +1045,15 @@ namespace CardGame.UI
         
         public void OnDrag(PointerEventData eventData)
         {
+            // If CardMoverP2 is present, let it handle opponent card dragging
+            if (IsOpponentCard())
+            {
+                CardMoverP2 cardMoverP2 = GetComponent<CardMoverP2>();
+                if (cardMoverP2 == null) cardMoverP2 = GetComponentInChildren<CardMoverP2>();
+                if (cardMoverP2 == null) cardMoverP2 = GetComponentInParent<CardMoverP2>();
+                if (cardMoverP2 != null) return; // CardMoverP2 handles this
+            }
+            
             if (!isDragging) return;
             
             Vector2 localPointerPosition;
@@ -1041,6 +1069,15 @@ namespace CardGame.UI
         
         public void OnEndDrag(PointerEventData eventData)
         {
+            // If CardMoverP2 is present, let it handle opponent card dragging
+            if (IsOpponentCard())
+            {
+                CardMoverP2 cardMoverP2 = GetComponent<CardMoverP2>();
+                if (cardMoverP2 == null) cardMoverP2 = GetComponentInChildren<CardMoverP2>();
+                if (cardMoverP2 == null) cardMoverP2 = GetComponentInParent<CardMoverP2>();
+                if (cardMoverP2 != null) return; // CardMoverP2 handles this
+            }
+            
             // [CardFront] OnEndDrag: Validate drag state
             if (!isDragging)
             {
@@ -1051,7 +1088,7 @@ namespace CardGame.UI
                 {
                     // Check if it's actually the opponent's turn - if so, we should have been dragging
                     bool canOpponentAct = CardGame.Managers.FateFlowController.Instance != null && 
-                                         CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.Opponent);
+                                         CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.P2);
                     
                     if (canOpponentAct)
                     {
@@ -1090,17 +1127,17 @@ namespace CardGame.UI
             
             // [CardFront] Cluster approach: Use UI raycast to find drop area (local system)
             Debug.Log($"[NewCardUI] OnEndDrag: Attempting to find drop area via UI raycast at position {eventData.position}...");
-            CardDropArea1 dropArea = FindDropAreaViaRaycast(eventData);
+            CardDropArea dropArea = FindDropAreaViaRaycast(eventData);
             
             if (dropArea == null)
             {
                 Debug.Log($"[NewCardUI] OnEndDrag: UI raycast found no drop area. Checking drop areas in scene...");
-                // Diagnostic: Count all CardDropArea1 components in scene
-                CardDropArea1[] allDropAreas = FindObjectsOfType<CardDropArea1>(true);
-                Debug.Log($"[NewCardUI] OnEndDrag: Found {allDropAreas.Length} CardDropArea1 component(s) in scene.");
+                // Diagnostic: Count all CardDropArea components in scene
+                CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>(true);
+                Debug.Log($"[NewCardUI] OnEndDrag: Found {allDropAreas.Length} CardDropArea component(s) in scene.");
                 foreach (var area in allDropAreas)
                 {
-                    Debug.Log($"[NewCardUI] OnEndDrag:   - CardDropArea1 '{area.name}' at {area.transform.position}, IsOccupied: {area.IsOccupied}");
+                    Debug.Log($"[NewCardUI] OnEndDrag:   - CardDropArea '{area.name}' at {area.transform.position}, IsOccupied: {area.IsOccupied}");
                 }
             }
             
@@ -1116,7 +1153,7 @@ namespace CardGame.UI
             {
                 Debug.Log($"[NewCardUI] OnEndDrag: Drop area found! '{dropArea.name}' at {dropArea.transform.position}. Placing card...");
                 
-                // [CardFront] Handle opponent cards differently - they use CardMoverOpp and OnCardDropOpp
+                // [CardFront] Handle P2 cards differently - they use CardMoverP2 and OnCardDropP2
                 bool isOpponentCard = IsOpponentCard();
                 if (isOpponentCard)
                 {
@@ -1130,13 +1167,13 @@ namespace CardGame.UI
             }
             
             Debug.LogWarning($"[NewCardUI] OnEndDrag: No valid drop area found for card '{card.Data.cardName}' at screen position {eventData.position}. Card will return to hand.");
-            // Card returns to original position via NewHandUI.ArrangeCards()
+            // Card returns to original position via NewHandP1UI.ArrangeCards()
         }
         
         /// <summary>
         /// [CardFront] Cluster method: Find drop area via UI raycast (local system)
         /// </summary>
-        private CardDropArea1 FindDropAreaViaRaycast(PointerEventData eventData)
+        private CardDropArea FindDropAreaViaRaycast(PointerEventData eventData)
         {
             if (EventSystem.current == null)
             {
@@ -1151,24 +1188,24 @@ namespace CardGame.UI
             
             foreach (RaycastResult result in raycastResults)
             {
-                Debug.Log($"[NewCardUI] FindDropAreaViaRaycast: Checking '{result.gameObject.name}' for CardDropArea1...");
-                CardDropArea1 dropArea = result.gameObject.GetComponent<CardDropArea1>();
+                Debug.Log($"[NewCardUI] FindDropAreaViaRaycast: Checking '{result.gameObject.name}' for CardDropArea...");
+                CardDropArea dropArea = result.gameObject.GetComponent<CardDropArea>();
                 if (dropArea != null)
                 {
-                    Debug.Log($"[NewCardUI] FindDropAreaViaRaycast: Found CardDropArea1 '{dropArea.name}'! IsOccupied: {dropArea.IsOccupied}");
+                    Debug.Log($"[NewCardUI] FindDropAreaViaRaycast: Found CardDropArea '{dropArea.name}'! IsOccupied: {dropArea.IsOccupied}");
                     if (!dropArea.IsOccupied)
                     {
-                        Debug.Log($"[NewCardUI] Found CardDropArea1 via UI raycast: {dropArea.name}");
+                        Debug.Log($"[NewCardUI] Found CardDropArea via UI raycast: {dropArea.name}");
                         return dropArea;
                     }
                     else
                     {
-                        Debug.Log($"[NewCardUI] FindDropAreaViaRaycast: CardDropArea1 '{dropArea.name}' is occupied. Skipping.");
+                        Debug.Log($"[NewCardUI] FindDropAreaViaRaycast: CardDropArea '{dropArea.name}' is occupied. Skipping.");
                     }
                 }
             }
             
-            Debug.Log($"[NewCardUI] FindDropAreaViaRaycast: No unoccupied CardDropArea1 found in raycast results.");
+            Debug.Log($"[NewCardUI] FindDropAreaViaRaycast: No unoccupied CardDropArea found in raycast results.");
             return null;
         }
         
@@ -1176,7 +1213,7 @@ namespace CardGame.UI
         /// [CardFront] Cluster method: Find drop area via Physics2D (local system)
         /// Uses Canvas camera if available, otherwise falls back to closest drop area
         /// </summary>
-        private CardDropArea1 FindDropAreaViaPhysics2D(PointerEventData eventData)
+        private CardDropArea FindDropAreaViaPhysics2D(PointerEventData eventData)
         {
             Camera worldCamera = null;
             
@@ -1217,19 +1254,19 @@ namespace CardGame.UI
                 {
                     if (hitCollider == null) continue;
                     
-                    Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Checking collider '{hitCollider.gameObject.name}' for CardDropArea1...");
-                    CardDropArea1 dropArea = hitCollider.GetComponent<CardDropArea1>();
+                    Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Checking collider '{hitCollider.gameObject.name}' for CardDropArea...");
+                    CardDropArea dropArea = hitCollider.GetComponent<CardDropArea>();
                     if (dropArea != null)
                     {
-                        Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Found CardDropArea1 '{dropArea.name}'! IsOccupied: {dropArea.IsOccupied}");
+                        Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Found CardDropArea '{dropArea.name}'! IsOccupied: {dropArea.IsOccupied}");
                         if (!dropArea.IsOccupied)
                         {
-                            Debug.Log($"[NewCardUI] Found CardDropArea1 via Physics2D: {dropArea.name}");
+                            Debug.Log($"[NewCardUI] Found CardDropArea via Physics2D: {dropArea.name}");
                             return dropArea;
                         }
                         else
                         {
-                            Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: CardDropArea1 '{dropArea.name}' is occupied. Skipping.");
+                            Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: CardDropArea '{dropArea.name}' is occupied. Skipping.");
                         }
                     }
                 }
@@ -1242,14 +1279,14 @@ namespace CardGame.UI
                 
                 Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Physics2D.OverlapCircleAll found {hitColliders.Length} collider(s) within radius {searchRadius} at world position {worldPos}");
                 
-                CardDropArea1 closestDropArea = null;
+                CardDropArea closestDropArea = null;
                 float closestDistance = float.MaxValue;
                 
                 foreach (Collider2D hitCollider in hitColliders)
                 {
                     if (hitCollider == null) continue;
                     
-                    CardDropArea1 dropArea = hitCollider.GetComponent<CardDropArea1>();
+                    CardDropArea dropArea = hitCollider.GetComponent<CardDropArea>();
                     if (dropArea != null && !dropArea.IsOccupied)
                     {
                         float distance = Vector3.Distance(worldPos, dropArea.transform.position);
@@ -1263,18 +1300,18 @@ namespace CardGame.UI
                 
                 if (closestDropArea != null)
                 {
-                    Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Found closest CardDropArea1 '{closestDropArea.name}' at distance {closestDistance}");
+                    Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Found closest CardDropArea '{closestDropArea.name}' at distance {closestDistance}");
                     return closestDropArea;
                 }
             }
             
             // Final fallback: Find closest unoccupied drop area in scene (distance-based)
             Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Physics2D detection failed. Using scene-based closest drop area search...");
-            CardDropArea1[] allDropAreas = FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>();
             
             if (allDropAreas.Length == 0)
             {
-                Debug.LogWarning($"[NewCardUI] FindDropAreaViaPhysics2D: No CardDropArea1 components found in scene!");
+                Debug.LogWarning($"[NewCardUI] FindDropAreaViaPhysics2D: No CardDropArea components found in scene!");
                 return null;
             }
             
@@ -1287,10 +1324,10 @@ namespace CardGame.UI
                 mouseWorldPos.z = 0f;
             }
             
-            CardDropArea1 closest = null;
+            CardDropArea closest = null;
             float minDist = float.MaxValue;
             
-            foreach (CardDropArea1 area in allDropAreas)
+            foreach (CardDropArea area in allDropAreas)
             {
                 if (area.IsOccupied) continue;
                 
@@ -1304,15 +1341,15 @@ namespace CardGame.UI
             
             if (closest != null && minDist < 5f) // Only return if within reasonable distance (5 units)
             {
-                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Found closest unoccupied CardDropArea1 '{closest.name}' at distance {minDist}");
+                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Found closest unoccupied CardDropArea '{closest.name}' at distance {minDist}");
                 return closest;
             }
             
-            Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: No unoccupied CardDropArea1 found in Physics2D results or nearby.");
+            Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: No unoccupied CardDropArea found in Physics2D results or nearby.");
             return null;
         }
         
-        private void PlaceCardOnBoard(CardDropArea1 dropArea)
+        private void PlaceCardOnBoard(CardDropArea dropArea)
         {
             Debug.Log($"PlaceCardOnBoard: Attempting to place card on {dropArea?.name}");
             
@@ -1347,12 +1384,12 @@ namespace CardGame.UI
                 return;
             }
             
-            // [CardFront] Hub connection: Get deck manager via Hub (NewHandUI) instead of FindObjectOfType
-            // NewHandUI is the Hub that manages card UI instances and knows about deckManager
-            CardGame.Managers.NewDeckManager deckManager = null;
+            // [CardFront] Hub connection: Get deck manager via Hub (NewHandP1UI) instead of FindObjectOfType
+            // NewHandP1UI is the Hub that manages card UI instances and knows about deckManager
+            CardGame.Managers.NewDeckManagerP1 deckManager = null;
             
             // Use parent Hub connection to get deck manager
-            CardGame.UI.NewHandUI handUI = GetComponentInParent<CardGame.UI.NewHandUI>();
+            CardGame.UI.NewHandP1UI handUI = GetComponentInParent<CardGame.UI.NewHandP1UI>();
             if (handUI != null)
             {
                 // [CardFront] Access deckManager via Hub property (clean Hub connection)
@@ -1368,7 +1405,7 @@ namespace CardGame.UI
             }
             else
             {
-                Debug.LogError("[NewCardUI] PlaceCardOnBoard: NewHandUI Hub not found in parent hierarchy. Cannot place card.");
+                Debug.LogError("[NewCardUI] PlaceCardOnBoard: NewHandP1UI Hub not found in parent hierarchy. Cannot place card.");
                 return;
             }
             
@@ -1411,34 +1448,34 @@ namespace CardGame.UI
                 return;
             }
             
-            // Get CardMover component (should be added by CardFactory)
-            CardMover cardMover = boardCard.GetComponent<CardMover>();
+            // Get CardMoverP1 component (should be added by CardFactory)
+            CardMoverP1 cardMover = boardCard.GetComponent<CardMoverP1>();
             if (cardMover == null)
             {
-                cardMover = boardCard.GetComponentInChildren<CardMover>();
+                cardMover = boardCard.GetComponentInChildren<CardMoverP1>();
             }
             
             if (cardMover == null)
             {
-                Debug.LogError("[NewCardUI] PlaceCardOnBoard: Board card prefab missing CardMover component. Cannot drag board card.");
+                Debug.LogError("[NewCardUI] PlaceCardOnBoard: Board card prefab missing CardMoverP1 component. Cannot drag board card.");
                 Destroy(boardCard);
                 return;
             }
             
-            // [CardFront] Trigger drop through CardDropArea1 (uses event channel)
+            // [CardFront] Trigger drop through CardDropArea (uses event channel)
             // This will handle: playing card, placement, battles via Hub connections
             Debug.Log($"[NewCardUI] PlaceCardOnBoard: Triggering drop for card '{card.Data.cardName}' on {dropArea.name}");
             dropArea.OnCardDrop(cardMover);
             
             // [CardFront] Remove from hand UI via event channel (cluster cleanup)
-            // NewHandUI will handle removal when OnCardPlayed event fires
+            // NewHandP1UI will handle removal when OnCardPlayed event fires
             Debug.Log($"[NewCardUI] PlaceCardOnBoard: Card '{card.Data.cardName}' placement complete!");
         }
         
         /// <summary>
-        /// [CardFront] Places an opponent card on the board using CardMoverOpp
+        /// [CardFront] Places a P2 card on the board using CardMoverP2
         /// </summary>
-        private void PlaceOpponentCardOnBoard(CardDropArea1 dropArea)
+        private void PlaceOpponentCardOnBoard(CardDropArea dropArea)
         {
             Debug.Log($"[NewCardUI] PlaceOpponentCardOnBoard: Attempting to place opponent card on {dropArea?.name}");
             
@@ -1451,7 +1488,7 @@ namespace CardGame.UI
             // Check if it's the opponent's turn
             if (CardGame.Managers.FateFlowController.Instance != null)
             {
-                if (!CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.Opponent))
+                if (!CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.P2))
                 {
                     Debug.LogWarning($"Cannot place opponent card - not opponent's turn. Current fate: {CardGame.Managers.FateFlowController.Instance.CurrentFate}");
                     return;
@@ -1473,19 +1510,19 @@ namespace CardGame.UI
                 return;
             }
             
-            // [CardFront] Hub connection: Get opponent deck manager via Hub (NewHandOppUI) instead of FindObjectOfType
-            // NewHandOppUI is the Hub that manages opponent card UI instances and knows about deckManagerOpp
-            CardGame.Managers.NewDeckManagerOpp deckManagerOpp = null;
+            // [CardFront] Hub connection: Get opponent deck manager via Hub (NewHandP2UI) instead of FindObjectOfType
+            // NewHandP2UI is the Hub that manages opponent card UI instances and knows about deckManagerP2
+            CardGame.Managers.NewDeckManagerP2 deckManagerP2 = null;
             
             // Use parent Hub connection to get opponent deck manager
-            CardGame.UI.NewHandOppUI handOppUI = GetComponentInParent<CardGame.UI.NewHandOppUI>();
-            if (handOppUI != null)
+            CardGame.UI.NewHandP2UI handP2UI = GetComponentInParent<CardGame.UI.NewHandP2UI>();
+            if (handP2UI != null)
             {
-                // [CardFront] Access deckManagerOpp via Hub property (clean Hub connection)
-                deckManagerOpp = handOppUI.DeckManager;
+                // [CardFront] Access deckManagerP2 via Hub property (clean Hub connection)
+                deckManagerP2 = handP2UI.DeckManager;
                 
                 // Validate card via Hub connection (HandOppUI knows which cards are in hand)
-                NewCard validatedCard = handOppUI.GetCardForUI(this);
+                NewCard validatedCard = handP2UI.GetCardForUI(this);
                 if (validatedCard == null || validatedCard != card)
                 {
                     Debug.LogWarning($"[NewCardUI] PlaceOpponentCardOnBoard: Card '{card.Data?.cardName}' not found in HandOppUI Hub. Cannot place.");
@@ -1494,33 +1531,33 @@ namespace CardGame.UI
             }
             else
             {
-                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: NewHandOppUI Hub not found in parent hierarchy. Cannot place opponent card.");
+                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: NewHandP2UI Hub not found in parent hierarchy. Cannot place opponent card.");
                 return;
             }
             
-            // [CardFront] Validate deckManagerOpp exists
-            if (deckManagerOpp == null)
+            // [CardFront] Validate deckManagerP2 exists
+            if (deckManagerP2 == null)
             {
                 Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: DeckManagerOpp is null in HandOppUI Hub. Cannot place opponent card.");
                 return;
             }
             
             // [CardFront] Final validation: Card must be in opponent hand (via Hub connection)
-            if (!deckManagerOpp.Hand.Contains(card))
+            if (!deckManagerP2.Hand.Contains(card))
             {
-                Debug.LogWarning($"[NewCardUI] PlaceOpponentCardOnBoard: Card '{card.Data?.cardName}' not found in opponent hand. Hand contains {deckManagerOpp.Hand.Count} cards.");
+                Debug.LogWarning($"[NewCardUI] PlaceOpponentCardOnBoard: Card '{card.Data?.cardName}' not found in opponent hand. Hand contains {deckManagerP2.Hand.Count} cards.");
                 return;
             }
             
             Debug.Log($"[NewCardUI] PlaceOpponentCardOnBoard: All checks passed. Creating opponent board card for '{card.Data.cardName}'...");
             
-            // [CardFront] Hub approach: Get opponent board card prefab from NewHandOppUI (Hub)
-            // NewHandOppUI has the cardPrefab reference assigned in Inspector - use that instead of Resources.Load
-            NewCardUI opponentPrefab = handOppUI.CardPrefab;
+            // [CardFront] Hub approach: Get opponent board card prefab from NewHandP2UI (Hub)
+            // NewHandP2UI has the cardPrefab reference assigned in Inspector - use that instead of Resources.Load
+            NewCardUI opponentPrefab = handP2UI.CardPrefab;
             
             if (opponentPrefab == null)
             {
-                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: cardPrefab is null in NewHandOppUI Hub. Cannot create opponent board card. Please assign the prefab in the Inspector.");
+                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: cardPrefab is null in NewHandP2UI Hub. Cannot create opponent board card. Please assign the prefab in the Inspector.");
                 return;
             }
             
@@ -1541,38 +1578,38 @@ namespace CardGame.UI
             // [CardFront] Note: CardFactory.CreateBoardCard now handles:
             // - Activation of the board card
             // - Initialization of NewCardUI component
-            // - Setting card reference on CardMoverOpp (Player 2) or CardMover (Player 1)
+            // - Setting card reference on CardMoverP2 (P2) or CardMover (P1)
             // - Refreshing home position on the mover component
             
-            // Get CardMoverOpp component (should already be set up by CardFactory)
-            CardMoverOpp cardMoverOpp = boardCardOpp.GetComponent<CardMoverOpp>();
-            if (cardMoverOpp == null)
+            // Get CardMoverP2 component (should already be set up by CardFactory)
+            CardMoverP2 cardMoverP2 = boardCardOpp.GetComponent<CardMoverP2>();
+            if (cardMoverP2 == null)
             {
-                cardMoverOpp = boardCardOpp.GetComponentInChildren<CardMoverOpp>();
+                cardMoverP2 = boardCardOpp.GetComponentInChildren<CardMoverP2>();
             }
             
-            if (cardMoverOpp == null)
+            if (cardMoverP2 == null)
             {
-                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: Opponent board card prefab missing CardMoverOpp component. Cannot drag opponent board card. Please ensure the prefab has a CardMoverOpp component.");
+                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: P2 board card prefab missing CardMoverP2 component. Cannot drag P2 board card. Please ensure the prefab has a CardMoverP2 component.");
                 Destroy(boardCardOpp);
                 return;
             }
             
             // [CardFront] Safety check: Ensure card reference is set (CardFactory should have done this)
-            if (cardMoverOpp.Card == null)
+            if (cardMoverP2.Card == null)
             {
-                Debug.LogWarning("[NewCardUI] PlaceOpponentCardOnBoard: CardMoverOpp card reference is null (CardFactory should have set it). Setting it now as fallback.");
-                cardMoverOpp.SetCard(card);
-                cardMoverOpp.RefreshHomePosition();
+                Debug.LogWarning("[NewCardUI] PlaceOpponentCardOnBoard: CardMoverP2 card reference is null (CardFactory should have set it). Setting it now as fallback.");
+                cardMoverP2.SetCard(card);
+                cardMoverP2.RefreshHomePosition();
             }
             
-            // [CardFront] Trigger opponent drop through CardDropArea1 (uses event channel)
+            // [CardFront] Trigger opponent drop through CardDropArea (uses event channel)
             // This will handle: playing card, placement, battles via Hub connections
             Debug.Log($"[NewCardUI] PlaceOpponentCardOnBoard: Triggering opponent drop for card '{card.Data.cardName}' on {dropArea.name}");
-            dropArea.OnCardDropOpp(cardMoverOpp);
+            dropArea.OnCardDropP2(cardMoverP2);
             
             // [CardFront] Remove from hand UI via event channel (cluster cleanup)
-            // NewHandOppUI will handle removal when OnCardPlayed event fires
+            // NewHandP2UI will handle removal when OnCardPlayed event fires
             Debug.Log($"[NewCardUI] PlaceOpponentCardOnBoard: Opponent card '{card.Data.cardName}' placement complete!");
         }
         
@@ -1596,7 +1633,7 @@ namespace CardGame.UI
             int syncCount = 0;
             
             // Player mover on this GameObject (if present)
-            if (TryGetComponent<CardMover>(out var mover))
+            if (TryGetComponent<CardMoverP1>(out var mover))
             {
                 mover.SetCard(card);
                 syncCount++;
@@ -1604,15 +1641,15 @@ namespace CardGame.UI
             }
             
             // Opponent mover on this GameObject (if present)
-            if (TryGetComponent<CardMoverOpp>(out var moverOpp))
+            if (TryGetComponent<CardMoverP2>(out var moverP2))
             {
-                moverOpp.SetCard(card);
+                moverP2.SetCard(card);
                 syncCount++;
-                Debug.Log($"[NewCardUI] Synced card reference '{card.Data.cardName}' to CardMoverOpp on '{gameObject.name}'");
+                Debug.Log($"[NewCardUI] Synced card reference '{card.Data.cardName}' to CardMoverP2 on '{gameObject.name}'");
             }
             
-            // Some prefabs nest CardMover/CardMoverOpp on children, so update them too
-            CardMover[] childMovers = GetComponentsInChildren<CardMover>(true);
+            // Some prefabs nest CardMoverP1 (P1)/CardMoverP2 (P2) on children, so update them too
+            CardMoverP1[] childMovers = GetComponentsInChildren<CardMoverP1>(true);
             foreach (var childMover in childMovers)
             {
                 // Skip if we already synced this one (same component on root GameObject)
@@ -1620,23 +1657,23 @@ namespace CardGame.UI
                 
                 childMover.SetCard(card);
                 syncCount++;
-                Debug.Log($"[NewCardUI] Synced card reference '{card.Data.cardName}' to child CardMover on '{childMover.gameObject.name}'");
+                Debug.Log($"[NewCardUI] Synced card reference '{card.Data.cardName}' to child CardMoverP1 (P1) on '{childMover.gameObject.name}'");
             }
             
-            CardMoverOpp[] childMoverOpps = GetComponentsInChildren<CardMoverOpp>(true);
-            foreach (var childMoverOpp in childMoverOpps)
+            CardMoverP2[] childMoverP2s = GetComponentsInChildren<CardMoverP2>(true);
+            foreach (var childMoverP2 in childMoverP2s)
             {
                 // Skip if we already synced this one (same component on root GameObject)
-                if (childMoverOpp == moverOpp) continue;
+                if (childMoverP2 == moverP2) continue;
                 
-                childMoverOpp.SetCard(card);
+                childMoverP2.SetCard(card);
                 syncCount++;
-                Debug.Log($"[NewCardUI] Synced card reference '{card.Data.cardName}' to child CardMoverOpp on '{childMoverOpp.gameObject.name}'");
+                Debug.Log($"[NewCardUI] Synced card reference '{card.Data.cardName}' to child CardMoverP2 (P2) on '{childMoverP2.gameObject.name}'");
             }
             
             if (syncCount == 0)
             {
-                Debug.LogWarning($"[NewCardUI] SyncCardReferenceToMovers: No CardMover or CardMoverOpp components found on '{gameObject.name}' or its children. Card will need to find reference via FindCardReference().");
+                Debug.LogWarning($"[NewCardUI] SyncCardReferenceToMovers: No CardMoverP1 (P1) or CardMoverP2 (P2) components found on '{gameObject.name}' or its children. Card will need to find reference via FindCardReference().");
             }
         }
 
@@ -1649,26 +1686,26 @@ namespace CardGame.UI
         /// </summary>
         private bool IsOpponentCard()
         {
-            // [CardFront] CRITICAL: Check for CardMoverOpp component FIRST (most reliable for board cards)
+            // [CardFront] CRITICAL: Check for CardMoverP2 component FIRST (most reliable for board cards)
             // Board cards don't have "Opp" in their name (renamed to card name), so component check is essential
-            CardMoverOpp cardMoverOpp = GetComponent<CardMoverOpp>();
-            if (cardMoverOpp != null)
+            CardMoverP2 cardMoverP2 = GetComponent<CardMoverP2>();
+            if (cardMoverP2 != null)
             {
-                return true; // Opponent card (has CardMoverOpp)
+                return true; // P2 card (has CardMoverP2)
             }
             
             // Check in children (for nested components)
-            cardMoverOpp = GetComponentInChildren<CardMoverOpp>();
-            if (cardMoverOpp != null)
+            cardMoverP2 = GetComponentInChildren<CardMoverP2>();
+            if (cardMoverP2 != null)
             {
-                return true; // Opponent card (has CardMoverOpp in children)
+                return true; // P2 card (has CardMoverP2 in children)
             }
             
             // Check in parents (for nested components)
-            cardMoverOpp = GetComponentInParent<CardMoverOpp>();
-            if (cardMoverOpp != null)
+            cardMoverP2 = GetComponentInParent<CardMoverP2>();
+            if (cardMoverP2 != null)
             {
-                return true; // Opponent card (has CardMoverOpp in parent)
+                return true; // P2 card (has CardMoverP2 in parent)
             }
             
             // Check GameObject name for "Opp" marker (works for hand cards)
@@ -1690,10 +1727,10 @@ namespace CardGame.UI
             
             // [CardFront] Use Hub connection instead of FindObjectOfType
             // Check if card is in opponent hand UI via parent Hub (works for hand cards)
-            CardGame.UI.NewHandOppUI handOppUI = GetComponentInParent<CardGame.UI.NewHandOppUI>();
-            if (handOppUI != null)
+            CardGame.UI.NewHandP2UI handP2UI = GetComponentInParent<CardGame.UI.NewHandP2UI>();
+            if (handP2UI != null)
             {
-                NewCard foundCard = handOppUI.GetCardForUI(this);
+                NewCard foundCard = handP2UI.GetCardForUI(this);
                 if (foundCard != null)
                 {
                     return true;
@@ -1719,7 +1756,7 @@ namespace CardGame.UI
         {
             // [CardFront] Use Hub connection instead of FindObjectOfType
             // Check if card is in player's hand via parent Hub
-            CardGame.UI.NewHandUI handUI = GetComponentInParent<CardGame.UI.NewHandUI>();
+            CardGame.UI.NewHandP1UI handUI = GetComponentInParent<CardGame.UI.NewHandP1UI>();
             if (handUI != null)
             {
                 NewCard foundCard = handUI.GetCardForUI(this);
@@ -1737,31 +1774,31 @@ namespace CardGame.UI
                 // TODO: Refactor to use Hub connection instead of checking deck manager directly
             }
 
-            // Check if it's a CardMover (player card) vs CardMoverOpp (opponent card)
-            CardMover cardMover = GetComponent<CardMover>();
+            // Check if it's a CardMoverP1 (P1) vs CardMoverP2 (P2)
+            CardMoverP1 cardMover = GetComponent<CardMoverP1>();
             if (cardMover != null)
             {
                 return true; // Player card
             }
 
-            CardMoverOpp cardMoverOpp = GetComponent<CardMoverOpp>();
-            if (cardMoverOpp != null)
+            CardMoverP2 cardMoverP2 = GetComponent<CardMoverP2>();
+            if (cardMoverP2 != null)
             {
-                return false; // Opponent card
+                return false; // P2 card
             }
 
             // Check in children/parents
-            cardMover = GetComponentInChildren<CardMover>();
+            cardMover = GetComponentInChildren<CardMoverP1>();
             if (cardMover != null) return true;
 
-            cardMoverOpp = GetComponentInChildren<CardMoverOpp>();
-            if (cardMoverOpp != null) return false;
+            cardMoverP2 = GetComponentInChildren<CardMoverP2>();
+            if (cardMoverP2 != null) return false;
 
-            cardMover = GetComponentInParent<CardMover>();
+            cardMover = GetComponentInParent<CardMoverP1>();
             if (cardMover != null) return true;
 
-            cardMoverOpp = GetComponentInParent<CardMoverOpp>();
-            if (cardMoverOpp != null) return false;
+            cardMoverP2 = GetComponentInParent<CardMoverP2>();
+            if (cardMoverP2 != null) return false;
 
             // Default: assume player card if we can't determine
             return true;

@@ -75,12 +75,12 @@ namespace CardGame.Tests
             yield return new WaitForSeconds(2.0f);
             
             // Verify all 16 drop areas exist
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.AreEqual(16, dropAreas.Length, "Should have exactly 16 drop areas");
             
             // Count empty slots (IsOccupied = false)
             int emptySlots = 0;
-            foreach (CardDropArea1 dropArea in dropAreas)
+            foreach (CardDropArea dropArea in dropAreas)
             {
                 if (!dropArea.IsOccupied)
                 {
@@ -98,12 +98,12 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.AreEqual(16, dropAreas.Length, "Should have exactly 16 drop areas");
             
             // Count initial empty slots
             int initialEmptySlots = 0;
-            foreach (CardDropArea1 dropArea in dropAreas)
+            foreach (CardDropArea dropArea in dropAreas)
             {
                 if (!dropArea.IsOccupied)
                 {
@@ -132,13 +132,13 @@ namespace CardGame.Tests
             Assert.IsNotNull(checkGameEndMethod, "GameEndManager should have CheckGameEnd method");
             
             // Game ends when all 10 cards are placed (5 player + 5 opponent)
-            // CardDropArea1.GetCardsPlayed() tracks total cards placed
-            int cardsPlayed = CardDropArea1.GetCardsPlayed();
+            // CardDropArea.GetCardsPlayed() tracks total cards placed
+            int cardsPlayed = CardDropArea.GetCardsPlayed();
             
             // Verify GetCardsPlayed method exists
-            var getCardsPlayedMethod = typeof(CardDropArea1).GetMethod("GetCardsPlayed", 
+            var getCardsPlayedMethod = typeof(CardDropArea).GetMethod("GetCardsPlayed", 
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            Assert.IsNotNull(getCardsPlayedMethod, "CardDropArea1 should have GetCardsPlayed static method");
+            Assert.IsNotNull(getCardsPlayedMethod, "CardDropArea should have GetCardsPlayed static method");
             
             // GameEndManager.CheckGameEnd checks if totalCardsPlayed >= 10
             Assert.IsTrue(true, "Board full condition triggers game end (10 cards placed)");
@@ -150,18 +150,18 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.AreEqual(16, dropAreas.Length, "Should have exactly 16 drop areas");
             
             // Verify IsOccupied property prevents placement on occupied tiles
-            foreach (CardDropArea1 dropArea in dropAreas)
+            foreach (CardDropArea dropArea in dropAreas)
             {
-                // CardDropArea1.OnCardDrop checks IsOccupied before allowing placement
-                var onCardDropMethod = typeof(CardDropArea1).GetMethod("OnCardDrop");
-                Assert.IsNotNull(onCardDropMethod, "CardDropArea1 should have OnCardDrop method");
+                // CardDropArea.OnCardDrop checks IsOccupied before allowing placement
+                var onCardDropMethod = typeof(CardDropArea).GetMethod("OnCardDrop");
+                Assert.IsNotNull(onCardDropMethod, "CardDropArea should have OnCardDrop method");
                 
                 // The method checks if (IsOccupied) and returns early if true
-                Assert.IsTrue(true, "CardDropArea1 prevents placement on occupied tiles");
+                Assert.IsTrue(true, "CardDropArea prevents placement on occupied tiles");
                 break; // Only need to check once
             }
         }
@@ -172,17 +172,17 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.AreEqual(16, dropAreas.Length, "Should have exactly 16 drop areas");
             
             // Verify IsOccupied property
-            var isOccupiedProperty = typeof(CardDropArea1).GetProperty("IsOccupied");
-            Assert.IsNotNull(isOccupiedProperty, "CardDropArea1 should have IsOccupied property");
+            var isOccupiedProperty = typeof(CardDropArea).GetProperty("IsOccupied");
+            Assert.IsNotNull(isOccupiedProperty, "CardDropArea should have IsOccupied property");
             
             // IsOccupied returns occupyingCard != null
             // occupyingCard is set when card is successfully placed
             // This ensures occupancy always reflects actual card presence
-            foreach (CardDropArea1 dropArea in dropAreas)
+            foreach (CardDropArea dropArea in dropAreas)
             {
                 bool isOccupied = dropArea.IsOccupied;
                 // At start, should be false (no cards placed)

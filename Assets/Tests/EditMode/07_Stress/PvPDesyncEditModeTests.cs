@@ -13,9 +13,9 @@ namespace CardGame.Tests
         [Test]
         public void NewDeckManager_Has_Independent_Hand_Property()
         {
-            // Verify NewDeckManager has Hand property
-            var handProperty = typeof(NewDeckManager).GetProperty("Hand");
-            Assert.IsNotNull(handProperty, "NewDeckManager should have Hand property");
+            // Verify NewDeckManagerP1 has Hand property
+            var handProperty = typeof(NewDeckManagerP1).GetProperty("Hand");
+            Assert.IsNotNull(handProperty, "NewDeckManagerP1 should have Hand property");
             
             // Verify it returns IReadOnlyList<NewCard>
             Assert.AreEqual(typeof(System.Collections.Generic.IReadOnlyList<NewCard>), handProperty.PropertyType, 
@@ -23,11 +23,11 @@ namespace CardGame.Tests
         }
 
         [Test]
-        public void NewDeckManagerOpp_Has_Independent_Hand_Property()
+        public void NewDeckManagerP2_Has_Independent_Hand_Property()
         {
-            // Verify NewDeckManagerOpp has Hand property
-            var handProperty = typeof(NewDeckManagerOpp).GetProperty("Hand");
-            Assert.IsNotNull(handProperty, "NewDeckManagerOpp should have Hand property");
+            // Verify NewDeckManagerP2 has Hand property
+            var handProperty = typeof(NewDeckManagerP2).GetProperty("Hand");
+            Assert.IsNotNull(handProperty, "NewDeckManagerP2 should have Hand property");
             
             // Verify it returns IReadOnlyList<NewCard>
             Assert.AreEqual(typeof(System.Collections.Generic.IReadOnlyList<NewCard>), handProperty.PropertyType, 
@@ -35,11 +35,11 @@ namespace CardGame.Tests
         }
 
         [Test]
-        public void NewDeckManager_And_NewDeckManagerOpp_Are_Different_Types()
+        public void NewDeckManager_And_NewDeckManagerP2_Are_Different_Types()
         {
             // Verify they are different types (independent implementations)
-            Assert.AreNotEqual(typeof(NewDeckManager), typeof(NewDeckManagerOpp), 
-                "NewDeckManager and NewDeckManagerOpp should be different types");
+            Assert.AreNotEqual(typeof(NewDeckManagerP1), typeof(NewDeckManagerP2), 
+                "NewDeckManagerP1 and NewDeckManagerP2 should be different types");
         }
 
         [Test]

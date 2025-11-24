@@ -158,11 +158,11 @@ namespace CardGame.Editor
                 }
             }
             
-            // Check for CardMover (optional - only for board cards)
-            CardMover cardMover = prefab.GetComponent<CardMover>();
-            if (cardMover != null)
+            // Check for CardMoverP1 (optional - only for board cards)
+            CardMoverP1 CardMoverP1 = prefab.GetComponent<CardMoverP1>();
+            if (CardMoverP1 != null)
             {
-                ValidateCardMover(cardMover, result);
+                ValidateCardMover(CardMoverP1, result);
             }
             
             // Check for CardBackVisual
@@ -242,13 +242,13 @@ namespace CardGame.Editor
             }
         }
         
-        private void ValidateCardMover(CardMover cardMover, ValidationResult result)
+        private void ValidateCardMover(CardMoverP1 CardMoverP1, ValidationResult result)
         {
-            // CardMover.card should be null in prefab (will be set at runtime)
+            // CardMoverP1.card should be null in prefab (will be set at runtime)
             // But we can check if the component is properly set up
-            if (cardMover.GetComponent<Collider2D>() == null)
+            if (CardMoverP1.GetComponent<Collider2D>() == null)
             {
-                result.warnings.Add("CardMover requires a Collider2D for mouse interaction");
+                result.warnings.Add("CardMoverP1 requires a Collider2D for mouse interaction");
             }
         }
         

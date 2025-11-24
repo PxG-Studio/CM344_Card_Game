@@ -179,7 +179,7 @@ namespace CardGame.Tests
             yield return new WaitForSeconds(0.5f);
             
             // Switch turn
-            FateSide newTurn = initialTurn == FateSide.Player ? FateSide.Opponent : FateSide.Player;
+            FateSide newTurn = initialTurn == FateSide.Player ? FateSide.P2 : FateSide.Player;
             fateController.SetFate(newTurn);
             yield return new WaitForSeconds(0.5f); // Wait for UI update
             
@@ -376,8 +376,8 @@ namespace CardGame.Tests
             yield return CardTestHelper.WaitForCoinTossToComplete();
             yield return new WaitForSeconds(1.0f);
             
-            NewHandUI handUI = Object.FindObjectOfType<NewHandUI>();
-            NewDeckManager deckManager = handUI?.DeckManager;
+            NewHandP1UI handUI = Object.FindObjectOfType<NewHandP1UI>();
+            NewDeckManagerP1 deckManager = handUI?.DeckManager;
             if (handUI == null || deckManager == null || deckManager.Hand == null || deckManager.Hand.Count == 0)
             {
                 Assert.Inconclusive("No cards in hand for hover test");

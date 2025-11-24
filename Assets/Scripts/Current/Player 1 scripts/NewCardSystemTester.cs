@@ -8,11 +8,11 @@ namespace CardGame.Testing
     /// Test script to easily initialize and test the NewCard system
     /// Attach this to a GameObject in your scene to test the card system
     /// </summary>
-    public class NewCardSystemTester : MonoBehaviour
+    public class NewCardSystemP1Tester : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] private NewDeckManager deckManager;
-        [SerializeField] private NewHandUI handUI;
+        [SerializeField] private NewDeckManagerP1 deckManager;
+        [SerializeField] private NewHandP1UI handUI;
         
         [Header("Test Settings")]
         [SerializeField] private bool autoInitializeOnStart = true;
@@ -26,10 +26,10 @@ namespace CardGame.Testing
         {
             // Auto-find components if not assigned
             if (deckManager == null)
-                deckManager = FindObjectOfType<NewDeckManager>();
+                deckManager = FindObjectOfType<NewDeckManagerP1>();
             
             if (handUI == null)
-                handUI = FindObjectOfType<NewHandUI>();
+                handUI = FindObjectOfType<NewHandP1UI>();
             
             if (autoInitializeOnStart && deckManager != null)
             {
@@ -154,8 +154,8 @@ namespace CardGame.Testing
             handUI.ClearHand();
             
             // Also clear all cards from the board
-            CardMover[] boardCards = FindObjectsOfType<CardMover>();
-            foreach (CardMover card in boardCards)
+            CardMoverP1[] boardCards = FindObjectsOfType<CardMoverP1>();
+            foreach (CardMoverP1 card in boardCards)
             {
                 if (card.IsPlayed)
                 {

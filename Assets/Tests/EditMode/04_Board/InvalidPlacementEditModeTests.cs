@@ -12,33 +12,33 @@ namespace CardGame.Tests
         [Test]
         public void CardMover_Has_ReturnToStartPosition_Method()
         {
-            // Verify CardMover has ReturnToStartPosition method
-            var returnMethod = typeof(CardMover).GetMethod("ReturnToStartPosition");
-            Assert.IsNotNull(returnMethod, "CardMover should have ReturnToStartPosition method");
+            // Verify CardMoverP1 has ReturnToStartPosition method
+            var returnMethod = typeof(CardMoverP1).GetMethod("ReturnToStartPosition");
+            Assert.IsNotNull(returnMethod, "CardMoverP1 should have ReturnToStartPosition method");
         }
 
         [Test]
         public void CardMover_Has_RefreshHomePosition_Method()
         {
-            // Verify CardMover has RefreshHomePosition method
-            var refreshMethod = typeof(CardMover).GetMethod("RefreshHomePosition");
-            Assert.IsNotNull(refreshMethod, "CardMover should have RefreshHomePosition method");
+            // Verify CardMoverP1 has RefreshHomePosition method
+            var refreshMethod = typeof(CardMoverP1).GetMethod("RefreshHomePosition");
+            Assert.IsNotNull(refreshMethod, "CardMoverP1 should have RefreshHomePosition method");
         }
 
         [Test]
-        public void CardMoverOpp_Has_ReturnToStartPosition_Method()
+        public void CardMoverP2_Has_ReturnToStartPosition_Method()
         {
-            // Verify CardMoverOpp has ReturnToStartPosition method
-            var returnMethod = typeof(CardMoverOpp).GetMethod("ReturnToStartPosition");
-            Assert.IsNotNull(returnMethod, "CardMoverOpp should have ReturnToStartPosition method");
+            // Verify CardMoverP2 has ReturnToStartPosition method
+            var returnMethod = typeof(CardMoverP2).GetMethod("ReturnToStartPosition");
+            Assert.IsNotNull(returnMethod, "CardMoverP2 should have ReturnToStartPosition method");
         }
 
         [Test]
-        public void CardMoverOpp_Has_RefreshHomePosition_Method()
+        public void CardMoverP2_Has_RefreshHomePosition_Method()
         {
-            // Verify CardMoverOpp has RefreshHomePosition method
-            var refreshMethod = typeof(CardMoverOpp).GetMethod("RefreshHomePosition");
-            Assert.IsNotNull(refreshMethod, "CardMoverOpp should have RefreshHomePosition method");
+            // Verify CardMoverP2 has RefreshHomePosition method
+            var refreshMethod = typeof(CardMoverP2).GetMethod("RefreshHomePosition");
+            Assert.IsNotNull(refreshMethod, "CardMoverP2 should have RefreshHomePosition method");
         }
     }
 }

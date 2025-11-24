@@ -83,8 +83,8 @@ namespace CardGame.Tests
                 GameObject dropArea = GameObject.Find($"DropArea{i}");
                 Assert.IsNotNull(dropArea, $"DropArea{i} should exist in scene");
                 
-                CardDropArea1 dropAreaComponent = dropArea.GetComponent<CardDropArea1>();
-                Assert.IsNotNull(dropAreaComponent, $"DropArea{i} should have CardDropArea1 component");
+                CardDropArea dropAreaComponent = dropArea.GetComponent<CardDropArea>();
+                Assert.IsNotNull(dropAreaComponent, $"DropArea{i} should have CardDropArea component");
             }
         }
 
@@ -144,70 +144,51 @@ namespace CardGame.Tests
         [Test]
         public void HandUIs_Exist()
         {
-            GameObject handUI1 = GameObject.Find("NewHandUI Flame");
-            GameObject handUI2 = GameObject.Find("NewHandUI Earth");
+            // Try finding by GameObject name first (may have old or new naming)
+            GameObject handUI1GameObject = GameObject.Find("NewHandP1UI Flame") ?? GameObject.Find("NewHandUI Flame");
+            GameObject handUI2GameObject = GameObject.Find("NewHandP2UI Earth") ?? GameObject.Find("NewHandOppUI Earth") ?? GameObject.Find("NewHandUI Earth");
             
-            Assert.IsNotNull(handUI1, "NewHandUI Flame should exist");
-            Assert.IsNotNull(handUI2, "NewHandUI Earth should exist");
+            // Check by component type (more robust)
+            NewHandP1UI handUIComponent1 = Object.FindObjectOfType<NewHandP1UI>();
+            NewHandP2UI handUIComponent2 = Object.FindObjectOfType<NewHandP2UI>();
             
-            // Player 1 (Flame) should have NewHandUI component
-            // Player 2/Opponent (Earth) should have NewHandOppUI component
-            // Try GetComponent first, then GetComponentInChildren as fallback
-            NewHandUI handUIComponent1 = handUI1.GetComponent<NewHandUI>();
-            if (handUIComponent1 == null)
+            Assert.IsNotNull(handUIComponent1, "NewHandP1UI component should exist (Flame/Player 1)");
+            Assert.IsNotNull(handUIComponent2, "NewHandP2UI component should exist (Earth/Player 2)");
+            
+            // Optionally verify GameObject names if found
+            if (handUI1GameObject != null)
             {
-                handUIComponent1 = handUI1.GetComponentInChildren<NewHandUI>(true);
+                Assert.AreEqual(handUI1GameObject, handUIComponent1.gameObject, "P1 hand UI GameObject should match component");
             }
-            
-            // If component not found, provide diagnostic information
-            if (handUIComponent1 == null)
+            if (handUI2GameObject != null)
             {
-                MonoBehaviour[] components1 = handUI1.GetComponents<MonoBehaviour>();
-                string componentList1 = components1.Length > 0 
-                    ? string.Join(", ", components1.Select(c => c.GetType().Name)) 
-                    : "None";
-                
-                Assert.Fail($"NewHandUI Flame GameObject exists but is missing NewHandUI component. " +
-                           $"Found components: [{componentList1}]. " +
-                           $"Child count: {handUI1.transform.childCount}. " +
-                           $"FIX: Select 'NewHandUI Flame' in scene and add 'NewHandUI' component " +
-                           $"(Component > CardGame.UI > NewHandUI)");
+                Assert.AreEqual(handUI2GameObject, handUIComponent2.gameObject, "P2 hand UI GameObject should match component");
             }
-            
-            // Player 2/Opponent uses NewHandOppUI, not NewHandUI
-            NewHandOppUI handOppUIComponent = handUI2.GetComponent<NewHandOppUI>();
-            if (handOppUIComponent == null)
-            {
-                handOppUIComponent = handUI2.GetComponentInChildren<NewHandOppUI>(true);
-            }
-            
-            // If component not found, provide diagnostic information
-            if (handOppUIComponent == null)
-            {
-                MonoBehaviour[] components2 = handUI2.GetComponents<MonoBehaviour>();
-                string componentList2 = components2.Length > 0 
-                    ? string.Join(", ", components2.Select(c => c.GetType().Name)) 
-                    : "None";
-                
-                Assert.Fail($"NewHandUI Earth GameObject exists but is missing NewHandOppUI component (Player 2/Opponent uses NewHandOppUI, not NewHandUI). " +
-                           $"Found components: [{componentList2}]. " +
-                           $"Child count: {handUI2.transform.childCount}. " +
-                           $"FIX: Select 'NewHandUI Earth' in scene and add 'NewHandOppUI' component " +
-                           $"(Component > CardGame.UI > NewHandOppUI)");
-            }
-            
-            Assert.IsNotNull(handUIComponent1, "NewHandUI Flame should have NewHandUI component (Player 1)");
-            Assert.IsNotNull(handOppUIComponent, "NewHandUI Earth should have NewHandOppUI component (Player 2/Opponent)");
         }
 
         [Test]
         public void DeckManagers_Exist()
         {
-            GameObject deckMgr1 = GameObject.Find("NewDeckManager Flame");
-            GameObject deckMgr2 = GameObject.Find("NewDeckManager Earth");
+            // Try finding by GameObject name first (may have old or new naming)
+            GameObject deckMgr1GameObject = GameObject.Find("NewDeckManagerP1 Flame") ?? GameObject.Find("NewDeckManager Flame");
+            GameObject deckMgr2GameObject = GameObject.Find("NewDeckManagerP2 Earth") ?? GameObject.Find("NewDeckManager Earth");
             
-            Assert.IsNotNull(deckMgr1, "NewDeckManager Flame should exist");
-            Assert.IsNotNull(deckMgr2, "NewDeckManager Earth should exist");
+            // Also check by component type (more robust)
+            NewDeckManagerP1 deckMgr1 = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 deckMgr2 = Object.FindObjectOfType<NewDeckManagerP2>();
+            
+            Assert.IsNotNull(deckMgr1, "NewDeckManagerP1 component should exist (Flame deck)");
+            Assert.IsNotNull(deckMgr2, "NewDeckManagerP2 component should exist (Earth deck)");
+            
+            // Optionally verify GameObject names if found
+            if (deckMgr1GameObject != null)
+            {
+                Assert.AreEqual(deckMgr1GameObject, deckMgr1.gameObject, "P1 deck manager GameObject should match component");
+            }
+            if (deckMgr2GameObject != null)
+            {
+                Assert.AreEqual(deckMgr2GameObject, deckMgr2.gameObject, "P2 deck manager GameObject should match component");
+            }
         }
 
         [Test]
@@ -246,22 +227,22 @@ namespace CardGame.Tests
                 GameObject dropArea = GameObject.Find($"DropArea{i}");
                 Assert.IsNotNull(dropArea, $"DropArea{i} should exist");
                 
-                // CardDropArea1 component
-                CardDropArea1 dropAreaComponent = dropArea.GetComponent<CardDropArea1>();
-                Assert.IsNotNull(dropAreaComponent, $"DropArea{i} should have CardDropArea1 component");
+                // CardDropArea component
+                CardDropArea dropAreaComponent = dropArea.GetComponent<CardDropArea>();
+                Assert.IsNotNull(dropAreaComponent, $"DropArea{i} should have CardDropArea component");
                 
                 // Collider2D for drop detection
                 Collider2D collider = dropArea.GetComponent<Collider2D>();
                 Assert.IsNotNull(collider, $"DropArea{i} should have Collider2D");
                 
-                // Note: CardDropArea1.Start() automatically sets isTrigger = true at runtime
+                // Note: CardDropArea.Start() automatically sets isTrigger = true at runtime
                 // In EditMode, we don't check isTrigger since it's set by Start() when the game runs
                 // We only verify the collider exists (required for drop detection)
-                // The isTrigger property will be correctly set at runtime by CardDropArea1.Start()
+                // The isTrigger property will be correctly set at runtime by CardDropArea.Start()
                 
                 // Verify IsOccupied property exists (used for placement validation)
-                var isOccupiedProperty = typeof(CardDropArea1).GetProperty("IsOccupied");
-                Assert.IsNotNull(isOccupiedProperty, $"CardDropArea1 should have IsOccupied property for placement validation");
+                var isOccupiedProperty = typeof(CardDropArea).GetProperty("IsOccupied");
+                Assert.IsNotNull(isOccupiedProperty, $"CardDropArea should have IsOccupied property for placement validation");
             }
         }
 
@@ -269,57 +250,57 @@ namespace CardGame.Tests
         public void HandUIs_Have_GetCardForUI_Method()
         {
             // Verify HandUI components have GetCardForUI method (used for drag validation)
-            GameObject handUI1 = GameObject.Find("NewHandUI Flame");
-            GameObject handUI2 = GameObject.Find("NewHandUI Earth");
+            GameObject handUI1 = GameObject.Find("NewHandP1UI Flame");
+            GameObject handUI2 = GameObject.Find("NewHandP1UI Earth");
             
             if (handUI1 != null)
             {
-                NewHandUI handUIComponent = handUI1.GetComponent<NewHandUI>();
+                NewHandP1UI handUIComponent = handUI1.GetComponent<NewHandP1UI>();
                 if (handUIComponent != null)
                 {
-                    var method = typeof(NewHandUI).GetMethod("GetCardForUI");
-                    Assert.IsNotNull(method, "NewHandUI should have GetCardForUI method for drag validation");
+                    var method = typeof(NewHandP1UI).GetMethod("GetCardForUI");
+                    Assert.IsNotNull(method, "NewHandP1UI should have GetCardForUI method for drag validation");
                 }
             }
             
             if (handUI2 != null)
             {
-                NewHandOppUI handOppUIComponent = handUI2.GetComponent<NewHandOppUI>();
+                NewHandP2UI handOppUIComponent = handUI2.GetComponent<NewHandP2UI>();
                 if (handOppUIComponent != null)
                 {
-                    var method = typeof(NewHandOppUI).GetMethod("GetCardForUI");
-                    Assert.IsNotNull(method, "NewHandOppUI should have GetCardForUI method for drag validation");
+                    var method = typeof(NewHandP2UI).GetMethod("GetCardForUI");
+                    Assert.IsNotNull(method, "NewHandP2UI should have GetCardForUI method for drag validation");
                 }
             }
         }
 
         [Test]
-        public void CardDropArea1_Supports_Placement_Validation()
+        public void CardDropArea_Supports_Placement_Validation()
         {
-            // Verify CardDropArea1 has methods/properties for placement validation
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>(true);
-            Assert.IsTrue(dropAreas.Length > 0, "At least one CardDropArea1 should exist");
+            // Verify CardDropArea has methods/properties for placement validation
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>(true);
+            Assert.IsTrue(dropAreas.Length > 0, "At least one CardDropArea should exist");
             
             if (dropAreas.Length > 0)
             {
-                CardDropArea1 sampleDropArea = dropAreas[0];
+                CardDropArea sampleDropArea = dropAreas[0];
                 
                 // Verify OnCardDrop method exists (for Player 1 cards)
-                var onCardDropMethod = typeof(CardDropArea1).GetMethod("OnCardDrop");
-                Assert.IsNotNull(onCardDropMethod, "CardDropArea1 should have OnCardDrop method for Player 1 card placement");
+                var onCardDropMethod = typeof(CardDropArea).GetMethod("OnCardDrop");
+                Assert.IsNotNull(onCardDropMethod, "CardDropArea should have OnCardDrop method for Player 1 card placement");
                 
-                // Verify OnCardDropOpp method exists (for Player 2/Opponent cards)
-                var onCardDropOppMethod = typeof(CardDropArea1).GetMethod("OnCardDropOpp");
-                Assert.IsNotNull(onCardDropOppMethod, "CardDropArea1 should have OnCardDropOpp method for Player 2 card placement");
+                // Verify OnCardDropP2 method exists (for P2 cards)
+                var onCardDropP2Method = typeof(CardDropArea).GetMethod("OnCardDropP2");
+                Assert.IsNotNull(onCardDropP2Method, "CardDropArea should have OnCardDropP2 method for P2 card placement");
                 
                 // Verify IsOccupied property exists
-                var isOccupiedProperty = typeof(CardDropArea1).GetProperty("IsOccupied");
-                Assert.IsNotNull(isOccupiedProperty, "CardDropArea1 should have IsOccupied property for placement validation");
+                var isOccupiedProperty = typeof(CardDropArea).GetProperty("IsOccupied");
+                Assert.IsNotNull(isOccupiedProperty, "CardDropArea should have IsOccupied property for placement validation");
                 
                 // Verify the property is accessible (test getter)
                 bool isOccupied = sampleDropArea.IsOccupied;
                 // Property should be accessible (no exception)
-                Assert.IsTrue(true, $"CardDropArea1.IsOccupied property is accessible: {isOccupied}");
+                Assert.IsTrue(true, $"CardDropArea.IsOccupied property is accessible: {isOccupied}");
             }
         }
 
@@ -351,7 +332,7 @@ namespace CardGame.Tests
             
             // Verify method signature matches expected parameters
             var parameters = placeOpponentCardMethod.GetParameters();
-            Assert.IsTrue(parameters.Length >= 1, "PlaceOpponentCardOnBoard should accept CardDropArea1 parameter");
+            Assert.IsTrue(parameters.Length >= 1, "PlaceOpponentCardOnBoard should accept CardDropArea parameter");
         }
 
         [Test]

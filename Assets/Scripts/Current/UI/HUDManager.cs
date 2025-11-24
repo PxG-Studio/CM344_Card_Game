@@ -26,8 +26,8 @@ namespace CardGame.UI
         [SerializeField] private TMP_Text tilesRemainingLabel;
         
         [Header("Managers")]
-        [SerializeField] private NewDeckManager player1DeckManager;
-        [SerializeField] private NewDeckManagerOpp player2DeckManager;
+        [SerializeField] private NewDeckManagerP1 player1DeckManager;
+        [SerializeField] private NewDeckManagerP2 player2DeckManager;
         
         [Header("Turn Indicator Settings")]
         [SerializeField] private Color activeTurnColor = new Color(1f, 0.8f, 0f, 1f); // Gold
@@ -55,11 +55,11 @@ namespace CardGame.UI
             // Auto-find deck managers if not assigned
             if (player1DeckManager == null)
             {
-                player1DeckManager = FindObjectOfType<NewDeckManager>();
+                player1DeckManager = FindObjectOfType<NewDeckManagerP1>();
             }
             if (player2DeckManager == null)
             {
-                player2DeckManager = FindObjectOfType<NewDeckManagerOpp>();
+                player2DeckManager = FindObjectOfType<NewDeckManagerP2>();
             }
             
             // Initialize displays
@@ -118,7 +118,7 @@ namespace CardGame.UI
         /// </summary>
         public void SetTurn(bool isPlayer1)
         {
-            currentFate = isPlayer1 ? FateSide.Player : FateSide.Opponent;
+            currentFate = isPlayer1 ? FateSide.Player : FateSide.P2;
             UpdateTurnIndicators();
         }
         
@@ -171,8 +171,8 @@ namespace CardGame.UI
             // Count placed cards on the board
             int placedCards = 0;
             
-            CardMover[] playerCards = FindObjectsOfType<CardMover>();
-            foreach (CardMover card in playerCards)
+            CardMoverP1[] playerCards = FindObjectsOfType<CardMoverP1>();
+            foreach (CardMoverP1 card in playerCards)
             {
                 if (card.IsPlayed)
                 {
@@ -180,8 +180,8 @@ namespace CardGame.UI
                 }
             }
             
-            CardMoverOpp[] opponentCards = FindObjectsOfType<CardMoverOpp>();
-            foreach (CardMoverOpp card in opponentCards)
+            CardMoverP2[] p2Cards = FindObjectsOfType<CardMoverP2>();
+            foreach (CardMoverP2 card in p2Cards)
             {
                 if (card.IsPlayed)
                 {
@@ -228,7 +228,7 @@ namespace CardGame.UI
         {
             if (scoreManager != null)
             {
-                UpdateScores(scoreManager.PlayerScore, scoreManager.OpponentScore);
+                UpdateScores(scoreManager.P1Score, scoreManager.P2Score);
             }
             UpdateHandDeckCounts();
             UpdateTilesRemaining();

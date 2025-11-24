@@ -90,22 +90,22 @@ namespace CardGame.Tests
         [Test]
         public void NewHandUI_Has_Canvas_Group()
         {
-            // Verify NewHandUI has CanvasGroup for layout
-            var canvasGroupProperty = typeof(NewHandUI).GetProperty("CanvasGroup",
+            // Verify NewHandP1UI has CanvasGroup for layout
+            var canvasGroupProperty = typeof(NewHandP1UI).GetProperty("CanvasGroup",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
             // CanvasGroup might be accessed via GetComponent, so we check for AddCardToHand instead
-            var addCardMethod = typeof(NewHandUI).GetMethod("AddCardToHand",
+            var addCardMethod = typeof(NewHandP1UI).GetMethod("AddCardToHand",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            Assert.IsNotNull(addCardMethod, "NewHandUI should have AddCardToHand method");
+            Assert.IsNotNull(addCardMethod, "NewHandP1UI should have AddCardToHand method");
         }
 
         [Test]
-        public void NewHandOppUI_Has_Canvas_Group()
+        public void NewHandP2UI_Has_Canvas_Group()
         {
-            // Verify NewHandOppUI has CanvasGroup for layout
-            var addCardMethod = typeof(NewHandOppUI).GetMethod("AddCardToHand",
+            // Verify NewHandP2UI has CanvasGroup for layout
+            var addCardMethod = typeof(NewHandP2UI).GetMethod("AddCardToHand",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            Assert.IsNotNull(addCardMethod, "NewHandOppUI should have AddCardToHand method");
+            Assert.IsNotNull(addCardMethod, "NewHandP2UI should have AddCardToHand method");
         }
 
         [Test]

@@ -7,9 +7,9 @@ using CardGame.Factories;
 namespace CardGame.UI
 {
     /// <summary>
-    /// Manages the visual representation of the player's hand with NewCard
+    /// Manages the visual representation of P2's hand with NewCard
     /// </summary>
-    public class NewHandOppUI : MonoBehaviour
+    public class NewHandP2UI : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private NewCardUI cardPrefab;
@@ -22,7 +22,7 @@ namespace CardGame.UI
         [SerializeField] private float rotationAngle = 5f;
         
         private List<NewCardUI> cardUIList = new List<NewCardUI>();
-        private NewDeckManagerOpp deckManager;
+        private NewDeckManagerP2 deckManager;
         
         // [CardFront] Static cache for prefab reference (fallback if serialized reference is lost)
         private static NewCardUI staticCardPrefab;
@@ -30,7 +30,7 @@ namespace CardGame.UI
         /// <summary>
         /// [CardFront] Hub property: Exposes deck manager for Hub connections
         /// </summary>
-        public NewDeckManagerOpp DeckManager => deckManager;
+        public NewDeckManagerP2 DeckManager => deckManager;
         
         /// <summary>
         /// [CardFront] Hub property: Exposes card prefab for Hub connections
@@ -122,27 +122,27 @@ namespace CardGame.UI
             if (cardPrefab != null && staticCardPrefab == null)
             {
                 staticCardPrefab = cardPrefab;
-                Debug.Log("[NewHandOppUI] Cached cardPrefab reference in static variable");
+                Debug.Log("[NewHandP2UI] Cached cardPrefab reference in static variable");
             }
             
             // [CardFront] Restore prefab reference from static cache if lost
             if (cardPrefab == null && staticCardPrefab != null)
             {
                 cardPrefab = staticCardPrefab;
-                Debug.Log("[NewHandOppUI] Restored cardPrefab reference from static cache (reference was lost during rematch)");
+                Debug.Log("[NewHandP2UI] Restored cardPrefab reference from static cache (reference was lost during rematch)");
             }
             
             // Ensure cardContainer is assigned
             if (cardContainer == null)
             {
                 cardContainer = transform;
-                Debug.Log("[NewHandOppUI] Auto-assigned cardContainer to self transform");
+                Debug.Log("[NewHandP2UI] Auto-assigned cardContainer to self transform");
             }
         }
         
         private void Start()
         {
-            deckManager = FindObjectOfType<NewDeckManagerOpp>();
+            deckManager = FindObjectOfType<NewDeckManagerP2>();
             
             if (deckManager != null)
             {
@@ -181,7 +181,7 @@ namespace CardGame.UI
         {
             if (card == null)
             {
-                Debug.LogError("NewHandOppUI.AddCardToHand: Cannot add null card to hand!");
+                Debug.LogError("NewHandP2UI.AddCardToHand: Cannot add null card to hand!");
                 return;
             }
             
@@ -191,18 +191,18 @@ namespace CardGame.UI
                 if (staticCardPrefab != null)
                 {
                     cardPrefab = staticCardPrefab;
-                    Debug.Log("[NewHandOppUI] Restored cardPrefab from static cache during AddCardToHand");
+                    Debug.Log("[NewHandP2UI] Restored cardPrefab from static cache during AddCardToHand");
                 }
                 else
                 {
-                    Debug.LogError("[NewHandOppUI] AddCardToHand: CardPrefab is null and static cache is also null! Please ensure the prefab is assigned in the Inspector for the NewHandOppUI component.");
+                    Debug.LogError("[NewHandP2UI] AddCardToHand: CardPrefab is null and static cache is also null! Please ensure the prefab is assigned in the Inspector for the NewHandP2UI component.");
                     return;
                 }
             }
             
             if (cardContainer == null)
             {
-                Debug.LogError("NewHandOppUI.AddCardToHand: CardContainer is not assigned!");
+                Debug.LogError("NewHandP2UI.AddCardToHand: CardContainer is not assigned!");
                 return;
             }
             
@@ -218,14 +218,14 @@ namespace CardGame.UI
             
             if (cardUI == null)
             {
-                Debug.LogError($"NewHandOppUI.AddCardToHand: Failed to create card UI for '{card.Data?.cardName ?? "UNKNOWN"}'");
+                Debug.LogError($"NewHandP2UI.AddCardToHand: Failed to create card UI for '{card.Data?.cardName ?? "UNKNOWN"}'");
                 return;
             }
             
             // Verify card is bound (should always be true if CardFactory worked)
             if (cardUI.Card == null)
             {
-                Debug.LogError($"NewHandOppUI.AddCardToHand: Card UI was created but card is null for '{card.Data?.cardName ?? "UNKNOWN"}'. This should never happen with CardFactory.");
+                Debug.LogError($"NewHandP2UI.AddCardToHand: Card UI was created but card is null for '{card.Data?.cardName ?? "UNKNOWN"}'. This should never happen with CardFactory.");
                 Destroy(cardUI.gameObject);
                 return;
             }
@@ -239,7 +239,7 @@ namespace CardGame.UI
             // Arrange cards in hand
             ArrangeCards();
             
-            Debug.Log($"NewHandOppUI.AddCardToHand: Successfully added card '{card.Data.cardName}' to hand. Total cards: {cardUIList.Count}");
+            Debug.Log($"NewHandP2UI.AddCardToHand: Successfully added card '{card.Data.cardName}' to hand. Total cards: {cardUIList.Count}");
         }
         
         private void HandleCardUIPlayed(NewCardUI cardUI)
@@ -279,7 +279,7 @@ namespace CardGame.UI
                 
                 // Only destroy if it's a UI card (NewCardUI), not a 2D board card (CardMover)
                 // CardMover cards should stay on the board when played
-                CardMoverOpp cardMover = cardUIToRemove.GetComponent<CardMoverOpp>();
+                CardMoverP2 cardMover = cardUIToRemove.GetComponent<CardMoverP2>();
                 if (cardMover == null)
                 {
                     // It's a UI card, safe to destroy

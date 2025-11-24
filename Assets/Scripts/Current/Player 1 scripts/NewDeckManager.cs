@@ -8,7 +8,7 @@ namespace CardGame.Managers
     /// <summary>
     /// Manages the player's deck, hand, and discard pile for NewCard system
     /// </summary>
-    public class NewDeckManager : MonoBehaviour
+    public class NewDeckManagerP1 : MonoBehaviour
     {
         [Header("Deck Configuration")]
         [SerializeField] private List<NewCardData.NewCardData> startingDeck = new List<NewCardData.NewCardData>();

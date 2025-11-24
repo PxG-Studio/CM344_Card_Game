@@ -85,7 +85,7 @@ namespace CardGame.Tests
             }
             
             // Assert: Board state should remain consistent
-            CardDropArea1[] dropAreas = Object.FindObjectsOfType<CardDropArea1>();
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.AreEqual(16, dropAreas.Length, "Should still have exactly 16 drop areas after rapid input");
             
             // FateFlowController should still be valid
@@ -98,23 +98,23 @@ namespace CardGame.Tests
             // Arrange: Wait for game to initialize
             yield return new WaitForSeconds(2.0f);
             
-            // Verify CardMover has drag state tracking
-            CardMover[] cardMovers = Object.FindObjectsOfType<CardMover>(true);
+            // Verify CardMoverP1 has drag state tracking
+            CardMoverP1[] cardMovers = Object.FindObjectsOfType<CardMoverP1>(true);
             
-            // CardMover uses isDragging flag to prevent simultaneous drags
+            // CardMoverP1 uses isDragging flag to prevent simultaneous drags
             // Only one card can be dragged at a time per player
             if (cardMovers.Length > 0)
             {
                 // Verify isDragging field exists
-                var isDraggingField = typeof(CardMover).GetField("isDragging", 
+                var isDraggingField = typeof(CardMoverP1).GetField("isDragging", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                Assert.IsNotNull(isDraggingField, "CardMover should track isDragging state");
+                Assert.IsNotNull(isDraggingField, "CardMoverP1 should track isDragging state");
                 
-                Assert.IsTrue(true, "CardMover tracks drag state (prevents simultaneous drags)");
+                Assert.IsTrue(true, "CardMoverP1 tracks drag state (prevents simultaneous drags)");
             }
             else
             {
-                Assert.IsTrue(true, "CardMover components may be created at runtime");
+                Assert.IsTrue(true, "CardMoverP1 components may be created at runtime");
             }
         }
 

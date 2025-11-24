@@ -104,7 +104,7 @@ namespace CardGame.Managers
                 Debug.LogWarning("[CoinTossManager] No player selection made. Defaulting to random result.");
                 // Fallback: random selection if no player selection was made
                 bool isHeads = UnityEngine.Random.Range(0, 2) == 0;
-                coinTossResult = isHeads ? FateSide.Player : FateSide.Opponent;
+                coinTossResult = isHeads ? FateSide.Player : FateSide.P2;
                 isCoinTossComplete = true;
                 OnCoinTossComplete?.Invoke(coinTossResult.Value);
                 return coinTossResult.Value;
@@ -126,7 +126,7 @@ namespace CardGame.Managers
             else
             {
                 // Result doesn't match selection - other player goes first
-                startingPlayer = selectedByPlayer.Value == FateSide.Player ? FateSide.Opponent : FateSide.Player;
+                startingPlayer = selectedByPlayer.Value == FateSide.Player ? FateSide.P2 : FateSide.Player;
             }
 
             coinTossResult = startingPlayer;

@@ -37,36 +37,36 @@ namespace CardGame.Tests
         }
 
         [Test]
-        public void CardDropArea1_Has_DeckManager_Integration()
+        public void CardDropArea_Has_DeckManager_Integration()
         {
-            // Verify CardDropArea1 can access deck managers
-            var deckManagerField = typeof(CardDropArea1).GetField("deckManager",
+            // Verify CardDropArea can access deck managers
+            var deckManagerP1Field = typeof(CardDropArea).GetField("deckManagerP1",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var deckManagerOppField = typeof(CardDropArea1).GetField("deckManagerOpp",
+            var deckManagerP2Field = typeof(CardDropArea).GetField("deckManagerP2",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
-            Assert.IsNotNull(deckManagerField, "CardDropArea1 should have deckManager field");
-            Assert.IsNotNull(deckManagerOppField, "CardDropArea1 should have deckManagerOpp field");
+            Assert.IsNotNull(deckManagerP1Field, "CardDropArea should have deckManagerP1 field");
+            Assert.IsNotNull(deckManagerP2Field, "CardDropArea should have deckManagerP2 field");
         }
 
         [Test]
         public void NewHandUI_Has_DeckManager_Integration()
         {
-            // Verify NewHandUI can access deck manager
-            var deckManagerProperty = typeof(NewHandUI).GetProperty("DeckManager");
-            Assert.IsNotNull(deckManagerProperty, "NewHandUI should have DeckManager property");
-            Assert.AreEqual(typeof(NewDeckManager), deckManagerProperty.PropertyType,
-                "NewHandUI.DeckManager should be of type NewDeckManager");
+            // Verify NewHandP1UI can access deck manager
+            var deckManagerProperty = typeof(NewHandP1UI).GetProperty("DeckManager");
+            Assert.IsNotNull(deckManagerProperty, "NewHandP1UI should have DeckManager property");
+            Assert.AreEqual(typeof(NewDeckManagerP1), deckManagerProperty.PropertyType,
+                "NewHandP1UI.DeckManager should be of type NewDeckManager");
         }
 
         [Test]
-        public void NewHandOppUI_Has_DeckManager_Integration()
+        public void NewHandP2UI_Has_DeckManager_Integration()
         {
-            // Verify NewHandOppUI can access opponent deck manager
-            var deckManagerProperty = typeof(NewHandOppUI).GetProperty("DeckManager");
-            Assert.IsNotNull(deckManagerProperty, "NewHandOppUI should have DeckManager property");
-            Assert.AreEqual(typeof(NewDeckManagerOpp), deckManagerProperty.PropertyType,
-                "NewHandOppUI.DeckManager should be of type NewDeckManagerOpp");
+            // Verify NewHandP2UI can access P2 deck manager
+            var deckManagerProperty = typeof(NewHandP2UI).GetProperty("DeckManager");
+            Assert.IsNotNull(deckManagerProperty, "NewHandP2UI should have DeckManager property");
+            Assert.AreEqual(typeof(NewDeckManagerP2), deckManagerProperty.PropertyType,
+                "NewHandP2UI.DeckManager should be of type NewDeckManagerP2");
         }
 
         [Test]
@@ -88,21 +88,21 @@ namespace CardGame.Tests
         }
 
         [Test]
-        public void CardDropArea1_Has_ScoreManager_Integration()
+        public void CardDropArea_Has_ScoreManager_Integration()
         {
-            // Verify CardDropArea1 can access ScoreManager
-            var scoreManagerField = typeof(CardDropArea1).GetField("scoreManager",
+            // Verify CardDropArea can access ScoreManager
+            var scoreManagerField = typeof(CardDropArea).GetField("scoreManager",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            Assert.IsNotNull(scoreManagerField, "CardDropArea1 should have scoreManager field");
+            Assert.IsNotNull(scoreManagerField, "CardDropArea should have scoreManager field");
         }
 
         [Test]
-        public void CardDropArea1_Has_GameEndManager_Integration()
+        public void CardDropArea_Has_GameEndManager_Integration()
         {
-            // Verify CardDropArea1 can access GameEndManager
-            var gameEndManagerField = typeof(CardDropArea1).GetField("gameEndManager",
+            // Verify CardDropArea can access GameEndManager
+            var gameEndManagerField = typeof(CardDropArea).GetField("gameEndManager",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            Assert.IsNotNull(gameEndManagerField, "CardDropArea1 should have gameEndManager field");
+            Assert.IsNotNull(gameEndManagerField, "CardDropArea should have gameEndManager field");
         }
     }
 }

@@ -31,36 +31,36 @@ namespace CardGame.Tests
         }
 
         [Test]
-        public void CardDropArea1_Has_Reset_Methods()
+        public void CardDropArea_Has_Reset_Methods()
         {
-            // Verify CardDropArea1 has reset methods (it's a static method)
-            var resetGameStatisticsMethod = typeof(CardDropArea1).GetMethod("ResetGameStatistics",
+            // Verify CardDropArea has reset methods (it's a static method)
+            var resetGameStatisticsMethod = typeof(CardDropArea).GetMethod("ResetGameStatistics",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            Assert.IsNotNull(resetGameStatisticsMethod, "CardDropArea1 should have ResetGameStatistics static method");
+            Assert.IsNotNull(resetGameStatisticsMethod, "CardDropArea should have ResetGameStatistics static method");
         }
 
         [Test]
         public void NewDeckManager_Has_Hand_Limit_Check()
         {
-            // Verify NewDeckManager has hand limit checking
-            var handProperty = typeof(NewDeckManager).GetProperty("Hand");
-            Assert.IsNotNull(handProperty, "NewDeckManager should have Hand property for limit checking");
+            // Verify NewDeckManagerP1 has hand limit checking
+            var handProperty = typeof(NewDeckManagerP1).GetProperty("Hand");
+            Assert.IsNotNull(handProperty, "NewDeckManagerP1 should have Hand property for limit checking");
         }
 
         [Test]
-        public void NewDeckManagerOpp_Has_Hand_Limit_Check()
+        public void NewDeckManagerP2_Has_Hand_Limit_Check()
         {
-            // Verify NewDeckManagerOpp has hand limit checking
-            var handProperty = typeof(NewDeckManagerOpp).GetProperty("Hand");
-            Assert.IsNotNull(handProperty, "NewDeckManagerOpp should have Hand property for limit checking");
+            // Verify NewDeckManagerP2 has hand limit checking
+            var handProperty = typeof(NewDeckManagerP2).GetProperty("Hand");
+            Assert.IsNotNull(handProperty, "NewDeckManagerP2 should have Hand property for limit checking");
         }
 
         [Test]
-        public void CardDropArea1_Has_Occupancy_Check()
+        public void CardDropArea_Has_Occupancy_Check()
         {
-            // Verify CardDropArea1 has occupancy checking
-            var isOccupiedProperty = typeof(CardDropArea1).GetProperty("IsOccupied");
-            Assert.IsNotNull(isOccupiedProperty, "CardDropArea1 should have IsOccupied property");
+            // Verify CardDropArea has occupancy checking
+            var isOccupiedProperty = typeof(CardDropArea).GetProperty("IsOccupied");
+            Assert.IsNotNull(isOccupiedProperty, "CardDropArea should have IsOccupied property");
             Assert.AreEqual(typeof(bool), isOccupiedProperty.PropertyType,
                 "IsOccupied should return bool");
         }

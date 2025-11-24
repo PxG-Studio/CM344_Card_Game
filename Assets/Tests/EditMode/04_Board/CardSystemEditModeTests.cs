@@ -16,69 +16,69 @@ namespace CardGame.Tests
         [Test]
         public void NewDeckManager_Has_Deck_Management_Methods()
         {
-            // Verify NewDeckManager has deck management methods
-            var initializeDeckMethod = typeof(NewDeckManager).GetMethod("InitializeDeck",
+            // Verify NewDeckManagerP1 has deck management methods
+            var initializeDeckMethod = typeof(NewDeckManagerP1).GetMethod("InitializeDeck",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            var drawCardMethod = typeof(NewDeckManager).GetMethod("DrawCard",
+            var drawCardMethod = typeof(NewDeckManagerP1).GetMethod("DrawCard",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            var shuffleDeckMethod = typeof(NewDeckManager).GetMethod("ShuffleDeck",
+            var shuffleDeckMethod = typeof(NewDeckManagerP1).GetMethod("ShuffleDeck",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
             
-            Assert.IsNotNull(initializeDeckMethod, "NewDeckManager should have InitializeDeck method");
-            Assert.IsNotNull(drawCardMethod, "NewDeckManager should have DrawCard method");
-            Assert.IsNotNull(shuffleDeckMethod, "NewDeckManager should have ShuffleDeck method");
+            Assert.IsNotNull(initializeDeckMethod, "NewDeckManagerP1 should have InitializeDeck method");
+            Assert.IsNotNull(drawCardMethod, "NewDeckManagerP1 should have DrawCard method");
+            Assert.IsNotNull(shuffleDeckMethod, "NewDeckManagerP1 should have ShuffleDeck method");
         }
 
         [Test]
         public void NewDeckManager_Has_Hand_Property()
         {
-            // Verify NewDeckManager has Hand property
-            var handProperty = typeof(NewDeckManager).GetProperty("Hand");
-            Assert.IsNotNull(handProperty, "NewDeckManager should have Hand property");
+            // Verify NewDeckManagerP1 has Hand property
+            var handProperty = typeof(NewDeckManagerP1).GetProperty("Hand");
+            Assert.IsNotNull(handProperty, "NewDeckManagerP1 should have Hand property");
         }
 
         [Test]
-        public void NewDeckManagerOpp_Has_Deck_Management_Methods()
+        public void NewDeckManagerP2_Has_Deck_Management_Methods()
         {
-            // Verify NewDeckManagerOpp has deck management methods
-            var initializeDeckMethod = typeof(NewDeckManagerOpp).GetMethod("InitializeDeck",
+            // Verify NewDeckManagerP2 has deck management methods
+            var initializeDeckMethod = typeof(NewDeckManagerP2).GetMethod("InitializeDeck",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            var drawCardMethod = typeof(NewDeckManagerOpp).GetMethod("DrawCard",
+            var drawCardMethod = typeof(NewDeckManagerP2).GetMethod("DrawCard",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            var shuffleDeckMethod = typeof(NewDeckManagerOpp).GetMethod("ShuffleDeck",
+            var shuffleDeckMethod = typeof(NewDeckManagerP2).GetMethod("ShuffleDeck",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
             
-            Assert.IsNotNull(initializeDeckMethod, "NewDeckManagerOpp should have InitializeDeck method");
-            Assert.IsNotNull(drawCardMethod, "NewDeckManagerOpp should have DrawCard method");
-            Assert.IsNotNull(shuffleDeckMethod, "NewDeckManagerOpp should have ShuffleDeck method");
+            Assert.IsNotNull(initializeDeckMethod, "NewDeckManagerP2 should have InitializeDeck method");
+            Assert.IsNotNull(drawCardMethod, "NewDeckManagerP2 should have DrawCard method");
+            Assert.IsNotNull(shuffleDeckMethod, "NewDeckManagerP2 should have ShuffleDeck method");
         }
 
         [Test]
-        public void NewDeckManagerOpp_Has_Hand_Property()
+        public void NewDeckManagerP2_Has_Hand_Property()
         {
-            // Verify NewDeckManagerOpp has Hand property
-            var handProperty = typeof(NewDeckManagerOpp).GetProperty("Hand");
-            Assert.IsNotNull(handProperty, "NewDeckManagerOpp should have Hand property");
+            // Verify NewDeckManagerP2 has Hand property
+            var handProperty = typeof(NewDeckManagerP2).GetProperty("Hand");
+            Assert.IsNotNull(handProperty, "NewDeckManagerP2 should have Hand property");
         }
 
         [Test]
         public void CardMover_Has_Card_Reference()
         {
-            // Verify CardMover has Card property
-            var cardProperty = typeof(CardMover).GetProperty("Card");
-            Assert.IsNotNull(cardProperty, "CardMover should have Card property");
+            // Verify CardMoverP1 has Card property
+            var cardProperty = typeof(CardMoverP1).GetProperty("Card");
+            Assert.IsNotNull(cardProperty, "CardMoverP1 should have Card property");
             Assert.AreEqual(typeof(NewCard), cardProperty.PropertyType,
-                "CardMover.Card should be of type NewCard");
+                "CardMoverP1.Card should be of type NewCard");
         }
 
         [Test]
-        public void CardMoverOpp_Has_Card_Reference()
+        public void CardMoverP2_Has_Card_Reference()
         {
-            // Verify CardMoverOpp has Card property
-            var cardProperty = typeof(CardMoverOpp).GetProperty("Card");
-            Assert.IsNotNull(cardProperty, "CardMoverOpp should have Card property");
+            // Verify CardMoverP2 has Card property
+            var cardProperty = typeof(CardMoverP2).GetProperty("Card");
+            Assert.IsNotNull(cardProperty, "CardMoverP2 should have Card property");
             Assert.AreEqual(typeof(NewCard), cardProperty.PropertyType,
-                "CardMoverOpp.Card should be of type NewCard");
+                "CardMoverP2.Card should be of type NewCard");
         }
 
         [Test]

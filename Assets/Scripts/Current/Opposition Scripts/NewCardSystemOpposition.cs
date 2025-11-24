@@ -5,14 +5,14 @@ using CardGame.UI;
 namespace CardGame.Testing
 {
     /// <summary>
-    /// Test script to easily initialize and test the NewCard system
+    /// Test script to easily initialize and test the NewCard system for P2
     /// Attach this to a GameObject in your scene to test the card system
     /// </summary>
-    public class NewCardSystemOpposition : MonoBehaviour
+    public class NewCardSystemP2 : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] private NewDeckManagerOpp deckManager;
-        [SerializeField] private NewHandOppUI handUI;
+        [SerializeField] private NewDeckManagerP2 deckManager;
+        [SerializeField] private NewHandP2UI handUI;
         
         [Header("Test Settings")]
         [SerializeField] private bool autoInitializeOnStart = true;
@@ -26,10 +26,10 @@ namespace CardGame.Testing
         {
             // Auto-find components if not assigned
             if (deckManager == null)
-                deckManager = FindObjectOfType<NewDeckManagerOpp>();
+                deckManager = FindObjectOfType<NewDeckManagerP2>();
             
             if (handUI == null)
-                handUI = FindObjectOfType<NewHandOppUI>();
+                handUI = FindObjectOfType<NewHandP2UI>();
             
             if (autoInitializeOnStart && deckManager != null)
             {
@@ -60,7 +60,7 @@ namespace CardGame.Testing
             
             if (coinTossManager == null)
             {
-                Debug.LogWarning("[NewCardSystemOpposition] CoinTossManager not found after wait. Proceeding with card draw anyway.");
+                Debug.LogWarning("[NewCardSystemP2] CoinTossManager not found after wait. Proceeding with card draw anyway.");
                 yield return new WaitForSeconds(0.5f);
                 DrawInitialCards();
                 yield break;
@@ -77,7 +77,7 @@ namespace CardGame.Testing
                 
                 if (coinTossManager == null)
                 {
-                    Debug.LogWarning("[NewCardSystemOpposition] CoinTossManager became null during wait. Proceeding with card draw.");
+                    Debug.LogWarning("[NewCardSystemP2] CoinTossManager became null during wait. Proceeding with card draw.");
                     break;
                 }
                 
@@ -154,8 +154,8 @@ namespace CardGame.Testing
             handUI.ClearHand();
             
             // Also clear all cards from the board
-            CardMoverOpp[] boardCards = FindObjectsOfType<CardMoverOpp>();
-            foreach (CardMoverOpp card in boardCards)
+            CardMoverP2[] boardCards = FindObjectsOfType<CardMoverP2>();
+            foreach (CardMoverP2 card in boardCards)
             {
                 if (card.IsPlayed)
                 {
@@ -183,7 +183,7 @@ namespace CardGame.Testing
             float flippedX = Screen.width - w - x;
 
             GUILayout.BeginArea(new Rect(flippedX, y, w, h));
-            GUILayout.Box("NewCard System Test Opp");
+            GUILayout.Box("NewCard System Test P2");
             
             if (GUILayout.Button("Initialize Deck"))
             {

@@ -5,7 +5,7 @@ using CardGame.Core;
 using CardGame.UI;
 using CardGame.Managers;
 
-public class CardMoverOpp : MonoBehaviour
+public class CardMoverP2 : MonoBehaviour
 {
     private Collider2D col;
     private Vector3 startDragPosition;
@@ -17,7 +17,7 @@ public class CardMoverOpp : MonoBehaviour
     
     [Header("Card Reference")]
     [SerializeField] private NewCard card; // Reference to the NewCard this represents
-    [SerializeField] private FateSide ownerSide = FateSide.Opponent;
+    [SerializeField] private FateSide ownerSide = FateSide.P2;
     
     public NewCard Card => card;
     public bool IsPlayed => isPlayed;
@@ -124,7 +124,7 @@ public class CardMoverOpp : MonoBehaviour
                     newCollider.size = size;
                 }
                 
-                Debug.Log($"[CardMoverOpp] Added BoxCollider2D to '{gameObject.name}' (no collider found). Size: {newCollider.size}");
+                Debug.Log($"[CardMoverP2] Added BoxCollider2D to '{gameObject.name}' (no collider found). Size: {newCollider.size}");
             }
         }
         
@@ -143,13 +143,13 @@ public class CardMoverOpp : MonoBehaviour
             // Ensure the GameObject the collider is on is active
             if (col.gameObject != null && !col.gameObject.activeInHierarchy)
             {
-                Debug.LogWarning($"[CardMoverOpp] Collider found on inactive GameObject '{col.gameObject.name}'. Ensuring it's active.");
+                Debug.LogWarning($"[CardMoverP2] Collider found on inactive GameObject '{col.gameObject.name}'. Ensuring it's active.");
                 col.gameObject.SetActive(true);
             }
         }
         else
         {
-            Debug.LogError($"[CardMoverOpp] Failed to ensure collider on '{gameObject.name}'. This should not happen!");
+            Debug.LogError($"[CardMoverP2] Failed to ensure collider on '{gameObject.name}'. This should not happen!");
         }
     }
     
@@ -181,7 +181,7 @@ public class CardMoverOpp : MonoBehaviour
         
         // Try to find card by name matching with NewDeckManager
         // This is a fallback for 2D cards that don't have NewCardUI
-        CardGame.Managers.NewDeckManagerOpp deckManager = FindObjectOfType<CardGame.Managers.NewDeckManagerOpp>();
+        CardGame.Managers.NewDeckManagerP2 deckManager = FindObjectOfType<CardGame.Managers.NewDeckManagerP2>();
         if (deckManager != null && deckManager.Hand != null && deckManager.Hand.Count > 0)
         {
             // Try to match by GameObject name or some identifier
@@ -221,7 +221,7 @@ public class CardMoverOpp : MonoBehaviour
         if (card == null && !gameObject.name.Contains("Prefab"))
         {
             // Suppress warning if this is a prefab instance that will be initialized later
-            Debug.LogWarning($"CardMoverOpp on {gameObject.name}: Could not find NewCard reference. Card will not be playable until reference is set. You can assign it manually in Inspector or ensure NewCardUI component exists.");
+            Debug.LogWarning($"CardMoverP2 on {gameObject.name}: Could not find NewCard reference. Card will not be playable until reference is set. You can assign it manually in Inspector or ensure NewCardUI component exists.");
         }
         #endif
     }
@@ -231,18 +231,18 @@ public class CardMoverOpp : MonoBehaviour
     private void OnMouseDown()
     {
         // [CardFront] Diagnostic logging (matching Player 1's CardMover)
-        Debug.Log($"[CardMoverOpp] OnMouseDown CALLED for '{gameObject.name}'. isPlayed: {isPlayed}, CanInteract: {CanInteract}, collider: {(col != null ? col.name : "null")}");
+        Debug.Log($"[CardMoverP2] OnMouseDown CALLED for '{gameObject.name}'. isPlayed: {isPlayed}, CanInteract: {CanInteract}, collider: {(col != null ? col.name : "null")}");
         
         // Don't allow dragging if card has been played or it's not the opponent's turn
         if (isPlayed)
         {
-            Debug.LogWarning($"[CardMoverOpp] Cannot drag '{gameObject.name}' - card has been played.");
+            Debug.LogWarning($"[CardMoverP2] Cannot drag '{gameObject.name}' - card has been played.");
             return;
         }
         
         if (!CanInteract)
         {
-            Debug.LogWarning($"[CardMoverOpp] Cannot drag '{gameObject.name}' - not opponent's turn. CurrentFate: {(FateFlowController.Instance != null ? FateFlowController.Instance.CurrentFate.ToString() : "null")}");
+            Debug.LogWarning($"[CardMoverP2] Cannot drag '{gameObject.name}' - not opponent's turn. CurrentFate: {(FateFlowController.Instance != null ? FateFlowController.Instance.CurrentFate.ToString() : "null")}");
             return;
         }
         
@@ -250,11 +250,11 @@ public class CardMoverOpp : MonoBehaviour
         EnsureCollider();
         if (col == null)
         {
-            Debug.LogError($"[CardMoverOpp] OnMouseDown called but no Collider2D found on '{gameObject.name}'. OnMouseDown requires a Collider2D component!");
+            Debug.LogError($"[CardMoverP2] OnMouseDown called but no Collider2D found on '{gameObject.name}'. OnMouseDown requires a Collider2D component!");
             return;
         }
         
-        Debug.Log($"[CardMoverOpp] Starting drag for '{gameObject.name}'");
+        Debug.Log($"[CardMoverP2] Starting drag for '{gameObject.name}'");
         isDragging = true;
         hasMovedDuringDrag = false;
         startDragPosition = transform.position;
@@ -346,7 +346,7 @@ public class CardMoverOpp : MonoBehaviour
         Camera camera = GetPlayer2Camera();
         if (camera == null)
         {
-            Debug.LogError("[CardMoverOpp] No camera found for mouse position conversion!");
+            Debug.LogError("[CardMoverP2] No camera found for mouse position conversion!");
             return Vector3.zero;
         }
         
@@ -396,7 +396,7 @@ public class CardMoverOpp : MonoBehaviour
     {
         if (!bypassTurnCheck && !CanInteract)
         {
-            Debug.Log($"[CardMoverOpp] AttemptDrop failed - cannot interact (bypassTurnCheck: {bypassTurnCheck}, CanInteract: {CanInteract})");
+            Debug.Log($"[CardMoverP2] AttemptDrop failed - cannot interact (bypassTurnCheck: {bypassTurnCheck}, CanInteract: {CanInteract})");
             return false;
         }
 
@@ -406,7 +406,7 @@ public class CardMoverOpp : MonoBehaviour
         // [CardFront] Enhanced drop detection with better logging and layer mask support
         if (col == null)
         {
-            Debug.LogError($"[CardMoverOpp] AttemptDrop failed - no Collider2D on '{gameObject.name}' (EnsureCollider failed)");
+            Debug.LogError($"[CardMoverP2] AttemptDrop failed - no Collider2D on '{gameObject.name}' (EnsureCollider failed)");
             return false;
         }
 
@@ -429,7 +429,7 @@ public class CardMoverOpp : MonoBehaviour
         
         if (hitCollider != null)
         {
-            Debug.Log($"[CardMoverOpp] AttemptDrop: Found collider '{hitCollider.name}' at position {transform.position}");
+            Debug.Log($"[CardMoverP2] AttemptDrop: Found collider '{hitCollider.name}' at position {transform.position}");
             
             // Try to get ICardDropArea component
             ICardDropArea cardDropArea = hitCollider.GetComponent<ICardDropArea>();
@@ -441,8 +441,8 @@ public class CardMoverOpp : MonoBehaviour
             
             if (cardDropArea != null)
             {
-                Debug.Log($"[CardMoverOpp] AttemptDrop: Successfully found ICardDropArea on '{hitCollider.name}'. Calling OnCardDropOpp...");
-                cardDropArea.OnCardDropOpp(this);
+                Debug.Log($"[CardMoverP2] AttemptDrop: Successfully found ICardDropArea on '{hitCollider.name}'. Calling OnCardDropP2...");
+                cardDropArea.OnCardDropP2(this);
                 hasMovedDuringDrag = false;
                 isDragging = false;
                 startDragPosition = transform.position;
@@ -450,12 +450,12 @@ public class CardMoverOpp : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"[CardMoverOpp] AttemptDrop: Collider '{hitCollider.name}' found but no ICardDropArea component!");
+                Debug.LogWarning($"[CardMoverP2] AttemptDrop: Collider '{hitCollider.name}' found but no ICardDropArea component!");
             }
         }
         else
         {
-            Debug.Log($"[CardMoverOpp] AttemptDrop: No collider found at position {transform.position} (radius: {checkRadius})");
+            Debug.Log($"[CardMoverP2] AttemptDrop: No collider found at position {transform.position} (radius: {checkRadius})");
         }
 
         return false;
