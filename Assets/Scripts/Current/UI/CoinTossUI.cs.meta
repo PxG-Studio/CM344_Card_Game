@@ -3,7 +3,19 @@ guid: db8fded932bb9994598b9deae3f778f0
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - coinTossPanel: {instanceID: 0}
+  - resultText: {instanceID: 0}
+  - headsLabel: {instanceID: 0}
+  - tailsLabel: {instanceID: 0}
+  - coinImage: {instanceID: 0}
+  - continueButton: {instanceID: 0}
+  - headsButton: {instanceID: 0}
+  - tailsButton: {instanceID: 0}
+  - selectionPanel: {instanceID: 0}
+  - selectionPromptText: {instanceID: 0}
+  - headsSprite: {fileID: 21300000, guid: e2748be5111c49e44966b145a5cbb459, type: 3}
+  - tailsSprite: {fileID: 21300000, guid: fc8651270365b444a9fac8cc7993dd83, type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
