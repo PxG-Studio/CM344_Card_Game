@@ -108,6 +108,8 @@ namespace CardGame.Managers
             DiscardCard(card);
             
             Debug.Log($"Played card: {card.Data.cardName}");
+            if (DrawPileCount != 0)
+            { DrawCard();}
         }
         
         public void DiscardCard(NewCard card)
