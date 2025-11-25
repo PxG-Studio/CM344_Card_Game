@@ -239,7 +239,23 @@ namespace CardGame.UI
             // Arrange cards in hand
             ArrangeCards();
             
+            // Show delta marker when card is drawn (+1 for gaining a card)
+            // Delay slightly to allow card to be positioned first
+            StartCoroutine(ShowDrawDeltaMarker(cardUI.transform));
+            
             Debug.Log($"NewHandP2UI.AddCardToHand: Successfully added card '{card.Data.cardName}' to hand. Total cards: {cardUIList.Count}");
+        }
+        
+        private System.Collections.IEnumerator ShowDrawDeltaMarker(Transform cardTransform)
+        {
+            // Wait a frame to ensure card is positioned
+            yield return null;
+            
+            // Show +1 delta marker at card position
+            if (cardTransform != null)
+            {
+                DeltaMarkerSystem.ShowDelta(+1, cardTransform);
+            }
         }
         
         private void HandleCardUIPlayed(NewCardUI cardUI)

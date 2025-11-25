@@ -65,7 +65,7 @@ namespace CardGame.Managers
         }
         
         /// <summary>
-        /// [CardFront] Checks if game should end (when all cards have been played - both hands empty and all 10 cards on board)
+        /// Checks if game should end (when all 16 board slots are filled)
         /// </summary>
         public void CheckGameEnd()
         {
@@ -75,62 +75,21 @@ namespace CardGame.Managers
                 return;
             }
             
-            // [CardFront] Check if all cards have been played
-            // Game ends when:
-            // 1. Both players' hands are empty (no more cards to play)
-            // 2. All 10 cards have been placed on the board (5 player + 5 opponent)
-            // Note: Cards are moved to discard pile when played, so IsDeckEmpty() is not reliable
+            // Game ends when all 16 board slots are filled (territory-based scoring)
+            // Get board occupancy count from CardDropArea
+            (int occupiedSpaces, int totalSpaces) = CardDropArea.GetBoardOccupancy();
             
-            bool playerHandEmpty = false;
-            bool opponentHandEmpty = false;
-            int totalCardsPlayed = CardDropArea.GetCardsPlayed();
-            int playerHandCount = 0;
-            int opponentHandCount = 0;
-            
-            if (playerDeckManager != null)
-            {
-                playerHandEmpty = playerDeckManager.IsHandEmpty();
-                // [CardFront] Get actual hand count for detailed diagnostics
-                if (playerDeckManager.Hand != null)
-                {
-                    playerHandCount = playerDeckManager.Hand.Count;
-                }
-                Debug.Log($"[GameEndManager] Player hand check - IsHandEmpty: {playerHandEmpty}, Hand.Count: {playerHandCount}, DeckManager: {(playerDeckManager != null ? "Found" : "NULL")}");
-            }
-            else
-            {
-                Debug.LogWarning("[GameEndManager] PlayerDeckManager is NULL! Cannot check player hand.");
-            }
-            
-            if (opponentDeckManager != null)
-            {
-                opponentHandEmpty = opponentDeckManager.IsHandEmpty();
-                // [CardFront] Get actual hand count for detailed diagnostics
-                if (opponentDeckManager.Hand != null)
-                {
-                    opponentHandCount = opponentDeckManager.Hand.Count;
-                }
-                Debug.Log($"[GameEndManager] Opponent hand check - IsHandEmpty: {opponentHandEmpty}, Hand.Count: {opponentHandCount}, DeckManager: {(opponentDeckManager != null ? "Found" : "NULL")}");
-            }
-            else
-            {
-                Debug.LogWarning("[GameEndManager] OpponentDeckManager is NULL! Cannot check opponent hand.");
-            }
-            
-            // Game ends when both hands are empty AND all 10 cards are on the board
-            bool allCardsPlayed = (totalCardsPlayed >= 10) && playerHandEmpty && opponentHandEmpty;
+            bool allSlotsFilled = occupiedSpaces >= totalSpaces && totalSpaces >= 16;
             
             Debug.Log($"[GameEndManager] ===== GAME END CHECK =====");
-            Debug.Log($"[GameEndManager] Cards played: {totalCardsPlayed}/10");
-            Debug.Log($"[GameEndManager] Player hand empty: {playerHandEmpty} (hand.Count: {playerHandCount})");
-            Debug.Log($"[GameEndManager] Opponent hand empty: {opponentHandEmpty} (hand.Count: {opponentHandCount})");
-            Debug.Log($"[GameEndManager] All cards played condition: {allCardsPlayed}");
+            Debug.Log($"[GameEndManager] Board occupancy: {occupiedSpaces}/{totalSpaces} slots filled");
+            Debug.Log($"[GameEndManager] All slots filled condition: {allSlotsFilled} (need {totalSpaces} slots)");
             Debug.Log($"[GameEndManager] ==========================");
             
-            if (allCardsPlayed)
+            if (allSlotsFilled)
             {
-                Debug.Log("[GameEndManager] ✓✓✓ ALL CARDS HAVE BEEN PLAYED! ✓✓✓");
-                Debug.Log("[GameEndManager] Both players have no cards left and all 10 cards are on the board. Ending game...");
+                Debug.Log("[GameEndManager] ✓✓✓ ALL BOARD SLOTS FILLED! ✓✓✓");
+                Debug.Log($"[GameEndManager] All {totalSpaces} slots are occupied. Ending game...");
                 Debug.Log($"[GameEndManager] Current gameEndUI reference: {(gameEndUI != null ? "Found" : "Null - will search when showing UI")}");
                 isGameEnding = true;
                 
@@ -139,17 +98,7 @@ namespace CardGame.Managers
             }
             else
             {
-                // Detailed logging for debugging
-                if (totalCardsPlayed < 10)
-                {
-                    Debug.Log($"[GameEndManager] ❌ Game continues - Waiting for all cards to be played. Cards played: {totalCardsPlayed}/10 (need 10)");
-                }
-                else if (!playerHandEmpty || !opponentHandEmpty)
-                {
-                    Debug.Log($"[GameEndManager] ❌ Game continues - Waiting for hands to empty.");
-                    Debug.Log($"[GameEndManager]   - Player hand empty: {playerHandEmpty} (hand.Count: {playerHandCount})");
-                    Debug.Log($"[GameEndManager]   - Opponent hand empty: {opponentHandEmpty} (hand.Count: {opponentHandCount})");
-                }
+                Debug.Log($"[GameEndManager] ❌ Game continues - Waiting for all slots to be filled. Occupied: {occupiedSpaces}/{totalSpaces} (need {totalSpaces})");
             }
         }
         

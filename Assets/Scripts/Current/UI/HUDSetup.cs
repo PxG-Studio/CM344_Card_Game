@@ -4,6 +4,7 @@ using UnityEngine.EventSystems;
 using TMPro;
 using CardGame.Managers;
 using CardGame.Visuals;
+using CardGame.UI;
 
 namespace CardGame.UI
 {
@@ -93,6 +94,9 @@ namespace CardGame.UI
             // Setup Coin Toss UI
             SetupCoinTossUI(hudCanvas.transform);
             
+            // Setup Delta Marker System
+            EnsureDeltaMarkerEmitter();
+            
             Debug.Log("HUDSetup: HUD successfully configured!");
             
             // After successful HUD setup, automatically start the game
@@ -157,6 +161,24 @@ namespace CardGame.UI
                 statsObj.AddComponent<GameStatsTracker>();
                 Debug.Log("HUDSetup: Created GameStatsTracker");
             }
+        }
+        
+        /// <summary>
+        /// Ensure DeltaMarkerEmitter exists for delta marker popups.
+        /// </summary>
+        private void EnsureDeltaMarkerEmitter()
+        {
+            DeltaMarkerEmitter existingEmitter = FindObjectOfType<DeltaMarkerEmitter>();
+            if (existingEmitter != null)
+            {
+                Debug.Log($"HUDSetup: DeltaMarkerEmitter already exists on '{existingEmitter.gameObject.name}'");
+                return;
+            }
+            
+            // Create DeltaMarkerEmitter GameObject
+            GameObject emitterObj = new GameObject("DeltaMarkerEmitter");
+            DeltaMarkerEmitter emitter = emitterObj.AddComponent<DeltaMarkerEmitter>();
+            Debug.Log("HUDSetup: Created DeltaMarkerEmitter. Note: You must assign DeltaMarkerConfig asset and DeltaMarkerPopup prefab in the Inspector for delta markers to work.");
         }
         
         /// <summary>

@@ -406,6 +406,13 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 cardsPlayedThisTurn.Add(cardMover.gameObject);
                 occupyingCard = cardMover.gameObject;
                 
+                // Draw a card for the placing player after successful placement
+                if (deckManagerP1 != null && deckManagerP1.DrawPileCount > 0)
+                {
+                    deckManagerP1.DrawCard();
+                    Debug.Log($"[CardDropArea] Drew card for P1 after placing {card.Data.cardName}");
+                }
+                
                 CheckBoardOccupancy();
                 
                 // [CardFront] Check if game should end (all cards played - both players have no cards left)
@@ -838,6 +845,13 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 cardMoverP2.SetPlayed(true);
                 cardsPlayedThisTurn.Add(cardMoverP2.gameObject);
                 occupyingCard = cardMoverP2.gameObject;
+                
+                // Draw a card for the placing player after successful placement
+                if (deckManagerP2 != null && deckManagerP2.DrawPileCount > 0)
+                {
+                    deckManagerP2.DrawCard();
+                    Debug.Log($"[CardDropArea] Drew card for P2 after placing {card.Data.cardName}");
+                }
                 
                 CheckBoardOccupancy();
                 
@@ -1375,65 +1389,13 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
             gameCapturesMade++;
             Debug.Log($"[CardDropArea] Captures made count: {gameCapturesMade}");
+            
+            // Show delta marker for territory influence change (+1 for conquer)
+            DeltaMarkerSystem.ShowDelta(+1, cardObject.transform);
         }
         
-        // Notify ScoreManager of the capture
-        // Only update score for actual captures (not initial placement)
-        // Capture colors are: P1 = orange (1, 0.5, 0, 1), P2 = green (0, 0.8, 0, 1)
-        // White/clear colors indicate no capture (initial placement)
-        Debug.Log($"[CardDropArea] Score update check for {card.Data.cardName}. Capture color: ({captureColor.r:F2}, {captureColor.g:F2}, {captureColor.b:F2}, {captureColor.a:F2}). " +
-            $"Is white: {captureColor == Color.white}, Is clear: {captureColor == Color.clear}, Will update score: {captureColor != Color.white && captureColor != Color.clear}");
-        
-        if (captureColor != Color.white && captureColor != Color.clear)
-        {
-            // Use ScoreManager.Instance directly to ensure we always find it even if cached reference is null
-            ScoreManager scoreMgr = scoreManager ?? ScoreManager.Instance;
-            Debug.Log($"[CardDropArea] ScoreManager lookup for {card.Data.cardName}. Cached scoreManager: {scoreManager != null}, ScoreManager.Instance: {ScoreManager.Instance != null}, Final scoreMgr: {scoreMgr != null}");
-            if (scoreMgr != null)
-            {
-                bool isPlayerCapture = IsPlayerCard(cardObject);
-                // Note: The card is being captured, so the capture color determines who gets the score
-                Color playerColor = GetPlayerCaptureColor();
-                Color p2Color = GetP2CaptureColor();
-                
-                // Check if capture color matches P1 or P2 color (with tolerance for float precision)
-                bool isPlayerScoring = (Mathf.Abs(captureColor.r - playerColor.r) < 0.1f &&
-                                       Mathf.Abs(captureColor.g - playerColor.g) < 0.1f &&
-                                       Mathf.Abs(captureColor.b - playerColor.b) < 0.1f);
-                
-                bool isP2Scoring = (Mathf.Abs(captureColor.r - p2Color.r) < 0.1f &&
-                                         Mathf.Abs(captureColor.g - p2Color.g) < 0.1f &&
-                                         Mathf.Abs(captureColor.b - p2Color.b) < 0.1f);
-                
-                // Only update score if we have a valid capture color match
-                if (isPlayerScoring || isP2Scoring)
-                {
-                    int oldP1Score = scoreMgr.P1Score;
-                    int oldP2Score = scoreMgr.P2Score;
-                    
-                    scoreMgr.AddScore(isPlayerScoring);
-                    
-                    Debug.Log($"[CardDropArea] ✅ Score updated: {(isPlayerScoring ? "P1" : "P2")} captured {card.Data.cardName}. " +
-                        $"Capture color: ({captureColor.r:F2}, {captureColor.g:F2}, {captureColor.b:F2}). " +
-                        $"Scores - Before: P1={oldP1Score}, P2={oldP2Score}. " +
-                        $"After: P1={scoreMgr.P1Score}, P2={scoreMgr.P2Score}");
-                }
-                else
-                {
-                    Debug.LogWarning($"[CardDropArea] Invalid capture color for {card.Data.cardName}: ({captureColor.r:F2}, {captureColor.g:F2}, {captureColor.b:F2}). " +
-                        $"Expected P1: ({playerColor.r:F2}, {playerColor.g:F2}, {playerColor.b:F2}) or P2: ({p2Color.r:F2}, {p2Color.g:F2}, {p2Color.b:F2})");
-                }
-            }
-            else
-            {
-                Debug.LogWarning($"[CardDropArea] ScoreManager not found! Cannot update score for capture of {card.Data.cardName}. Check if ScoreManager.Instance exists.");
-            }
-        }
-        else
-        {
-            // Not a capture - just initial placement, no score update needed
-            Debug.Log($"[CardDropArea] No score update for {card.Data.cardName} - capture color is white/clear (initial placement, not a capture)");
-        }
+        // Scoring is now calculated only at game end based on final board state (territory control)
+        // Real-time scoring has been removed - scores will be calculated when all 16 slots are filled
     }
     
     /// <summary>
@@ -1715,14 +1677,31 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             Debug.Log($"Board occupancy: {occupiedSpaces}/{totalSpaces} spaces filled");
         }
         
-        // [CardFront] Log board occupancy (for debugging) - game ends when all cards are played, not when board is full
+        // Game ends when all 16 slots are filled (territory-based scoring)
         if (debugBattles && occupiedSpaces >= totalSpaces && totalSpaces > 0)
         {
-            Debug.Log($"[CardDropArea] Board is full! Occupied: {occupiedSpaces}/{totalSpaces} (Note: Game ends when all cards are played, not when board is full)");
+            Debug.Log($"[CardDropArea] Board is full! Occupied: {occupiedSpaces}/{totalSpaces}");
+        }
+    }
+    
+    /// <summary>
+    /// Gets the current board occupancy (occupied spaces and total spaces)
+    /// </summary>
+    public static (int occupiedSpaces, int totalSpaces) GetBoardOccupancy()
+    {
+        CardDropArea[] allDropAreas = Object.FindObjectsOfType<CardDropArea>();
+        int totalSpaces = allDropAreas.Length;
+        int occupiedSpaces = 0;
+        
+        foreach (CardDropArea dropArea in allDropAreas)
+        {
+            if (dropArea != null && dropArea.IsOccupied)
+            {
+                occupiedSpaces++;
+            }
         }
         
-        // [CardFront] Game end is now checked after each card is played in OnCardDrop (P1)/OnCardDropP2 (P2)
-        // Game ends when both players have no cards left (all 10 cards played), not when board is full (16/16)
+        return (occupiedSpaces, totalSpaces);
     }
     
     /// <summary>
