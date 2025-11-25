@@ -1673,26 +1673,40 @@ namespace CardGame.UI
         
         private void SetupBoardBackdrop()
         {
-            GameObject hudCanvas = GameObject.Find("HUDOverlayCanvas");
             GameObject hudCanvasGO = GameObject.Find("HUDOverlayCanvas");
             GameObject dropAreasRoot = GameObject.Find("Drop Areas");
-            if (hudCanvasGO == null || dropAreasRoot == null)
+            if (hudCanvasGO == null)
             {
-                Debug.LogWarning("HUDSetup: Cannot create battleground backdrop because required roots were not found.");
+                Debug.LogWarning("HUDSetup: Cannot create battleground backdrop because HUDOverlayCanvas was not found.");
                 return;
             }
 
-            // Remove old world-space backdrop
-            Transform oldWorldBackdrop = dropAreasRoot.transform.Find("BattlegroundSprite");
-            if (oldWorldBackdrop != null)
+            // Remove any lingering world-space backdrop
+            if (dropAreasRoot != null)
             {
-                if (Application.isPlaying)
+                Transform oldWorldBackdrop = dropAreasRoot.transform.Find("BattlegroundBackdrop");
+                if (oldWorldBackdrop != null)
                 {
-                    Destroy(oldWorldBackdrop.gameObject);
+                    if (Application.isPlaying)
+                    {
+                        Destroy(oldWorldBackdrop.gameObject);
+                    }
+                    else
+                    {
+                        DestroyImmediate(oldWorldBackdrop.gameObject);
+                    }
                 }
-                else
+                Transform oldSprite = dropAreasRoot.transform.Find("BattlegroundSprite");
+                if (oldSprite != null)
                 {
-                    DestroyImmediate(oldWorldBackdrop.gameObject);
+                    if (Application.isPlaying)
+                    {
+                        Destroy(oldSprite.gameObject);
+                    }
+                    else
+                    {
+                        DestroyImmediate(oldSprite.gameObject);
+                    }
                 }
             }
 
@@ -1703,46 +1717,37 @@ namespace CardGame.UI
                 return;
             }
 
-            Transform existing = dropAreasRoot.transform.Find("BattlegroundBackdrop");
+            Transform existing = hudCanvasGO.transform.Find("BattlegroundBackdrop");
             GameObject backdropObj = existing != null ? existing.gameObject : new GameObject("BattlegroundBackdrop");
             if (existing == null)
             {
-                backdropObj.transform.SetParent(dropAreasRoot.transform, false);
-                SpriteRenderer renderer = backdropObj.AddComponent<SpriteRenderer>();
-                renderer.sortingOrder = -500;
-                renderer.color = Color.white;
-                renderer.sprite = sprite;
+                backdropObj.transform.SetParent(hudCanvasGO.transform, false);
+                CanvasRenderer renderer = backdropObj.AddComponent<CanvasRenderer>();
+                UnityEngine.UI.Image img = backdropObj.AddComponent<UnityEngine.UI.Image>();
+                img.raycastTarget = false;
             }
-            else if (backdropObj.transform.parent != dropAreasRoot.transform)
+            else if (backdropObj.transform.parent != hudCanvasGO.transform)
             {
-                backdropObj.transform.SetParent(dropAreasRoot.transform, false);
+                backdropObj.transform.SetParent(hudCanvasGO.transform, false);
             }
 
-            SpriteRenderer spriteRenderer = backdropObj.GetComponent<SpriteRenderer>();
-            if (spriteRenderer == null)
+            RectTransform rect = backdropObj.GetComponent<RectTransform>();
+            if (rect == null)
             {
-                spriteRenderer = backdropObj.AddComponent<SpriteRenderer>();
+                rect = backdropObj.AddComponent<RectTransform>();
             }
-            spriteRenderer.sprite = sprite;
-            spriteRenderer.sortingOrder = -500;
-            spriteRenderer.color = Color.white;
-            spriteRenderer.drawMode = SpriteDrawMode.Sliced;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            rect.SetSiblingIndex(0);
 
-            Bounds bounds = CalculateDropAreaBounds(dropAreasRoot.transform);
-            if (bounds.size != Vector3.zero)
-            {
-                Vector2 boardSize = new Vector2(bounds.size.x + 2f, bounds.size.y + 2f);
-                backdropObj.transform.position = new Vector3(bounds.center.x, bounds.center.y, 0f);
-
-                Vector2 spriteSize = sprite.bounds.size;
-                if (spriteSize.x > 0.01f && spriteSize.y > 0.01f)
-                {
-                    backdropObj.transform.localScale = new Vector3(
-                        boardSize.x / spriteSize.x,
-                        boardSize.y / spriteSize.y,
-                        1f);
-                }
-            }
+            UnityEngine.UI.Image image = backdropObj.GetComponent<UnityEngine.UI.Image>();
+            image.sprite = sprite;
+            image.color = Color.white;
+            image.type = UnityEngine.UI.Image.Type.Simple;
+            image.preserveAspect = false;
+            image.raycastTarget = false;
         }
 
         private Sprite LoadBattlegroundSprite()
@@ -1757,22 +1762,6 @@ namespace CardGame.UI
             return Resources.Load<Sprite>("Backgrounds/Battle_Grounds");
         }
 
-        private Bounds CalculateDropAreaBounds(Transform dropAreasRoot)
-        {
-            if (dropAreasRoot == null || dropAreasRoot.childCount == 0)
-            {
-                return new Bounds(Vector3.zero, Vector3.zero);
-            }
-
-            Bounds bounds = new Bounds(dropAreasRoot.GetChild(0).position, Vector3.zero);
-            for (int i = 1; i < dropAreasRoot.childCount; i++)
-            {
-                bounds.Encapsulate(dropAreasRoot.GetChild(i).position);
-            }
-
-            return bounds;
-        }
-        
         private void BringCoinTossPanelToFront(Transform hudRoot)
         {
             if (hudRoot == null) return;
