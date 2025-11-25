@@ -58,7 +58,7 @@ namespace CardGame.UI
         /// <param name="value">The delta value to display (positive = conquer, negative = raze)</param>
         /// <param name="color">Color for the text</param>
         /// <param name="config">Configuration asset containing animation parameters</param>
-        public void Initialize(int value, Color color, DeltaMarkerConfig config)
+        public void Initialize(int value, Color color, DeltaMarkerConfig config, string overrideText = null)
         {
             if (config == null)
             {
@@ -73,7 +73,7 @@ namespace CardGame.UI
             {
                 // Format the value with sign
                 string sign = value >= 0 ? "+" : "";
-                deltaText.text = $"{sign}{value}";
+                deltaText.text = string.IsNullOrEmpty(overrideText) ? $"{sign}{value}" : overrideText;
                 deltaText.color = color;
                 deltaText.fontSize = config.FontSize;
                 

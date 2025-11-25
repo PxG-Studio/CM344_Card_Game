@@ -17,6 +17,9 @@ namespace CardGame.UI
         [Tooltip("Color for Raze events (-1 territory influence). Default: Red/Orange")]
         [SerializeField] private Color razeColor = new Color(1f, 0.4f, 0f, 1f); // Red-orange
         
+        [Tooltip("Color for alert markers (e.g., new card placed, attention callouts)")]
+        [SerializeField] private Color alertColor = new Color(1f, 0.96f, 0.75f, 1f);
+        
         [Header("Animation Settings")]
         [Tooltip("Distance the popup floats upward (in world units or screen pixels)")]
         [SerializeField] private float floatDistance = 100f;
@@ -40,6 +43,7 @@ namespace CardGame.UI
         // Public getters
         public Color ConquerColor => conquerColor;
         public Color RazeColor => razeColor;
+        public Color AlertColor => alertColor;
         public float FloatDistance => floatDistance;
         public float Duration => duration;
         public float ScalePunchAmount => scalePunchAmount;

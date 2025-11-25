@@ -406,6 +406,12 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 cardsPlayedThisTurn.Add(cardMover.gameObject);
                 occupyingCard = cardMover.gameObject;
                 
+                // Show alert marker for newly placed card
+                DeltaMarkerSystem.ShowAlert(cardMover.transform, "!");
+                
+                // Update CardFrontlineUI after card placement
+                UpdateFrontlineUI();
+                
                 // Draw a card for the placing player after successful placement
                 if (deckManagerP1 != null && deckManagerP1.DrawPileCount > 0)
                 {
@@ -845,6 +851,9 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 cardMoverP2.SetPlayed(true);
                 cardsPlayedThisTurn.Add(cardMoverP2.gameObject);
                 occupyingCard = cardMoverP2.gameObject;
+                
+                // Show alert marker for new opponent card
+                DeltaMarkerSystem.ShowAlert(cardMoverP2.transform, "!");
                 
                 // Draw a card for the placing player after successful placement
                 if (deckManagerP2 != null && deckManagerP2.DrawPileCount > 0)
@@ -1390,8 +1399,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             gameCapturesMade++;
             Debug.Log($"[CardDropArea] Captures made count: {gameCapturesMade}");
             
-            // Show delta marker for territory influence change (+1 for conquer)
-            DeltaMarkerSystem.ShowDelta(+1, cardObject.transform);
+            // Show delta marker for territory influence change (+1 for conquer) with slight delay for sync
+            StartCoroutine(ShowCaptureDelta(cardObject.transform, +1));
         }
         
         // Scoring is now calculated only at game end based on final board state (territory control)
@@ -1586,6 +1595,21 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // Sort by distance from source (closest first for ripple effect)
         flipTargets.Sort((a, b) => a.distance.CompareTo(b.distance));
         
+        // Group targets into distance-based waves so orthogonal neighbors flip together
+        const float distanceBandSize = 1f;
+        Dictionary<int, List<FlipTarget>> waveBuckets = new Dictionary<int, List<FlipTarget>>();
+        foreach (FlipTarget target in flipTargets)
+        {
+            int bucket = Mathf.RoundToInt(target.distance / distanceBandSize);
+            if (!waveBuckets.ContainsKey(bucket))
+            {
+                waveBuckets[bucket] = new List<FlipTarget>();
+            }
+            waveBuckets[bucket].Add(target);
+        }
+        List<int> orderedBuckets = new List<int>(waveBuckets.Keys);
+        orderedBuckets.Sort();
+        
         // [CardFront] Track chain length for statistics
         currentChainLength = flipTargets.Count;
         if (currentChainLength > gameLongestChain)
@@ -1608,37 +1632,48 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             gameEndManager.SetChainsInProgress(true);
         }
         
-        // Flip each card with increasing delay based on distance
-        float lastDistance = 0f;
-        foreach (var target in flipTargets)
+        // Flip cards wave-by-wave
+        for (int i = 0; i < orderedBuckets.Count; i++)
         {
-            // Calculate delay based on distance difference from previous card
-            float distanceDelta = target.distance - lastDistance;
-            float delay = distanceDelta * rippleDelayPerUnit;
+            List<FlipTarget> waveTargets = waveBuckets[orderedBuckets[i]];
             
-            if (delay > 0f)
+            if (debugBattles)
             {
-                yield return new WaitForSeconds(delay);
+                Debug.Log($"ExecuteRippleFlips: Wave {i + 1} flipping {waveTargets.Count} cards (bucket {orderedBuckets[i]}).");
             }
             
-            // Execute the flip
-            FlipCardGameObject(target.cardObject, target.card, target.captureColor, target.direction);
+            // Trigger flips simultaneously for this wave
+            foreach (var target in waveTargets)
+            {
+                FlipCardGameObject(target.cardObject, target.card, target.captureColor, target.direction);
+            }
             
-            // Wait for the flip animation to complete before checking for chain captures
-            // Flip animation takes about 1 second total (0.5s flip to back + 0.5s flip back to front)
-            // Use a safe delay to ensure animation completes
+            // Wait for flip animation to complete once per wave
             yield return new WaitForSeconds(1.1f);
             
-            // Check if this newly captured card can capture others (chain capture)
-            CheckChainCapture(target.cardObject, target.card);
+            foreach (var target in waveTargets)
+            {
+                CheckChainCapture(target.cardObject, target.card);
+            }
             
-            lastDistance = target.distance;
+            // Delay before next wave to create ripple propagation
+            if (i < orderedBuckets.Count - 1)
+            {
+                float waveDelay = Mathf.Max(0.05f, rippleDelayPerUnit * distanceBandSize);
+                yield return new WaitForSeconds(waveDelay);
+            }
         }
         
         if (debugBattles)
         {
             Debug.Log($"ExecuteRippleFlips: Ripple effect complete!");
         }
+        
+        // Update CardFrontlineUI after ripple completes
+        UpdateFrontlineUI();
+        
+        // Trigger blurp message based on capture type
+        TriggerBlurpForCaptures(flipTargets);
         
         // Decrement active chain count
         activeChainCount--;
@@ -1702,6 +1737,209 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         }
         
         return (occupiedSpaces, totalSpaces);
+    }
+    
+    /// <summary>
+    /// Gets the current control counts for P1 and P2 based on captured territories.
+    /// </summary>
+    public static (int p1Control, int p2Control) GetBoardControl()
+    {
+        CardDropArea[] allDropAreas = Object.FindObjectsOfType<CardDropArea>();
+        int p1Control = 0;
+        int p2Control = 0;
+        
+        // Helper to determine if a card belongs to P1
+        bool IsPlayerCardHelper(GameObject cardObject)
+        {
+            if (cardObject == null) return true; // Default to P1
+            
+            // Check for CardMover (P1) or CardMoverP2 (P2)
+            CardMoverP1 cardMover = cardObject.GetComponent<CardMoverP1>();
+            if (cardMover != null) return true;
+            
+            CardMoverP2 cardMoverP2 = cardObject.GetComponent<CardMoverP2>();
+            if (cardMoverP2 != null) return false;
+            
+            // Check children/parents
+            cardMover = cardObject.GetComponentInChildren<CardMoverP1>();
+            if (cardMover != null) return true;
+            
+            cardMoverP2 = cardObject.GetComponentInChildren<CardMoverP2>();
+            if (cardMoverP2 != null) return false;
+            
+            cardMover = cardObject.GetComponentInParent<CardMoverP1>();
+            if (cardMover != null) return true;
+            
+            cardMoverP2 = cardObject.GetComponentInParent<CardMoverP2>();
+            if (cardMoverP2 != null) return false;
+            
+            // Default: assume player card
+            return true;
+        }
+        
+        foreach (CardDropArea dropArea in allDropAreas)
+        {
+            if (dropArea == null || !dropArea.IsOccupied) continue;
+            
+            GameObject occupyingCard = dropArea.GetOccupyingCard();
+            if (occupyingCard == null) continue;
+            
+            // Determine control based on card ownership
+            bool isPlayerCard = IsPlayerCardHelper(occupyingCard);
+            if (isPlayerCard)
+            {
+                p1Control++;
+            }
+            else
+            {
+                p2Control++;
+            }
+        }
+        
+        return (p1Control, p2Control);
+    }
+    
+    /// <summary>
+    /// Updates the CardFrontlineUI with current board state.
+    /// </summary>
+    private static void UpdateFrontlineUI()
+    {
+        CardFrontlineUI frontlineUI = Object.FindObjectOfType<CardFrontlineUI>();
+        if (frontlineUI == null) return;
+        
+        (int occupiedSpaces, int totalSpaces) = GetBoardOccupancy();
+        (int p1Control, int p2Control) = GetBoardControl();
+        int remainingFields = totalSpaces - occupiedSpaces;
+        
+        frontlineUI.UpdateFrontline(p1Control, p2Control, remainingFields);
+    }
+    
+    /// <summary>
+    /// Triggers blurp messages for captures based on capture type.
+    /// </summary>
+    private void TriggerBlurpForCaptures(List<FlipTarget> flipTargets)
+    {
+        if (flipTargets == null || flipTargets.Count == 0) return;
+        
+        // Determine which player made the capture (check first capture color)
+        bool isPlayer1Capture = IsPlayerCaptureColor(flipTargets[0].captureColor);
+        PlayerPanelUI panelUI = GetPlayerPanelUI(isPlayer1Capture);
+        if (panelUI == null) return;
+        
+        // Check if any captures were opponent cards (overturn)
+        bool hasOverturn = false;
+        foreach (var target in flipTargets)
+        {
+            bool capturedCardWasPlayer = IsPlayerCard(target.cardObject);
+            bool captureIsPlayer = IsPlayerCaptureColor(target.captureColor);
+            if (capturedCardWasPlayer != captureIsPlayer)
+            {
+                hasOverturn = true;
+                break;
+            }
+        }
+        
+        // Determine blurp message
+        string blurpMessage = "";
+        if (flipTargets.Count == 1)
+        {
+            if (hasOverturn)
+            {
+                blurpMessage = "Overturn!!";
+            }
+            else
+            {
+                blurpMessage = "Perfect Capture!!";
+            }
+        }
+        else if (flipTargets.Count == 2)
+        {
+            blurpMessage = "Chain Combo x2!!";
+        }
+        else if (flipTargets.Count >= 3)
+        {
+            blurpMessage = "Chain Combo x3!!";
+        }
+        
+        if (!string.IsNullOrEmpty(blurpMessage))
+        {
+            panelUI.TriggerBlurp(blurpMessage);
+        }
+    }
+    
+    /// <summary>
+    /// Triggers blurp message for chain combo captures.
+    /// </summary>
+    private void TriggerBlurpForChainCombo(List<FlipTarget> flipTargets)
+    {
+        if (flipTargets == null || flipTargets.Count == 0) return;
+        
+        // Determine which player made the capture
+        bool isPlayer1Capture = IsPlayerCaptureColor(flipTargets[0].captureColor);
+        PlayerPanelUI panelUI = GetPlayerPanelUI(isPlayer1Capture);
+        if (panelUI == null) return;
+        
+        string blurpMessage = "";
+        if (flipTargets.Count == 2)
+        {
+            blurpMessage = "Chain Combo x2!!";
+        }
+        else if (flipTargets.Count >= 3)
+        {
+            blurpMessage = "Crazy Combo!!";
+        }
+        
+        if (!string.IsNullOrEmpty(blurpMessage))
+        {
+            panelUI.TriggerBlurp(blurpMessage);
+        }
+    }
+    
+    /// <summary>
+    /// Gets the PlayerPanelUI for the specified player.
+    /// </summary>
+    private PlayerPanelUI GetPlayerPanelUI(bool isPlayer1)
+    {
+        PlayerPanelUI[] allPanels = Object.FindObjectsOfType<PlayerPanelUI>();
+        foreach (PlayerPanelUI panel in allPanels)
+        {
+            Transform parent = panel.transform.parent;
+            if (parent != null)
+            {
+                if (isPlayer1 && parent.name == "P1Panel")
+                {
+                    return panel;
+                }
+                else if (!isPlayer1 && parent.name == "P2Panel")
+                {
+                    return panel;
+                }
+            }
+        }
+        return null;
+    }
+    
+    /// <summary>
+    /// Shows a delta marker after a short delay to align with flip animation.
+    /// </summary>
+    private IEnumerator ShowCaptureDelta(Transform target, int deltaValue)
+    {
+        if (target == null) yield break;
+        
+        yield return new WaitForSeconds(0.15f);
+        DeltaMarkerSystem.ShowDelta(deltaValue, target);
+    }
+    
+    /// <summary>
+    /// Checks if a capture color belongs to Player 1.
+    /// </summary>
+    private bool IsPlayerCaptureColor(Color captureColor)
+    {
+        Color playerColor = GetPlayerCaptureColor();
+        float tolerance = 0.1f;
+        return Mathf.Abs(captureColor.r - playerColor.r) < tolerance &&
+               Mathf.Abs(captureColor.g - playerColor.g) < tolerance &&
+               Mathf.Abs(captureColor.b - playerColor.b) < tolerance;
     }
     
     /// <summary>
@@ -1902,6 +2140,12 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
             Debug.Log($"ExecuteChainCaptureRipple: Chain capture ripple complete!");
         }
+        
+        // Update CardFrontlineUI after chain capture completes
+        UpdateFrontlineUI();
+        
+        // Trigger blurp message for chain combo
+        TriggerBlurpForChainCombo(flipTargets);
     }
     
     /// <summary>

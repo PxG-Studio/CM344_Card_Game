@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
+using CardGame.UI.Widgets;
+using CardGame.UI.CursorSystem;
 using CardGame.Managers;
 using CardGame.Visuals;
 using CardGame.UI;
@@ -100,6 +102,9 @@ namespace CardGame.UI
             // Setup Delta Marker System
             EnsureDeltaMarkerEmitter();
             
+            // Setup Card Frontline UI
+            SetupCardFrontlineUI(hudCanvas.transform);
+            
             Debug.Log("HUDSetup: HUD successfully configured!");
             
             // After successful HUD setup, automatically start the game
@@ -175,13 +180,15 @@ namespace CardGame.UI
             if (existingEmitter != null)
             {
                 Debug.Log($"HUDSetup: DeltaMarkerEmitter already exists on '{existingEmitter.gameObject.name}'");
+                existingEmitter.EnsureReady();
                 return;
             }
             
             // Create DeltaMarkerEmitter GameObject
             GameObject emitterObj = new GameObject("DeltaMarkerEmitter");
             DeltaMarkerEmitter emitter = emitterObj.AddComponent<DeltaMarkerEmitter>();
-            Debug.Log("HUDSetup: Created DeltaMarkerEmitter. Note: You must assign DeltaMarkerConfig asset and DeltaMarkerPopup prefab in the Inspector for delta markers to work.");
+            emitter.EnsureReady();
+            Debug.Log("HUDSetup: Created DeltaMarkerEmitter and auto-configured default settings.");
         }
         
         /// <summary>
@@ -354,6 +361,10 @@ namespace CardGame.UI
             TMP_Text p2HandDeckLabel = p2Panel.Find("HandDeckLabel")?.GetComponent<TMP_Text>();
             TMP_Text p2PlayerLabel = p2Panel.Find("PlayerLabel")?.GetComponent<TMP_Text>();
             TMP_Text tilesRemainingLabel = hudRoot.Find("TilesRemainingLabel")?.GetComponent<TMP_Text>();
+            if (tilesRemainingLabel != null)
+            {
+                tilesRemainingLabel.text = "Open Fields: 16";
+            }
             
             // Create turn indicators above each panel (like develop-5)
             TurnIndicatorUI p1TurnIndicator = FindOrCreateTurnIndicator(p1Panel, "TurnIndicator", true);
@@ -377,6 +388,26 @@ namespace CardGame.UI
             SetPrivateField(hudManager, hudType, "tilesRemainingLabel", tilesRemainingLabel);
             SetPrivateField(hudManager, hudType, "player1DeckManager", player1DeckManager);
             SetPrivateField(hudManager, hudType, "player2DeckManager", player2DeckManager);
+            
+            // Wire up PlayerPanelUI components with their labels
+            PlayerPanelUI p1PanelUI = p1Panel.GetComponent<PlayerPanelUI>();
+            PlayerPanelUI p2PanelUI = p2Panel.GetComponent<PlayerPanelUI>();
+            
+            if (p1PanelUI != null)
+            {
+                System.Type panelUIType = typeof(PlayerPanelUI);
+                TMP_Text p1BlurpLabel = p1Panel.Find("BlurpLabel")?.GetComponent<TMP_Text>();
+                SetPrivateField(p1PanelUI, panelUIType, "fieldControlLabel", p1ScoreLabel);
+                SetPrivateField(p1PanelUI, panelUIType, "blurpLabel", p1BlurpLabel);
+            }
+            
+            if (p2PanelUI != null)
+            {
+                System.Type panelUIType = typeof(PlayerPanelUI);
+                TMP_Text p2BlurpLabel = p2Panel.Find("BlurpLabel")?.GetComponent<TMP_Text>();
+                SetPrivateField(p2PanelUI, panelUIType, "fieldControlLabel", p2ScoreLabel);
+                SetPrivateField(p2PanelUI, panelUIType, "blurpLabel", p2BlurpLabel);
+            }
             
             Debug.Log($"HUDSetup: Wired up references - " +
                      $"P1Score: {p1ScoreLabel != null}, " +
@@ -433,9 +464,31 @@ namespace CardGame.UI
             
             // Create text labels with better sizing
             CreateTextLabel(panel.transform, "PlayerLabel", isPlayer1 ? "Player 1" : "Player 2", 16, true, true);
-            CreateTextLabel(panel.transform, "ScoreLabel", "Conquered Territories: 0", 15, false, true);
+            CreateTextLabel(panel.transform, "ScoreLabel", "Field Control: 0", 15, false, true);
             CreateTextLabel(panel.transform, "HandDeckLabel", "Hand: 0 | Deck: 0", 13, false, true);
-            CreateTextLabel(panel.transform, "BattlefieldTilesLabel", "Battlefield where tiles: 16", 13, false, true);
+            
+            // Create BlurpText area (replaces "Battlefield where tiles: 16")
+            GameObject blurpObj = new GameObject("BlurpLabel");
+            blurpObj.transform.SetParent(panel.transform, false);
+            blurpObj.layer = 5; // UI layer
+            
+            RectTransform blurpRect = blurpObj.AddComponent<RectTransform>();
+            blurpRect.sizeDelta = new Vector2(0, 40);
+            
+            TextMeshProUGUI blurpText = blurpObj.AddComponent<TextMeshProUGUI>();
+            blurpText.text = "";
+            blurpText.fontSize = 14;
+            blurpText.fontStyle = TMPro.FontStyles.Bold;
+            blurpText.alignment = TMPro.TextAlignmentOptions.Center;
+            blurpText.color = new Color(1f, 0.8f, 0f, 1f); // Gold color for blurps
+            
+            CanvasGroup blurpCanvasGroup = blurpObj.AddComponent<CanvasGroup>();
+            blurpCanvasGroup.alpha = 0f;
+            blurpCanvasGroup.blocksRaycasts = false;
+            blurpCanvasGroup.interactable = false;
+            
+            // Add PlayerPanelUI component to the panel (will be wired up later)
+            PlayerPanelUI panelUI = panel.AddComponent<PlayerPanelUI>();
             
             return panel.transform;
         }
@@ -598,13 +651,13 @@ namespace CardGame.UI
                 Destroy(existingManager);
             }
             
-            GameObject cursorManager = new GameObject("CursorManager");
-            cursorManager.transform.SetParent(null);
-            DontDestroyOnLoad(cursorManager);
-            if (ignoreRaycastLayer >= 0)
+            CursorManager cursorManager = FindObjectOfType<CursorManager>();
+            if (cursorManager == null)
             {
-                cursorManager.layer = ignoreRaycastLayer;
+                GameObject cursorManagerGO = new GameObject("CursorManager");
+                cursorManager = cursorManagerGO.AddComponent<CursorManager>();
             }
+            cursorManager.RefreshCursor();
             
             // Clean up any old generated cursor sprites that might still be in the scene
             GameObject strayCursorSprite = GameObject.Find("GeneratedCursorSprite");
@@ -613,50 +666,19 @@ namespace CardGame.UI
                 Destroy(strayCursorSprite);
             }
             
-            CustomCursor customCursor = cursorManager.AddComponent<CustomCursor>();
-            var cursorType = typeof(CustomCursor);
-            
-            // Configure cursor UI visual to match turn indicator
-            SetPrivateField(customCursor, cursorType, "useUICursorVisual", true);
-            SetPrivateField(customCursor, cursorType, "uiCursorGlyph", "▲");
-            SetPrivateField(customCursor, cursorType, "uiCursorSize", 48f);
-            SetPrivateField(customCursor, cursorType, "uiCursorColor", new Color(1f, 0.8f, 0f, 1f));
-            SetPrivateField(customCursor, cursorType, "tintGreen", false);
-            
+            // Legacy cursor prefab cleanup (no longer needed for CursorManager, but keep tidy)
             if (cursorGameObject != null)
             {
-                // Disable anything that could interfere
-                DisableAllInputComponents(cursorGameObject, "setting up custom cursor");
+                DisableAllInputComponents(cursorGameObject, "cleaning up old cursor source");
                 DisableInputScripts(cursorGameObject);
                 if (ignoreRaycastLayer >= 0)
                 {
                     SetLayerRecursive(cursorGameObject, ignoreRaycastLayer);
                 }
-                
-                Sprite cursorSprite = ExtractSpriteFromGameObject(cursorGameObject);
-                if (cursorSprite == null)
-                {
-                    Debug.LogWarning("HUDSetup: Cursor GameObject found but no sprite found. Using fallback cursor sprite.");
-                    SetPrivateField(customCursor, cursorType, "cursorSprite", CreateFallbackCursorSprite());
-                }
-                else
-                {
-                    SetPrivateField(customCursor, cursorType, "cursorSprite", cursorSprite);
-                }
-                
-                cursorGameObject.SetActive(false);
-                Debug.Log("HUDSetup: Deactivated cursor GameObject to prevent all input interference");
-                
-                // Permanently remove the scene copy so it never renders on the board again
                 Destroy(cursorGameObject);
-                Debug.Log("HUDSetup: Destroyed source cursor GameObject after extracting its sprite");
             }
-            else
-            {
-                Debug.Log("HUDSetup: No cursor GameObject found. Using fallback cursor sprite.");
-                SetPrivateField(customCursor, cursorType, "cursorSprite", CreateFallbackCursorSprite());
-            }
-            Debug.Log("HUDSetup: Created CustomCursor component (fully isolated from input system)");
+            
+            Debug.Log("HUDSetup: CursorManager ready with spinning triangle cursor");
         }
         
         /// <summary>
@@ -879,8 +901,8 @@ namespace CardGame.UI
             
             // Add vertical layout
             UnityEngine.UI.VerticalLayoutGroup layout = contentPanel.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
-            layout.padding = new RectOffset(40, 40, 40, 40);
-            layout.spacing = 30;
+            layout.padding = new RectOffset(40, 40, 70, 40); // extra top padding to center result text lower
+            layout.spacing = 24;
             layout.childAlignment = TextAnchor.MiddleCenter;
             layout.childControlWidth = true;
             layout.childControlHeight = false;
@@ -1261,6 +1283,7 @@ namespace CardGame.UI
             panelRect.anchoredPosition = Vector2.zero;
             
             // Add semi-transparent background
+            CanvasGroup panelCanvasGroup = coinTossPanel.AddComponent<CanvasGroup>();
             UnityEngine.UI.Image bgImage = coinTossPanel.AddComponent<UnityEngine.UI.Image>();
             bgImage.color = new Color(0f, 0f, 0f, 0.8f);
             
@@ -1272,21 +1295,21 @@ namespace CardGame.UI
             contentRect.anchorMin = new Vector2(0.5f, 0.5f);
             contentRect.anchorMax = new Vector2(0.5f, 0.5f);
             contentRect.pivot = new Vector2(0.5f, 0.5f);
-            contentRect.sizeDelta = new Vector2(600, 500);
+            contentRect.sizeDelta = new Vector2(650f, 550f);
             contentRect.anchoredPosition = Vector2.zero;
             
             // Add background to content panel
             UnityEngine.UI.Image contentBg = contentPanel.AddComponent<UnityEngine.UI.Image>();
             contentBg.color = new Color(0.15f, 0.15f, 0.2f, 0.95f);
             
-            // Add vertical layout
+            // Add vertical layout & size fitter
             UnityEngine.UI.VerticalLayoutGroup layout = contentPanel.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
-            layout.padding = new RectOffset(40, 40, 40, 40);
-            layout.spacing = 30;
-            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.padding = new RectOffset(32, 32, 36, 36);
+            layout.spacing = 28;
+            layout.childAlignment = TextAnchor.UpperCenter;
             layout.childControlWidth = true;
             layout.childControlHeight = false;
-            layout.childForceExpandWidth = true;
+            layout.childForceExpandWidth = false;
             layout.childForceExpandHeight = false;
             
             // Create title text
@@ -1305,11 +1328,26 @@ namespace CardGame.UI
             GameObject coinContainer = new GameObject("CoinContainer");
             coinContainer.transform.SetParent(contentPanel.transform, false);
             RectTransform coinRect = coinContainer.AddComponent<RectTransform>();
-            coinRect.sizeDelta = new Vector2(200, 200);
+            coinRect.sizeDelta = new Vector2(240, 240);
+            UnityEngine.UI.LayoutElement coinLayout = coinContainer.AddComponent<UnityEngine.UI.LayoutElement>();
+            coinLayout.preferredWidth = 240;
+            coinLayout.preferredHeight = 240;
             
-            // Create coin image
+            // Create coin mesh background
+            GameObject coinMeshObj = new GameObject("CoinMesh");
+            coinMeshObj.transform.SetParent(coinContainer.transform, false);
+            RectTransform coinMeshRect = coinMeshObj.AddComponent<RectTransform>();
+            coinMeshRect.anchorMin = new Vector2(0.5f, 0.5f);
+            coinMeshRect.anchorMax = new Vector2(0.5f, 0.5f);
+            coinMeshRect.pivot = new Vector2(0.5f, 0.5f);
+            coinMeshRect.sizeDelta = new Vector2(180, 180);
+            coinMeshRect.anchoredPosition = Vector2.zero;
+            
+            UICoinGraphic coinMesh = coinMeshObj.AddComponent<UICoinGraphic>();
+            
+            // Create coin face image (heads/tails artwork)
             GameObject coinImageObj = new GameObject("CoinImage");
-            coinImageObj.transform.SetParent(coinContainer.transform, false);
+            coinImageObj.transform.SetParent(coinMeshObj.transform, false);
             RectTransform coinImageRect = coinImageObj.AddComponent<RectTransform>();
             coinImageRect.anchorMin = new Vector2(0.5f, 0.5f);
             coinImageRect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -1319,45 +1357,68 @@ namespace CardGame.UI
             
             UnityEngine.UI.Image coinImage = coinImageObj.AddComponent<UnityEngine.UI.Image>();
             coinImage.color = Color.white;
-            // Note: User should assign heads/tails sprites in Unity Editor
+            coinImage.preserveAspect = true;
             
-            // Create labels container (horizontal)
-            GameObject labelsContainer = new GameObject("LabelsContainer");
-            labelsContainer.transform.SetParent(contentPanel.transform, false);
-            RectTransform labelsRect = labelsContainer.AddComponent<RectTransform>();
-            labelsRect.sizeDelta = new Vector2(0, 50);
+            // Create selection prompt
+            GameObject selectionPromptObj = new GameObject("SelectionPrompt");
+            selectionPromptObj.transform.SetParent(contentPanel.transform, false);
+            TextMeshProUGUI selectionPrompt = selectionPromptObj.AddComponent<TextMeshProUGUI>();
+            selectionPrompt.enableAutoSizing = true;
+            selectionPrompt.fontSizeMin = 24f;
+            selectionPrompt.fontSizeMax = 48f;
+            selectionPrompt.text = "Player 1: Select Heads or Tails";
+            selectionPrompt.fontStyle = FontStyles.Bold;
+            selectionPrompt.alignment = TextAlignmentOptions.Center;
+            selectionPrompt.color = new Color(0.95f, 0.95f, 1f, 1f);
+            RectTransform selectionPromptRect = selectionPromptObj.GetComponent<RectTransform>();
+            selectionPromptRect.sizeDelta = new Vector2(contentRect.sizeDelta.x - 64f, 60f);
             
-            UnityEngine.UI.HorizontalLayoutGroup labelsLayout = labelsContainer.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
-            labelsLayout.spacing = 100;
-            labelsLayout.childAlignment = TextAnchor.MiddleCenter;
-            labelsLayout.childControlWidth = false;
-            labelsLayout.childControlHeight = false;
-            labelsLayout.childForceExpandWidth = false;
-            labelsLayout.childForceExpandHeight = false;
+            // Create selection panel with buttons
+            GameObject selectionPanel = new GameObject("ButtonsContainer");
+            selectionPanel.transform.SetParent(contentPanel.transform, false);
+            RectTransform selectionPanelRect = selectionPanel.AddComponent<RectTransform>();
+            selectionPanelRect.sizeDelta = new Vector2(contentRect.sizeDelta.x - 64f, 90f);
             
-            // Create Heads label
-            GameObject headsLabelObj = new GameObject("HeadsLabel");
-            headsLabelObj.transform.SetParent(labelsContainer.transform, false);
-            TextMeshProUGUI headsLabel = headsLabelObj.AddComponent<TextMeshProUGUI>();
-            headsLabel.text = "HEADS";
-            headsLabel.fontSize = 32;
-            headsLabel.fontStyle = FontStyles.Bold;
-            headsLabel.alignment = TextAlignmentOptions.Center;
+            UnityEngine.UI.HorizontalLayoutGroup selectionLayout = selectionPanel.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
+            selectionLayout.spacing = 40;
+            selectionLayout.childAlignment = TextAnchor.MiddleCenter;
+            selectionLayout.childControlWidth = false;
+            selectionLayout.childControlHeight = false;
+            selectionLayout.childForceExpandWidth = false;
+            selectionLayout.childForceExpandHeight = false;
+            UnityEngine.UI.ContentSizeFitter selectionFitter = selectionPanel.AddComponent<UnityEngine.UI.ContentSizeFitter>();
+            selectionFitter.horizontalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
+            selectionFitter.verticalFit = UnityEngine.UI.ContentSizeFitter.FitMode.Unconstrained;
+            
+            GameObject headsButtonObj = CreateButton(selectionPanel.transform, "HeadsButton", "HEADS");
+            RectTransform headsBtnRect = headsButtonObj.GetComponent<RectTransform>();
+            headsBtnRect.sizeDelta = new Vector2(220, 70);
+            TextMeshProUGUI headsLabel = headsButtonObj.GetComponentInChildren<TextMeshProUGUI>();
+            headsLabel.enableAutoSizing = true;
+            headsLabel.fontSizeMin = 18f;
+            headsLabel.fontSizeMax = 32f;
             headsLabel.color = Color.yellow;
-            RectTransform headsRect = headsLabelObj.GetComponent<RectTransform>();
-            headsRect.sizeDelta = new Vector2(100, 40);
+            UnityEngine.UI.Button headsButton = headsButtonObj.GetComponent<UnityEngine.UI.Button>();
+            UnityEngine.UI.LayoutElement headsLayout = headsButtonObj.AddComponent<UnityEngine.UI.LayoutElement>();
+            headsLayout.minWidth = 200;
+            headsLayout.minHeight = 70;
+            headsLayout.preferredWidth = 220;
+            headsLayout.preferredHeight = 70;
             
-            // Create Tails label
-            GameObject tailsLabelObj = new GameObject("TailsLabel");
-            tailsLabelObj.transform.SetParent(labelsContainer.transform, false);
-            TextMeshProUGUI tailsLabel = tailsLabelObj.AddComponent<TextMeshProUGUI>();
-            tailsLabel.text = "TAILS";
-            tailsLabel.fontSize = 32;
-            tailsLabel.fontStyle = FontStyles.Bold;
-            tailsLabel.alignment = TextAlignmentOptions.Center;
+            GameObject tailsButtonObj = CreateButton(selectionPanel.transform, "TailsButton", "TAILS");
+            RectTransform tailsBtnRect = tailsButtonObj.GetComponent<RectTransform>();
+            tailsBtnRect.sizeDelta = new Vector2(220, 70);
+            TextMeshProUGUI tailsLabel = tailsButtonObj.GetComponentInChildren<TextMeshProUGUI>();
+            tailsLabel.enableAutoSizing = true;
+            tailsLabel.fontSizeMin = 18f;
+            tailsLabel.fontSizeMax = 32f;
             tailsLabel.color = Color.white;
-            RectTransform tailsRect = tailsLabelObj.GetComponent<RectTransform>();
-            tailsRect.sizeDelta = new Vector2(100, 40);
+            UnityEngine.UI.Button tailsButton = tailsButtonObj.GetComponent<UnityEngine.UI.Button>();
+            UnityEngine.UI.LayoutElement tailsLayout = tailsButtonObj.AddComponent<UnityEngine.UI.LayoutElement>();
+            tailsLayout.minWidth = 200;
+            tailsLayout.minHeight = 70;
+            tailsLayout.preferredWidth = 220;
+            tailsLayout.preferredHeight = 70;
             
             // Create result text
             GameObject resultTextObj = new GameObject("ResultText");
@@ -1375,21 +1436,32 @@ namespace CardGame.UI
             // Create continue button
             GameObject continueBtnObj = CreateButton(contentPanel.transform, "ContinueButton", "Continue");
             continueBtnObj.SetActive(false); // Hidden until result
+            UnityEngine.UI.LayoutElement continueLayout = continueBtnObj.AddComponent<UnityEngine.UI.LayoutElement>();
+            continueLayout.preferredWidth = 240;
+            continueLayout.preferredHeight = 80;
             
             // Add CoinTossUI component
             CoinTossUI coinTossUI = coinTossPanel.AddComponent<CoinTossUI>();
+            CoinTossUIController controller = coinTossPanel.AddComponent<CoinTossUIController>();
+            controller.InjectDependencies(panelCanvasGroup, contentRect, coinImage, headsButton, tailsButton, selectionPrompt);
             
             // Wire up references using reflection
             System.Type coinTossUIType = typeof(CoinTossUI);
             SetPrivateField(coinTossUI, coinTossUIType, "coinTossPanel", coinTossPanel);
+            SetPrivateField(coinTossUI, coinTossUIType, "hoverContainer", contentRect);
             SetPrivateField(coinTossUI, coinTossUIType, "resultText", resultText);
             SetPrivateField(coinTossUI, coinTossUIType, "headsLabel", headsLabel);
             SetPrivateField(coinTossUI, coinTossUIType, "tailsLabel", tailsLabel);
             SetPrivateField(coinTossUI, coinTossUIType, "coinImage", coinImage);
             SetPrivateField(coinTossUI, coinTossUIType, "continueButton", continueBtnObj.GetComponent<UnityEngine.UI.Button>());
+            SetPrivateField(coinTossUI, coinTossUIType, "selectionPanel", selectionPanel);
+            SetPrivateField(coinTossUI, coinTossUIType, "selectionPromptText", selectionPrompt);
+            SetPrivateField(coinTossUI, coinTossUIType, "headsButton", headsButton);
+            SetPrivateField(coinTossUI, coinTossUIType, "tailsButton", tailsButton);
             
             // Auto-assign coin toss sprites (Heads inventor.png and Sheep tails.png)
             LoadCoinTossSprites(coinTossUI, coinTossUIType);
+            controller.Setup("Player 1", coinTossUI.OnSelectionMade);
             
             // Verify the panel was created and parented correctly
             if (coinTossPanel.transform.parent != hudRoot)
@@ -1404,7 +1476,8 @@ namespace CardGame.UI
             }
             else
             {
-                Debug.Log($"HUDSetup: ✓ CoinTossUI panel created successfully on '{coinTossPanel.name}' (InstanceID: {coinTossUI.GetInstanceID()}, Parent: '{coinTossPanel.transform.parent?.name}', Active: {coinTossPanel.activeSelf})");
+            coinTossPanel.transform.SetAsLastSibling(); // ensure overlay renders above other HUD elements
+            Debug.Log($"HUDSetup: ✓ CoinTossUI panel created successfully on '{coinTossPanel.name}' (InstanceID: {coinTossUI.GetInstanceID()}, Parent: '{coinTossPanel.transform.parent?.name}', Active: {coinTossPanel.activeSelf})");
             }
         }
         
@@ -1470,6 +1543,156 @@ namespace CardGame.UI
         /// <summary>
         /// Ensures the gameplay board has a stylised backdrop for visual depth.
         /// </summary>
+        /// <summary>
+        /// Creates CardFrontlineUI bar programmatically below the board.
+        /// </summary>
+        private void SetupCardFrontlineUI(Transform hudRoot)
+        {
+            // Check if CardFrontlineUI already exists
+            CardFrontlineUI existing = FindObjectOfType<CardFrontlineUI>();
+            if (existing != null)
+            {
+                Debug.Log("HUDSetup: CardFrontlineUI already exists");
+                return;
+            }
+            
+            // Find "Drop Areas" to determine board width and position
+            GameObject dropAreas = GameObject.Find("Drop Areas");
+            if (dropAreas == null)
+            {
+                Debug.LogWarning("HUDSetup: Could not find 'Drop Areas' for CardFrontlineUI positioning.");
+                return;
+            }
+            
+            // Get board width from first CardDropArea or estimate
+            RectTransform boardRect = dropAreas.GetComponent<RectTransform>();
+            float boardWidth = 800f; // Default estimate
+            if (boardRect != null)
+            {
+                boardWidth = boardRect.rect.width;
+            }
+            
+            // Create root CardFrontlineBar
+            GameObject frontlineBar = new GameObject("CardFrontlineBar");
+            frontlineBar.transform.SetParent(hudRoot, false);
+            frontlineBar.layer = 5; // UI layer
+            
+            RectTransform barRect = frontlineBar.AddComponent<RectTransform>();
+            barRect.anchorMin = new Vector2(0.5f, 0f);
+            barRect.anchorMax = new Vector2(0.5f, 0f);
+            barRect.pivot = new Vector2(0.5f, 0f);
+            barRect.sizeDelta = new Vector2(boardWidth, 80f);
+            barRect.anchoredPosition = new Vector2(0f, 80f); // slightly closer to bottom to avoid overlap
+            
+            // Create Title Label
+            GameObject titleLabelObj = new GameObject("TitleLabel");
+            titleLabelObj.transform.SetParent(frontlineBar.transform, false);
+            RectTransform titleRect = titleLabelObj.AddComponent<RectTransform>();
+            titleRect.anchorMin = new Vector2(0.5f, 1f);
+            titleRect.anchorMax = new Vector2(0.5f, 1f);
+            titleRect.pivot = new Vector2(0.5f, 1f);
+            titleRect.sizeDelta = new Vector2(boardWidth * 0.9f, 26f);
+            titleRect.anchoredPosition = new Vector2(0f, -4f);
+            
+            TextMeshProUGUI titleLabelText = titleLabelObj.AddComponent<TextMeshProUGUI>();
+            titleLabelText.text = "Battle Front Influence";
+            titleLabelText.fontSize = 26;
+            titleLabelText.fontStyle = TMPro.FontStyles.Bold;
+            titleLabelText.alignment = TMPro.TextAlignmentOptions.Center;
+            titleLabelText.color = Color.white;
+            titleLabelText.enableWordWrapping = false;
+            titleLabelText.overflowMode = TMPro.TextOverflowModes.Overflow;
+            
+            // Create Counter Label
+            GameObject counterLabelObj = new GameObject("CounterLabel");
+            counterLabelObj.transform.SetParent(frontlineBar.transform, false);
+            RectTransform counterRect = counterLabelObj.AddComponent<RectTransform>();
+            counterRect.anchorMin = new Vector2(0.5f, 0f);
+            counterRect.anchorMax = new Vector2(0.5f, 0f);
+            counterRect.pivot = new Vector2(0.5f, 0f);
+            counterRect.sizeDelta = new Vector2(boardWidth * 0.9f, 24f);
+            counterRect.anchoredPosition = new Vector2(0f, -28f);
+            
+            TextMeshProUGUI counterLabelText = counterLabelObj.AddComponent<TextMeshProUGUI>();
+            counterLabelText.text = "Open Fields: 16";
+            counterLabelText.fontSize = 24;
+            counterLabelText.fontStyle = TMPro.FontStyles.Bold;
+            counterLabelText.alignment = TMPro.TextAlignmentOptions.Center;
+            counterLabelText.color = new Color(0.87f, 0.94f, 1f, 0.9f);
+            counterLabelText.enableWordWrapping = false;
+            counterLabelText.overflowMode = TMPro.TextOverflowModes.Overflow;
+            
+            // Create BarBackground
+            GameObject barBgObj = new GameObject("BarBackground");
+            barBgObj.transform.SetParent(frontlineBar.transform, false);
+            RectTransform barBgRect = barBgObj.AddComponent<RectTransform>();
+            barBgRect.anchorMin = new Vector2(0f, 0f);
+            barBgRect.anchorMax = new Vector2(1f, 0.5f);
+            barBgRect.sizeDelta = Vector2.zero;
+            barBgRect.anchoredPosition = Vector2.zero;
+            
+            Image barBgImage = barBgObj.AddComponent<Image>();
+            barBgImage.color = new Color(0.10f, 0.15f, 0.22f, 1f); // #1A2738 dark navy
+            
+            // Create P1Fill
+            GameObject p1FillObj = new GameObject("P1Fill");
+            p1FillObj.transform.SetParent(frontlineBar.transform, false);
+            RectTransform p1FillRect = p1FillObj.AddComponent<RectTransform>();
+            p1FillRect.anchorMin = new Vector2(0f, 0f);
+            p1FillRect.anchorMax = new Vector2(0.5f, 0.5f);
+            p1FillRect.sizeDelta = Vector2.zero;
+            p1FillRect.anchoredPosition = Vector2.zero;
+            
+            Image p1FillImage = p1FillObj.AddComponent<Image>();
+            p1FillImage.color = new Color(1f, 0.62f, 0.27f, 1f); // #FF9F45 ember
+            p1FillImage.type = Image.Type.Filled;
+            p1FillImage.fillMethod = Image.FillMethod.Horizontal;
+            p1FillImage.fillAmount = 0.5f; // Start at 50%
+            
+            // Create P2Fill
+            GameObject p2FillObj = new GameObject("P2Fill");
+            p2FillObj.transform.SetParent(frontlineBar.transform, false);
+            RectTransform p2FillRect = p2FillObj.AddComponent<RectTransform>();
+            p2FillRect.anchorMin = new Vector2(0.5f, 0f);
+            p2FillRect.anchorMax = new Vector2(1f, 0.5f);
+            p2FillRect.sizeDelta = Vector2.zero;
+            p2FillRect.anchoredPosition = Vector2.zero;
+            
+            Image p2FillImage = p2FillObj.AddComponent<Image>();
+            p2FillImage.color = new Color(0.43f, 1f, 0.55f, 1f); // #6EFF8D jade
+            p2FillImage.type = Image.Type.Filled;
+            p2FillImage.fillMethod = Image.FillMethod.Horizontal;
+            p2FillImage.fillOrigin = 1; // Fill from right
+            p2FillImage.fillAmount = 0.5f; // Start at 50%
+            
+            // Create MidDivider
+            GameObject dividerObj = new GameObject("MidDivider");
+            dividerObj.transform.SetParent(frontlineBar.transform, false);
+            RectTransform dividerRect = dividerObj.AddComponent<RectTransform>();
+            dividerRect.anchorMin = new Vector2(0.5f, 0f);
+            dividerRect.anchorMax = new Vector2(0.5f, 0.5f);
+            dividerRect.sizeDelta = new Vector2(4f, 0f);
+            dividerRect.anchoredPosition = Vector2.zero;
+            
+            Image dividerImage = dividerObj.AddComponent<Image>();
+            dividerImage.color = Color.white;
+            
+            // Add CardFrontlineUI component
+            CardFrontlineUI frontlineUI = frontlineBar.AddComponent<CardFrontlineUI>();
+            
+            // Wire up references using reflection
+            System.Type uiType = typeof(CardFrontlineUI);
+            SetPrivateField(frontlineUI, uiType, "titleLabel", titleLabelText);
+            SetPrivateField(frontlineUI, uiType, "remainingLabel", counterLabelText);
+            SetPrivateField(frontlineUI, uiType, "p1Fill", p1FillImage);
+            SetPrivateField(frontlineUI, uiType, "p2Fill", p2FillImage);
+            SetPrivateField(frontlineUI, uiType, "midDivider", dividerRect);
+            
+            Debug.Log("HUDSetup: Created CardFrontlineUI bar");
+            
+            BringCoinTossPanelToFront(hudRoot);
+        }
+        
         private void SetupBoardBackdrop()
         {
             GameObject dropAreas = GameObject.Find("Drop Areas");
@@ -1490,6 +1713,17 @@ namespace CardGame.UI
             backdrop.transform.SetParent(dropAreas.transform, false);
             ProceduralBoardBackdrop generator = backdrop.AddComponent<ProceduralBoardBackdrop>();
             generator.RefreshNow();
+        }
+        
+        private void BringCoinTossPanelToFront(Transform hudRoot)
+        {
+            if (hudRoot == null) return;
+            Transform coinPanel = hudRoot.Find("CoinTossPanel");
+            if (coinPanel != null)
+            {
+                coinPanel.SetAsLastSibling();
+                Debug.Log("HUDSetup: CoinTossPanel moved to front of HUD overlay");
+            }
         }
     }
 }

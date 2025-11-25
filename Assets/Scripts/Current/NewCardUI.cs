@@ -52,6 +52,13 @@ namespace CardGame.UI
         [SerializeField] private Color playerCapturedColor = new Color(1f, 128f/255f, 0f, 1f); // Orange #FF8000 for player's cards (matches card border orange)
         [SerializeField] private Color opponentCapturedColor = new Color(0f, 0.8f, 0f, 1f); // Green for opponent's captured cards
         
+        [Header("Shadow Settings")]
+        [SerializeField] private bool enableCardShadow = true;
+        [SerializeField] private Vector2 shadowOffset = new Vector2(0.08f, -0.08f);
+        [SerializeField] private float shadowScaleMultiplier = 1.05f;
+        [SerializeField] private Color shadowColor = new Color(0f, 0f, 0f, 0.35f);
+        [SerializeField] private SpriteRenderer cardShadow;
+        
         public Color PlayerCapturedColor => playerCapturedColor;
         public Color OpponentCapturedColor => opponentCapturedColor;
         
@@ -115,6 +122,8 @@ namespace CardGame.UI
                 }
             }
             
+            SetupCardShadow();
+            
             // Diagnostic: Check if Canvas has GraphicRaycaster
             if (canvas != null)
             {
@@ -174,6 +183,39 @@ namespace CardGame.UI
                     flipAnimation = GetComponent<CardFlipAnimation>();
                 }
             }
+        }
+        
+        private void SetupCardShadow()
+        {
+            if (!enableCardShadow)
+            {
+                if (cardShadow != null)
+                {
+                    cardShadow.gameObject.SetActive(false);
+                }
+                return;
+            }
+            
+            if (cardBackground == null)
+            {
+                return;
+            }
+            
+            if (cardShadow == null)
+            {
+                GameObject shadowObj = new GameObject("CardShadow");
+                shadowObj.transform.SetParent(cardBackground.transform, false);
+                cardShadow = shadowObj.AddComponent<SpriteRenderer>();
+            }
+            
+            cardShadow.gameObject.SetActive(true);
+            cardShadow.sprite = cardBackground.sprite;
+            cardShadow.color = shadowColor;
+            cardShadow.transform.localPosition = new Vector3(shadowOffset.x, shadowOffset.y, 0f);
+            cardShadow.transform.localScale = Vector3.one * shadowScaleMultiplier;
+            cardShadow.transform.localRotation = Quaternion.identity;
+            cardShadow.sortingLayerID = cardBackground.sortingLayerID;
+            cardShadow.sortingOrder = cardBackground.sortingOrder - 1;
         }
         
         /// <summary>
@@ -340,6 +382,8 @@ namespace CardGame.UI
             // They will be visible in the Inspector after the prefab is saved or in Play mode.
             
             Debug.Log($"NewCardUI: Auto-setup containers completed. FrontContainer: {frontContainer != null}, BackContainer: {backContainer != null}", this);
+            
+            SetupCardShadow();
         }
         
         public void Initialize(NewCard cardData)
@@ -485,6 +529,8 @@ namespace CardGame.UI
                     }
                 }
                 // If captured (face down), color will be applied by CardFlipAnimation during capture
+                
+                SetupCardShadow();
             }
         }
         

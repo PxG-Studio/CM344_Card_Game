@@ -345,7 +345,7 @@ MonoBehaviour:
   backContainer: {fileID: 3395844615914960357}
   backSpriteRenderer: {fileID: 0}
   backImage: {fileID: 0}
-  defaultCardBackSprite: {fileID: 0}
+  defaultCardBackSprite: {fileID: 21300000, guid: 2110c87c8d9c74cf99a29407cce375ef, type: 3}
   startFaceDown: 1
   autoFlipOnReveal: 1
   revealDelay: 0.2

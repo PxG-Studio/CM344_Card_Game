@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 
 namespace CardGame.UI
 {
@@ -24,59 +26,135 @@ namespace CardGame.UI
         [SerializeField] private bool useScreenSpace = true;
         
         private Camera mainCamera;
+        private const string ConfigResourcePath = "DeltaMarker/DeltaMarkerConfig";
+        private const string PrefabResourcePath = "DeltaMarker/DeltaMarkerPopup";
+        private GameObject runtimePopupTemplate;
         
         private void Awake()
         {
-            // Find main camera
+            EnsureReady();
+        }
+        
+        /// <summary>
+        /// Ensures the emitter is fully configured (camera, canvas, config and prefab).
+        /// Safe to call multiple times.
+        /// </summary>
+        public void EnsureReady()
+        {
+            InitializeCamera();
+            EnsureParentCanvas();
+            EnsureDependencies();
+        }
+        
+        private void InitializeCamera()
+        {
+            if (mainCamera != null) return;
+            
             mainCamera = Camera.main;
             if (mainCamera == null)
             {
                 mainCamera = FindObjectOfType<Camera>();
             }
+        }
+        
+        private void EnsureParentCanvas()
+        {
+            if (parentCanvas != null) return;
             
-            // Auto-find parent canvas if not assigned
+            GameObject hudCanvas = GameObject.Find("HUDOverlayCanvas");
+            if (hudCanvas != null)
+            {
+                parentCanvas = hudCanvas.GetComponent<Canvas>();
+            }
+            
             if (parentCanvas == null)
             {
-                GameObject hudCanvas = GameObject.Find("HUDOverlayCanvas");
-                if (hudCanvas != null)
+                GameObject gameplayCanvas = GameObject.Find("GameplayCanvas");
+                if (gameplayCanvas != null)
                 {
-                    parentCanvas = hudCanvas.GetComponent<Canvas>();
+                    parentCanvas = gameplayCanvas.GetComponent<Canvas>();
                 }
-                
-                if (parentCanvas == null)
+            }
+            
+            if (parentCanvas == null)
+            {
+                // Find any Canvas with ScreenSpaceOverlay render mode
+                Canvas[] allCanvases = FindObjectsOfType<Canvas>();
+                foreach (Canvas canvas in allCanvases)
                 {
-                    GameObject gameplayCanvas = GameObject.Find("GameplayCanvas");
-                    if (gameplayCanvas != null)
+                    if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
                     {
-                        parentCanvas = gameplayCanvas.GetComponent<Canvas>();
-                    }
-                }
-                
-                if (parentCanvas == null)
-                {
-                    // Find any Canvas with ScreenSpaceOverlay render mode
-                    Canvas[] allCanvases = FindObjectsOfType<Canvas>();
-                    foreach (Canvas canvas in allCanvases)
-                    {
-                        if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
-                        {
-                            parentCanvas = canvas;
-                            break;
-                        }
+                        parentCanvas = canvas;
+                        break;
                     }
                 }
             }
             
-            // Validate configuration
+            if (parentCanvas == null)
+            {
+                Debug.LogWarning("[DeltaMarkerEmitter] Could not locate a parent canvas. Popups will parent to emitter transform.");
+            }
+        }
+        
+        private void EnsureDependencies()
+        {
             if (config == null)
             {
-                Debug.LogWarning("[DeltaMarkerEmitter] No DeltaMarkerConfig assigned! Delta markers will not display correctly.");
+                config = Resources.Load<DeltaMarkerConfig>(ConfigResourcePath);
+                if (config != null)
+                {
+                    Debug.Log("[DeltaMarkerEmitter] Loaded DeltaMarkerConfig from Resources.");
+                }
+                else
+                {
+                    config = ScriptableObject.CreateInstance<DeltaMarkerConfig>();
+                    config.name = "RuntimeDeltaMarkerConfig";
+                    Debug.LogWarning("[DeltaMarkerEmitter] No DeltaMarkerConfig found. Using runtime defaults.");
+                }
             }
             
             if (deltaMarkerPrefab == null)
             {
-                Debug.LogWarning("[DeltaMarkerEmitter] No deltaMarkerPrefab assigned! Cannot spawn delta markers.");
+                GameObject loadedPrefab = Resources.Load<GameObject>(PrefabResourcePath);
+                if (loadedPrefab != null)
+                {
+                    deltaMarkerPrefab = loadedPrefab;
+                    Debug.Log("[DeltaMarkerEmitter] Loaded DeltaMarkerPopup prefab from Resources.");
+                }
+                else
+                {
+                    deltaMarkerPrefab = BuildRuntimePopupTemplate();
+                    Debug.LogWarning("[DeltaMarkerEmitter] No DeltaMarkerPopup prefab found. Generated runtime template.");
+                }
             }
+        }
+        
+        private GameObject BuildRuntimePopupTemplate()
+        {
+            if (runtimePopupTemplate != null)
+            {
+                return runtimePopupTemplate;
+            }
+            
+            runtimePopupTemplate = new GameObject("DeltaMarkerPopup_Runtime");
+            RectTransform rect = runtimePopupTemplate.AddComponent<RectTransform>();
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = new Vector2(120f, 120f);
+            
+            CanvasGroup canvasGroup = runtimePopupTemplate.AddComponent<CanvasGroup>();
+            canvasGroup.alpha = 0f;
+            
+            TextMeshProUGUI text = runtimePopupTemplate.AddComponent<TextMeshProUGUI>();
+            text.text = "+1";
+            text.alignment = TextAlignmentOptions.Center;
+            text.fontSize = config != null ? config.FontSize : 60;
+            text.fontStyle = FontStyles.Bold;
+            text.color = Color.white;
+            text.enableWordWrapping = false;
+            
+            runtimePopupTemplate.AddComponent<DeltaMarkerPopup>();
+            
+            return runtimePopupTemplate;
         }
         
         /// <summary>
@@ -85,8 +163,10 @@ namespace CardGame.UI
         /// </summary>
         /// <param name="value">Delta value (positive = conquer, negative = raze)</param>
         /// <param name="worldPosition">World position to spawn the popup at</param>
-        public void SpawnDelta(int value, Vector3 worldPosition)
+        public void SpawnDelta(int value, Vector3 worldPosition, string overrideText = null, Color? overrideColor = null)
         {
+            EnsureReady();
+            
             if (config == null || deltaMarkerPrefab == null)
             {
                 Debug.LogWarning("[DeltaMarkerEmitter] Cannot spawn delta marker - config or prefab is missing!");
@@ -94,7 +174,7 @@ namespace CardGame.UI
             }
             
             // Determine color based on sign
-            Color popupColor = value >= 0 ? config.ConquerColor : config.RazeColor;
+            Color popupColor = overrideColor ?? (value >= 0 ? config.ConquerColor : config.RazeColor);
             
             // Convert world position to screen/UI space
             Vector3 spawnPosition;
@@ -153,7 +233,7 @@ namespace CardGame.UI
             
             if (popup != null)
             {
-                popup.Initialize(value, popupColor, config);
+                popup.Initialize(value, popupColor, config, overrideText);
             }
             else
             {
@@ -167,8 +247,10 @@ namespace CardGame.UI
         /// </summary>
         /// <param name="value">Delta value (positive = conquer, negative = raze)</param>
         /// <param name="uiPosition">Screen/UI position to spawn at</param>
-        public void SpawnDeltaAtUI(int value, Vector3 uiPosition)
+        public void SpawnDeltaAtUI(int value, Vector3 uiPosition, string overrideText = null, Color? overrideColor = null)
         {
+            EnsureReady();
+            
             if (config == null || deltaMarkerPrefab == null)
             {
                 Debug.LogWarning("[DeltaMarkerEmitter] Cannot spawn delta marker - config or prefab is missing!");
@@ -176,7 +258,7 @@ namespace CardGame.UI
             }
             
             // Determine color based on sign
-            Color popupColor = value >= 0 ? config.ConquerColor : config.RazeColor;
+            Color popupColor = overrideColor ?? (value >= 0 ? config.ConquerColor : config.RazeColor);
             
             // Ensure we have a canvas parent
             Transform parentTransform = parentCanvas != null ? parentCanvas.transform : transform;
@@ -204,13 +286,23 @@ namespace CardGame.UI
             
             if (popup != null)
             {
-                popup.Initialize(value, popupColor, config);
+                popup.Initialize(value, popupColor, config, overrideText);
             }
             else
             {
                 Debug.LogError("[DeltaMarkerEmitter] DeltaMarkerPopup component not found on prefab!");
                 Destroy(popupInstance);
             }
+        }
+        
+        /// <summary>
+        /// Spawns a custom alert marker (e.g., "!") at the specified world position.
+        /// </summary>
+        public void SpawnAlert(string text, Vector3 worldPosition, Color? colorOverride = null)
+        {
+            EnsureReady();
+            Color alertColor = colorOverride ?? (config != null ? config.AlertColor : Color.white);
+            SpawnDelta(0, worldPosition, string.IsNullOrEmpty(text) ? "!" : text, alertColor);
         }
     }
 }

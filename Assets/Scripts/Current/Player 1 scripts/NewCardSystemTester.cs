@@ -20,7 +20,13 @@ namespace CardGame.Testing
         [SerializeField] private int cardsToDraw = 5;
         
         [Header("Debug")]
-        [SerializeField] private bool showDebugButtons = true;
+        [SerializeField] private bool showDebugButtons = false;
+        
+        private void Awake()
+        {
+            // Force hide debug buttons (override any serialized value in scene)
+            showDebugButtons = false;
+        }
         
         private void Start()
         {

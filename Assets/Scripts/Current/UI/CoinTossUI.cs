@@ -29,6 +29,9 @@ namespace CardGame.UI
         [SerializeField] private int spinCount = 5;
         [SerializeField] private int flipCount = 4; // Number of end-over-end flips (X-axis)
         [SerializeField] private AnimationCurve spinCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+        [SerializeField] private RectTransform hoverContainer;
+        [SerializeField] private float hoverAmplitude = 20f;
+        [SerializeField] private float hoverSpeed = 1.2f;
 
         [Header("Visual Settings")]
         [SerializeField] private Sprite headsSprite;
@@ -39,6 +42,7 @@ namespace CardGame.UI
         [SerializeField] private Color tailsColor = Color.white; // Legacy - kept for compatibility
 
         private CoinTossManager coinTossManager;
+        private bool hasExternalController;
         private bool isAnimating = false;
         private bool hasShownResult = false;
         private bool hasBeenActivated = false; // Track if panel has been intentionally activated
@@ -46,6 +50,8 @@ namespace CardGame.UI
 
         private void Awake()
         {
+            hasExternalController = GetComponent<CoinTossUIController>() != null;
+
             // Auto-find CoinTossManager
             if (coinTossManager == null)
             {
@@ -77,9 +83,11 @@ namespace CardGame.UI
             // Setup heads/tails selection buttons
             if (headsButton != null)
             {
-                // Remove any existing listeners to avoid duplicates
-                headsButton.onClick.RemoveAllListeners();
-                headsButton.onClick.AddListener(() => OnSelectionMade(true));
+                if (!hasExternalController)
+                {
+                    headsButton.onClick.RemoveAllListeners();
+                    headsButton.onClick.AddListener(() => OnSelectionMade(true));
+                }
                 headsButton.interactable = true; // Ensure button is interactable
                 // Ensure button's CanvasGroup (if any) allows interaction
                 CanvasGroup cg = headsButton.GetComponent<CanvasGroup>();
@@ -97,9 +105,11 @@ namespace CardGame.UI
 
             if (tailsButton != null)
             {
-                // Remove any existing listeners to avoid duplicates
-                tailsButton.onClick.RemoveAllListeners();
-                tailsButton.onClick.AddListener(() => OnSelectionMade(false));
+                if (!hasExternalController)
+                {
+                    tailsButton.onClick.RemoveAllListeners();
+                    tailsButton.onClick.AddListener(() => OnSelectionMade(false));
+                }
                 tailsButton.interactable = true; // Ensure button is interactable
                 // Ensure button's CanvasGroup (if any) allows interaction
                 CanvasGroup cg = tailsButton.GetComponent<CanvasGroup>();
@@ -116,111 +126,7 @@ namespace CardGame.UI
             }
             
             // If buttons are null, try to find them by name or add click handlers to labels
-            if (headsButton == null && headsLabel != null)
-            {
-                Debug.LogWarning("[CoinTossUI] headsButton is null but headsLabel exists. Trying to add Button component to label...");
-                // Try to find or add Button component to the label's GameObject
-                Button btn = headsLabel.GetComponent<Button>();
-                if (btn == null)
-                {
-                    btn = headsLabel.GetComponentInParent<Button>();
-                }
-                if (btn != null)
-                {
-                    headsButton = btn;
-                    headsButton.onClick.RemoveAllListeners();
-                    headsButton.onClick.AddListener(() => OnSelectionMade(true));
-                    headsButton.interactable = true;
-                    Debug.Log("[CoinTossUI] Found Button component on headsLabel GameObject");
-                }
-                else
-                {
-                    // Add EventTrigger to make label clickable
-                    try
-                    {
-                        UnityEngine.EventSystems.EventTrigger trigger = headsLabel.GetComponent<UnityEngine.EventSystems.EventTrigger>();
-                        if (trigger == null)
-                        {
-                            trigger = headsLabel.gameObject.AddComponent<UnityEngine.EventSystems.EventTrigger>();
-                            Debug.Log("[CoinTossUI] Created EventTrigger component on headsLabel");
-                        }
-                        // Clear existing triggers to avoid duplicates
-                        trigger.triggers.Clear();
-                        var entry = new UnityEngine.EventSystems.EventTrigger.Entry();
-                        entry.eventID = UnityEngine.EventSystems.EventTriggerType.PointerClick;
-                        entry.callback.AddListener((data) => { 
-                            Debug.Log("[CoinTossUI] Heads label clicked via EventTrigger!");
-                            OnSelectionMade(true); 
-                        });
-                        trigger.triggers.Add(entry);
-                        
-                        // CRITICAL: Ensure label can receive raycasts
-                        headsLabel.raycastTarget = true;
-                        
-                        // Ensure the GameObject is active and can receive events
-                        headsLabel.gameObject.SetActive(true);
-                        
-                        Debug.Log($"[CoinTossUI] ✓ Added EventTrigger to headsLabel. raycastTarget={headsLabel.raycastTarget}, active={headsLabel.gameObject.activeInHierarchy}, triggerCount={trigger.triggers.Count}");
-                    }
-                    catch (System.Exception e)
-                    {
-                        Debug.LogError($"[CoinTossUI] Failed to add EventTrigger to headsLabel: {e.Message}\n{e.StackTrace}");
-                    }
-                }
-            }
-            
-            if (tailsButton == null && tailsLabel != null)
-            {
-                Debug.LogWarning("[CoinTossUI] tailsButton is null but tailsLabel exists. Trying to add Button component to label...");
-                // Try to find or add Button component to the label's GameObject
-                Button btn = tailsLabel.GetComponent<Button>();
-                if (btn == null)
-                {
-                    btn = tailsLabel.GetComponentInParent<Button>();
-                }
-                if (btn != null)
-                {
-                    tailsButton = btn;
-                    tailsButton.onClick.RemoveAllListeners();
-                    tailsButton.onClick.AddListener(() => OnSelectionMade(false));
-                    tailsButton.interactable = true;
-                    Debug.Log("[CoinTossUI] Found Button component on tailsLabel GameObject");
-                }
-                else
-                {
-                    // Add EventTrigger to make label clickable
-                    try
-                    {
-                        UnityEngine.EventSystems.EventTrigger trigger = tailsLabel.GetComponent<UnityEngine.EventSystems.EventTrigger>();
-                        if (trigger == null)
-                        {
-                            trigger = tailsLabel.gameObject.AddComponent<UnityEngine.EventSystems.EventTrigger>();
-                            Debug.Log("[CoinTossUI] Created EventTrigger component on tailsLabel");
-                        }
-                        // Clear existing triggers to avoid duplicates
-                        trigger.triggers.Clear();
-                        var entry = new UnityEngine.EventSystems.EventTrigger.Entry();
-                        entry.eventID = UnityEngine.EventSystems.EventTriggerType.PointerClick;
-                        entry.callback.AddListener((data) => { 
-                            Debug.Log("[CoinTossUI] Tails label clicked via EventTrigger!");
-                            OnSelectionMade(false); 
-                        });
-                        trigger.triggers.Add(entry);
-                        
-                        // CRITICAL: Ensure label can receive raycasts
-                        tailsLabel.raycastTarget = true;
-                        
-                        // Ensure the GameObject is active and can receive events
-                        tailsLabel.gameObject.SetActive(true);
-                        
-                        Debug.Log($"[CoinTossUI] ✓ Added EventTrigger to tailsLabel. raycastTarget={tailsLabel.raycastTarget}, active={tailsLabel.gameObject.activeInHierarchy}, triggerCount={trigger.triggers.Count}");
-                    }
-                    catch (System.Exception e)
-                    {
-                        Debug.LogError($"[CoinTossUI] Failed to add EventTrigger to tailsLabel: {e.Message}\n{e.StackTrace}");
-                    }
-                }
-            }
+            // Legacy label click fallback removed since dedicated buttons are now created
 
             // Setup labels with default color (no yellow by default)
             if (headsLabel != null)
@@ -242,7 +148,16 @@ namespace CardGame.UI
             // Setup selection prompt
             if (selectionPromptText != null)
             {
+                selectionPromptText.enableAutoSizing = true;
+                selectionPromptText.fontSizeMin = 24f;
+                selectionPromptText.fontSizeMax = 48f;
                 selectionPromptText.text = "Player 1: Select Heads or Tails";
+                selectionPromptText.alignment = TextAlignmentOptions.Center;
+            }
+            
+            if (hoverContainer != null)
+            {
+                StartCoroutine(HoverAnimation());
             }
 
             // Hide result text initially
@@ -302,6 +217,18 @@ namespace CardGame.UI
             }
             
             Debug.Log($"[CoinTossUI] Added hover effect to '{label.text}' label. Default: {originalColor}, Hover: {hoverColor}");
+        }
+        
+        private IEnumerator HoverAnimation()
+        {
+            float baseY = hoverContainer.anchoredPosition.y;
+            
+            while (true)
+            {
+                float offset = Mathf.Sin(Time.unscaledTime * hoverSpeed) * hoverAmplitude;
+                hoverContainer.anchoredPosition = new Vector2(hoverContainer.anchoredPosition.x, baseY + offset);
+                yield return null;
+            }
         }
 
         private void Start()
@@ -367,13 +294,17 @@ namespace CardGame.UI
             {
                 selectionPanel.SetActive(true);
             }
-
+            
             // Force enable buttons to ensure they're clickable
             ForceEnableButtons();
 
+            // Initialize coin to show a random side (heads or tails) at startup
+            // Make sure coin is visible with random side before selection
+            InitializeRandomCoinSide();
+            
             if (coinImage != null)
             {
-                coinImage.gameObject.SetActive(false);
+                coinImage.gameObject.SetActive(true); // Ensure coin is visible at startup
             }
             
             // Check if coin toss manager is ready
@@ -853,6 +784,9 @@ namespace CardGame.UI
                 tailsLabel.color = defaultColor;
             }
 
+            // Initialize coin to show a random side (heads or tails) at startup
+            InitializeRandomCoinSide();
+
             // CRITICAL: Force enable buttons/labels to ensure they're clickable
             // This is needed because Show() might be called before Awake() completes,
             // or the EventTriggers might not have been set up properly
@@ -866,6 +800,30 @@ namespace CardGame.UI
             hasShownResult = false;
             isAnimating = false;
             waitingForSelection = true;
+        }
+        
+        /// <summary>
+        /// Initializes the coin to show a random side (heads or tails) at startup.
+        /// </summary>
+        private void InitializeRandomCoinSide()
+        {
+            if (coinImage == null || headsSprite == null || tailsSprite == null)
+            {
+                Debug.LogWarning("[CoinTossUI] Cannot initialize random coin side - coinImage or sprites are null.");
+                return;
+            }
+            
+            // Use RNG to randomly pick heads or tails
+            bool showHeads = Random.Range(0, 2) == 0;
+            
+            // Set the coin sprite and color
+            coinImage.sprite = showHeads ? headsSprite : tailsSprite;
+            coinImage.color = showHeads ? headsColor : tailsColor;
+            
+            // Reset rotation to default (no rotation)
+            coinImage.transform.rotation = Quaternion.identity;
+            
+            Debug.Log($"[CoinTossUI] Initialized coin to show random side: {(showHeads ? "HEADS" : "TAILS")}");
         }
 
         /// <summary>

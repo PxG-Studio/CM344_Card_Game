@@ -251,10 +251,10 @@ namespace CardGame.UI
             // Wait a frame to ensure card is positioned
             yield return null;
             
-            // Show +1 delta marker at card position
+            // Show alert marker for opponent draw
             if (cardTransform != null)
             {
-                DeltaMarkerSystem.ShowDelta(+1, cardTransform);
+                DeltaMarkerSystem.ShowAlert(cardTransform, "!");
             }
         }
         

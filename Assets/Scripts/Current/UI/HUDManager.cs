@@ -129,12 +129,12 @@ namespace CardGame.UI
         {
             if (p1ScoreLabel != null)
             {
-                p1ScoreLabel.text = $"Conquered Territories: {player1Score}";
+                p1ScoreLabel.text = $"Field Control: {player1Score}";
             }
             
             if (p2ScoreLabel != null)
             {
-                p2ScoreLabel.text = $"Conquered Territories: {player2Score}";
+                p2ScoreLabel.text = $"Field Control: {player2Score}";
             }
         }
         
@@ -190,7 +190,7 @@ namespace CardGame.UI
             }
             
             int remaining = totalBoardTiles - placedCards;
-            tilesRemainingLabel.text = $"Tiles: {remaining}";
+            tilesRemainingLabel.text = $"Open Fields: {remaining}";
         }
         
         /// <summary>

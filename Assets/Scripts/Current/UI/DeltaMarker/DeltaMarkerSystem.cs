@@ -26,6 +26,7 @@ namespace CardGame.UI
                 return;
             }
             
+            Debug.Log($"[DeltaMarkerSystem] ShowDelta called: delta={deltaValue}, target={targetTransform.name}, position={targetTransform.position}");
             ShowDeltaAtPosition(deltaValue, targetTransform.position);
         }
         
@@ -45,6 +46,7 @@ namespace CardGame.UI
                 return;
             }
             
+            Debug.Log($"[DeltaMarkerSystem] Spawning delta marker: delta={deltaValue}, position={worldPosition}, emitter={emitter.name}");
             emitter.SpawnDelta(deltaValue, worldPosition);
         }
         
@@ -63,6 +65,27 @@ namespace CardGame.UI
             }
             
             emitter.SpawnDeltaAtUI(deltaValue, uiPosition);
+        }
+        
+        /// <summary>
+        /// Shows an alert marker (custom text, default "!") at a transform's position.
+        /// </summary>
+        public static void ShowAlert(Transform targetTransform, string text = "!")
+        {
+            if (targetTransform == null)
+            {
+                Debug.LogWarning("[DeltaMarkerSystem] Target transform is null! Cannot show alert marker.");
+                return;
+            }
+            
+            DeltaMarkerEmitter emitter = GetEmitter();
+            if (emitter == null)
+            {
+                Debug.LogWarning("[DeltaMarkerSystem] DeltaMarkerEmitter not found in scene! Alert marker will not be shown.");
+                return;
+            }
+            
+            emitter.SpawnAlert(text, targetTransform.position);
         }
         
         /// <summary>
@@ -85,17 +108,21 @@ namespace CardGame.UI
             }
             
             // Search for emitter
-            hasSearchedForEmitter = true;
             cachedEmitter = Object.FindObjectOfType<DeltaMarkerEmitter>();
             
             if (cachedEmitter == null)
             {
-                Debug.LogWarning("[DeltaMarkerSystem] No DeltaMarkerEmitter found in scene. " +
-                    "Please add a DeltaMarkerEmitter component to a GameObject and assign the config and prefab.");
+                Debug.LogWarning("[DeltaMarkerSystem] No DeltaMarkerEmitter found in scene. Creating runtime emitter.");
+                GameObject emitterObj = new GameObject("DeltaMarkerEmitter_Runtime");
+                cachedEmitter = emitterObj.AddComponent<DeltaMarkerEmitter>();
             }
-            else
+            
+            hasSearchedForEmitter = true;
+            
+            if (cachedEmitter != null)
             {
-                Debug.Log($"[DeltaMarkerSystem] Found DeltaMarkerEmitter on '{cachedEmitter.gameObject.name}'");
+                cachedEmitter.EnsureReady();
+                Debug.Log($"[DeltaMarkerSystem] Using DeltaMarkerEmitter '{cachedEmitter.gameObject.name}'");
             }
             
             return cachedEmitter;

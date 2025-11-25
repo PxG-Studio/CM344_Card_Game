@@ -26,16 +26,26 @@ namespace CardGame.Visuals
         [SerializeField] private Color reflectionColor = new Color(0.741f, 0.949f, 0.890f, 0.4f);
 
         [Header("Depth")]
-        [SerializeField] private Vector2 shadowOffset = new Vector2(0.25f, -0.35f); // Increased offset for more pronounced hover effect
-        [SerializeField] private Color shadowColor = new Color(0f, 0f, 0f, 0.5f); // Darker shadow for better depth perception
+        [SerializeField] private Vector2 shadowOffset = new Vector2(0f, -0.32f); // Lower offset for levitation look
+        [SerializeField] private Color shadowColor = new Color(0f, 0f, 0f, 0.33f); // Softer translucent shadow
         [SerializeField] private int sortingOrder = -100;
         [SerializeField] private bool enableHoverEffect = true; // Enable/disable hover effect
-        [SerializeField] private float hoverShadowBlur = 1.2f; // Shadow blur multiplier for softer edges
+        [SerializeField] private float shadowScaleMultiplier = 1.12f; // Slightly larger shadow footprint
+        
+        [Header("Floating Animation")]
+        [SerializeField] private bool enableFloatingAnimation = true;
+        [SerializeField] private float floatScaleAmplitude = 0.02f;
+        [SerializeField] private float floatSpeed = 0.6f;
+        [SerializeField] private float shadowScaleOffset = 0.05f;
+        [SerializeField] private float shadowPulseAmplitude = 0.03f;
 
         private SpriteRenderer boardRenderer;
         private SpriteRenderer shadowRenderer;
         private Texture2D generatedTexture;
         private Sprite generatedSprite;
+        private Vector3 boardBaseScale = Vector3.one;
+        private Vector3 shadowBaseScale = Vector3.one;
+        private float animationTimer;
 
         private void Awake()
         {
@@ -45,6 +55,14 @@ namespace CardGame.Visuals
         private void OnEnable()
         {
             RefreshNow();
+        }
+        
+        private void Update()
+        {
+            if (enableFloatingAnimation && boardRenderer != null)
+            {
+                AnimateFloatingBoard();
+            }
         }
 
         private void OnDestroy()
@@ -95,6 +113,7 @@ namespace CardGame.Visuals
             transform.localPosition = boardPosition;
             transform.localRotation = Quaternion.identity;
             transform.localScale = Vector3.one;
+            boardBaseScale = transform.localScale;
 
             int targetWidth = Mathf.Max(64, Mathf.RoundToInt(boardSize.x * pixelsPerUnit));
             int targetHeight = Mathf.Max(64, Mathf.RoundToInt(boardSize.y * pixelsPerUnit));
@@ -105,20 +124,12 @@ namespace CardGame.Visuals
             ApplySprite(targetWidth, targetHeight, ppu);
 
             // Apply hover effect with enhanced shadow
-            if (enableHoverEffect)
-            {
-                shadowRenderer.transform.localPosition = new Vector3(shadowOffset.x, shadowOffset.y, 0f);
-                shadowRenderer.transform.localScale = Vector3.one * hoverShadowBlur; // Slightly larger for blur effect
-                shadowRenderer.sortingOrder = sortingOrder - 1;
-                shadowRenderer.color = shadowColor;
-            }
-            else
-            {
-                shadowRenderer.transform.localPosition = new Vector3(shadowOffset.x, shadowOffset.y, 0f);
-                shadowRenderer.transform.localScale = Vector3.one;
-                shadowRenderer.sortingOrder = sortingOrder - 1;
-                shadowRenderer.color = shadowColor;
-            }
+            shadowRenderer.transform.localPosition = new Vector3(shadowOffset.x, shadowOffset.y, 0f);
+            shadowRenderer.transform.localScale = Vector3.one * shadowScaleMultiplier;
+            shadowRenderer.sortingOrder = sortingOrder - 1;
+            shadowRenderer.color = shadowColor;
+            
+            shadowBaseScale = shadowRenderer.transform.localScale;
         }
 
         private void EnsureRenderers()
@@ -148,6 +159,22 @@ namespace CardGame.Visuals
                     shadowRenderer = shadowTransform.gameObject.AddComponent<SpriteRenderer>();
                 }
                 shadowRenderer.color = shadowColor;
+            }
+            shadowBaseScale = shadowRenderer.transform.localScale;
+        }
+        
+        private void AnimateFloatingBoard()
+        {
+            animationTimer += Time.deltaTime * floatSpeed;
+            float pulse = Mathf.Sin(animationTimer) * floatScaleAmplitude;
+            float shadowPulse = Mathf.Sin(animationTimer + Mathf.PI / 4f) * shadowPulseAmplitude;
+            
+            transform.localScale = boardBaseScale * (1f + pulse);
+            
+            if (shadowRenderer != null)
+            {
+                float shadowScale = 1f + shadowScaleOffset + shadowPulse;
+                shadowRenderer.transform.localScale = shadowBaseScale * shadowScale;
             }
         }
 
