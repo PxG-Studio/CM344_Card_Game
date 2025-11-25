@@ -41,7 +41,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     [SerializeField] private Vector3 cardScaleOnBoard = Vector3.one; // Leave at (1,1,1) to auto-match drop area size
     [SerializeField, Range(0.5f, 1.2f)] private float cardScaleFillPercent = 0.9f;
     [SerializeField] private SpriteRenderer tileSpriteRenderer;
-    // [SerializeField] private float adjacentCardDistance = 3f; // Distance to consider cards adjacent (increased from 2f) - Currently unused, kept for future use
+    [SerializeField] private float adjacentCardDistance = 3f; // Distance to consider cards adjacent (increased from 2f)
     [SerializeField] private bool enableCardBattles = true; // Enable stat comparison and card flipping
     [SerializeField] private bool debugBattles = true; // Log battle detection for debugging
     

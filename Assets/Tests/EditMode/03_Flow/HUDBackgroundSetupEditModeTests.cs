@@ -3,16 +3,27 @@ using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
+using CardGame.UI;
 
 namespace Tests.EditMode.Flow
 {
     public class HUDBackgroundSetupEditModeTests
     {
         private readonly List<GameObject> _createdObjects = new();
+        private readonly List<(GameObject go, string originalName)> _renamedObjects = new();
 
         [TearDown]
         public void TearDown()
         {
+            foreach (var entry in _renamedObjects)
+            {
+                if (entry.go != null)
+                {
+                    entry.go.name = entry.originalName;
+                }
+            }
+            _renamedObjects.Clear();
+
             foreach (var go in _createdObjects)
             {
                 if (go != null)
@@ -78,6 +89,7 @@ namespace Tests.EditMode.Flow
 
         private GameObject CreateNamedGO(string name)
         {
+            ReserveUniqueName(name);
             var go = new GameObject(name);
             _createdObjects.Add(go);
             return go;
@@ -97,6 +109,18 @@ namespace Tests.EditMode.Flow
                 .GetMethod("SetupBoardBackdrop", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(method, "Unable to find SetupBoardBackdrop via reflection.");
             method.Invoke(hudSetup, null);
+        }
+
+        private void ReserveUniqueName(string targetName)
+        {
+            GameObject existing;
+            int counter = 0;
+            while ((existing = GameObject.Find(targetName)) != null)
+            {
+                string backupName = $"{targetName}_Renamed_{counter++}";
+                _renamedObjects.Add((existing, existing.name));
+                existing.name = backupName;
+            }
         }
     }
 }
