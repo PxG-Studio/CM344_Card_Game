@@ -33,6 +33,11 @@ namespace CardGame.UI
         public NewDeckManagerP1 DeckManager => deckManager;
         
         /// <summary>
+        /// [CardFront] Hub property: Exposes card prefab for Hub connections (board card creation).
+        /// </summary>
+        public NewCardUI CardPrefab => cardPrefab;
+        
+        /// <summary>
         /// Gets the card associated with a specific card UI instance.
         /// </summary>
         public NewCard GetCardForUI(NewCardUI cardUI)

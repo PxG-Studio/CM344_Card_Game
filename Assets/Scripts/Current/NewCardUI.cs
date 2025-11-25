@@ -1552,12 +1552,12 @@ namespace CardGame.UI
                 return;
             }
             
-            // [CardFront] Hub connection: Get deck manager via Hub (NewHandP1UI) instead of FindObjectOfType
-            // NewHandP1UI is the Hub that manages card UI instances and knows about deckManager
+            // [CardFront] Hub connection: Get deck manager and prefab via Hub (NewHandP1UI)
+            // NewHandP1UI is the Hub that manages card UI instances and knows about deckManager and card prefab
             CardGame.Managers.NewDeckManagerP1 deckManager = null;
+            CardGame.UI.NewHandP1UI handUI = GetComponentInParent<CardGame.UI.NewHandP1UI>();
             
             // Use parent Hub connection to get deck manager
-            CardGame.UI.NewHandP1UI handUI = GetComponentInParent<CardGame.UI.NewHandP1UI>();
             if (handUI != null)
             {
                 // [CardFront] Access deckManager via Hub property (clean Hub connection)
@@ -1593,20 +1593,19 @@ namespace CardGame.UI
             
             Debug.Log($"[NewCardUI] PlaceCardOnBoard: All checks passed. Creating board card for '{card.Data.cardName}'...");
             
-            // [CardFront] Hub approach: Use CardFactory to create board card
-            // CardFactory is the Hub for card creation - use it instead of manual instantiation
-            GameObject boardCardPrefab = UnityEngine.Resources.Load<GameObject>("NewCardPrefab");
+            // [CardFront] Hub approach: Get board card prefab from NewHandP1UI (Hub) instead of Resources.Load
+            CardGame.UI.NewCardUI boardCardPrefab = handUI.CardPrefab;
             
             if (boardCardPrefab == null)
             {
-                Debug.LogError("[NewCardUI] PlaceCardOnBoard: NewCardPrefab not found in Resources folder. Cannot create board card.");
+                Debug.LogError("[NewCardUI] PlaceCardOnBoard: cardPrefab is null in NewHandP1UI Hub. Cannot create board card. Please assign the prefab in the Inspector for NewHandP1UI.");
                 return;
             }
             
             // [CardFront] Use CardFactory Hub for board card creation
             GameObject boardCard = CardGame.Factories.CardFactory.CreateBoardCard(
                 card, 
-                boardCardPrefab, 
+                boardCardPrefab.gameObject, 
                 dropArea.transform.position
             );
             
