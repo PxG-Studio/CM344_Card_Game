@@ -129,12 +129,12 @@ namespace CardGame.UI
         {
             if (p1ScoreLabel != null)
             {
-                p1ScoreLabel.text = $"Score: {player1Score}";
+                p1ScoreLabel.text = $"Conquered Territories: {player1Score}";
             }
             
             if (p2ScoreLabel != null)
             {
-                p2ScoreLabel.text = $"Score: {player2Score}";
+                p2ScoreLabel.text = $"Conquered Territories: {player2Score}";
             }
         }
         

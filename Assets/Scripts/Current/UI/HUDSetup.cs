@@ -5,6 +5,9 @@ using TMPro;
 using CardGame.Managers;
 using CardGame.Visuals;
 using CardGame.UI;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace CardGame.UI
 {
@@ -430,8 +433,9 @@ namespace CardGame.UI
             
             // Create text labels with better sizing
             CreateTextLabel(panel.transform, "PlayerLabel", isPlayer1 ? "Player 1" : "Player 2", 16, true, true);
-            CreateTextLabel(panel.transform, "ScoreLabel", "Score: 0", 15, false, true);
+            CreateTextLabel(panel.transform, "ScoreLabel", "Conquered Territories: 0", 15, false, true);
             CreateTextLabel(panel.transform, "HandDeckLabel", "Hand: 0 | Deck: 0", 13, false, true);
+            CreateTextLabel(panel.transform, "BattlefieldTilesLabel", "Battlefield where tiles: 16", 13, false, true);
             
             return panel.transform;
         }
@@ -1384,6 +1388,9 @@ namespace CardGame.UI
             SetPrivateField(coinTossUI, coinTossUIType, "coinImage", coinImage);
             SetPrivateField(coinTossUI, coinTossUIType, "continueButton", continueBtnObj.GetComponent<UnityEngine.UI.Button>());
             
+            // Auto-assign coin toss sprites (Heads inventor.png and Sheep tails.png)
+            LoadCoinTossSprites(coinTossUI, coinTossUIType);
+            
             // Verify the panel was created and parented correctly
             if (coinTossPanel.transform.parent != hudRoot)
             {
@@ -1399,6 +1406,65 @@ namespace CardGame.UI
             {
                 Debug.Log($"HUDSetup: ✓ CoinTossUI panel created successfully on '{coinTossPanel.name}' (InstanceID: {coinTossUI.GetInstanceID()}, Parent: '{coinTossPanel.transform.parent?.name}', Active: {coinTossPanel.activeSelf})");
             }
+        }
+        
+        /// <summary>
+        /// Loads and assigns coin toss sprites to CoinTossUI component.
+        /// </summary>
+        private void LoadCoinTossSprites(CoinTossUI coinTossUI, System.Type coinTossUIType)
+        {
+            #if UNITY_EDITOR
+            // Try to load sprites using AssetDatabase (Editor only)
+            string headsPath = "Assets/Sprite/Heads inventor.png";
+            string tailsPath = "Assets/Sprite/Sheep tails.png";
+            
+            Sprite headsSprite = AssetDatabase.LoadAssetAtPath<Sprite>(headsPath);
+            Sprite tailsSprite = AssetDatabase.LoadAssetAtPath<Sprite>(tailsPath);
+            
+            if (headsSprite != null)
+            {
+                SetPrivateField(coinTossUI, coinTossUIType, "headsSprite", headsSprite);
+                Debug.Log($"HUDSetup: ✓ Auto-assigned heads sprite from '{headsPath}'");
+            }
+            else
+            {
+                Debug.LogWarning($"HUDSetup: Could not load heads sprite from '{headsPath}'. Please assign manually in Inspector.");
+            }
+            
+            if (tailsSprite != null)
+            {
+                SetPrivateField(coinTossUI, coinTossUIType, "tailsSprite", tailsSprite);
+                Debug.Log($"HUDSetup: ✓ Auto-assigned tails sprite from '{tailsPath}'");
+            }
+            else
+            {
+                Debug.LogWarning($"HUDSetup: Could not load tails sprite from '{tailsPath}'. Please assign manually in Inspector.");
+            }
+            #else
+            // Runtime: Try Resources.Load as fallback
+            Sprite headsSprite = Resources.Load<Sprite>("Sprite/Heads inventor");
+            Sprite tailsSprite = Resources.Load<Sprite>("Sprite/Sheep tails");
+            
+            if (headsSprite != null)
+            {
+                SetPrivateField(coinTossUI, coinTossUIType, "headsSprite", headsSprite);
+                Debug.Log("HUDSetup: ✓ Auto-assigned heads sprite from Resources");
+            }
+            else
+            {
+                Debug.LogWarning("HUDSetup: Could not load heads sprite from Resources. Please assign manually in Inspector.");
+            }
+            
+            if (tailsSprite != null)
+            {
+                SetPrivateField(coinTossUI, coinTossUIType, "tailsSprite", tailsSprite);
+                Debug.Log("HUDSetup: ✓ Auto-assigned tails sprite from Resources");
+            }
+            else
+            {
+                Debug.LogWarning("HUDSetup: Could not load tails sprite from Resources. Please assign manually in Inspector.");
+            }
+            #endif
         }
         
         /// <summary>
