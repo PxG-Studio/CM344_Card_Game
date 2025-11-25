@@ -166,7 +166,7 @@ namespace CardGame.UI
         /// </summary>
         private void UpdateTilesRemaining()
         {
-            if (tilesRemainingLabel == null) return;
+            if (tilesRemainingLabel == null || !tilesRemainingLabel.gameObject.activeInHierarchy) return;
             
             // Count placed cards on the board
             int placedCards = 0;

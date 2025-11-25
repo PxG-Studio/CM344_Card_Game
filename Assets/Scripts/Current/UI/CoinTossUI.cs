@@ -42,7 +42,6 @@ namespace CardGame.UI
         [SerializeField] private Color tailsColor = Color.white; // Legacy - kept for compatibility
 
         private CoinTossManager coinTossManager;
-        private bool hasExternalController;
         private bool isAnimating = false;
         private bool hasShownResult = false;
         private bool hasBeenActivated = false; // Track if panel has been intentionally activated
@@ -50,8 +49,6 @@ namespace CardGame.UI
 
         private void Awake()
         {
-            hasExternalController = GetComponent<CoinTossUIController>() != null;
-
             // Auto-find CoinTossManager
             if (coinTossManager == null)
             {
@@ -83,11 +80,8 @@ namespace CardGame.UI
             // Setup heads/tails selection buttons
             if (headsButton != null)
             {
-                if (!hasExternalController)
-                {
-                    headsButton.onClick.RemoveAllListeners();
-                    headsButton.onClick.AddListener(() => OnSelectionMade(true));
-                }
+                headsButton.onClick.RemoveAllListeners();
+                headsButton.onClick.AddListener(() => OnSelectionMade(true));
                 headsButton.interactable = true; // Ensure button is interactable
                 // Ensure button's CanvasGroup (if any) allows interaction
                 CanvasGroup cg = headsButton.GetComponent<CanvasGroup>();
@@ -105,11 +99,8 @@ namespace CardGame.UI
 
             if (tailsButton != null)
             {
-                if (!hasExternalController)
-                {
-                    tailsButton.onClick.RemoveAllListeners();
-                    tailsButton.onClick.AddListener(() => OnSelectionMade(false));
-                }
+                tailsButton.onClick.RemoveAllListeners();
+                tailsButton.onClick.AddListener(() => OnSelectionMade(false));
                 tailsButton.interactable = true; // Ensure button is interactable
                 // Ensure button's CanvasGroup (if any) allows interaction
                 CanvasGroup cg = tailsButton.GetComponent<CanvasGroup>();

@@ -25,12 +25,14 @@ namespace CardGame.Tests.PlayMode
             GameObject panel = CoinTossUITestFactory.CreatePanel();
             panel.transform.SetParent(canvasRoot.transform, false);
 
-            var controller = panel.GetComponent<CoinTossUIController>();
-            Assert.IsNotNull(controller);
-            Assert.IsNotNull(controller.headsButton);
-            Assert.IsNotNull(controller.tailsButton);
-            Assert.IsTrue(controller.headsButton.gameObject.activeSelf);
-            Assert.IsTrue(controller.tailsButton.gameObject.activeSelf);
+            Assert.IsNotNull(panel.GetComponent<CoinTossUIController>());
+
+            var heads = panel.transform.Find("PanelRoot/ButtonsContainer/HEADSButton");
+            var tails = panel.transform.Find("PanelRoot/ButtonsContainer/TAILSButton");
+            Assert.IsNotNull(heads);
+            Assert.IsNotNull(tails);
+            Assert.IsNotNull(heads.GetComponent<Button>());
+            Assert.IsNotNull(tails.GetComponent<Button>());
 
             yield return null;
         }
@@ -60,7 +62,7 @@ namespace CardGame.Tests.PlayMode
             panelRect.anchorMin = new Vector2(0.5f, 0.5f);
             panelRect.anchorMax = new Vector2(0.5f, 0.5f);
             panelRect.pivot = new Vector2(0.5f, 0.5f);
-            panelRect.sizeDelta = new Vector2(650f, 550f);
+            panelRect.sizeDelta = new Vector2(750f, 650f);
 
             var controller = panel.GetComponent<CoinTossUIController>();
             var panelCanvasGroup = panel.GetComponent<CanvasGroup>();
@@ -73,7 +75,7 @@ namespace CardGame.Tests.PlayMode
             var rootRect = root.GetComponent<RectTransform>();
             rootRect.anchorMin = rootRect.anchorMax = new Vector2(0.5f, 0.5f);
             rootRect.pivot = new Vector2(0.5f, 0.5f);
-            rootRect.sizeDelta = new Vector2(650f, 550f);
+            rootRect.sizeDelta = new Vector2(750f, 650f);
 
             // Coin image
             var coinGO = new GameObject("CoinImage",
@@ -84,7 +86,7 @@ namespace CardGame.Tests.PlayMode
             var coinRect = coinGO.GetComponent<RectTransform>();
             coinRect.anchorMin = coinRect.anchorMax = new Vector2(0.5f, 0.65f);
             coinRect.pivot = new Vector2(0.5f, 0.5f);
-            coinRect.sizeDelta = new Vector2(180f, 180f);
+            coinRect.sizeDelta = new Vector2(200f, 200f);
 
             // Prompt text
             var promptGO = new GameObject("PromptText",
@@ -129,8 +131,8 @@ namespace CardGame.Tests.PlayMode
 
             controller.InjectDependencies(panelCanvasGroup, rootRect,
                 coinGO.GetComponent<Image>(),
-                headsButton, tailsButton, promptTMP);
-            controller.Setup("Player 1", _ => { });
+                promptTMP);
+            controller.Setup("Player 1");
 
             return panel;
         }

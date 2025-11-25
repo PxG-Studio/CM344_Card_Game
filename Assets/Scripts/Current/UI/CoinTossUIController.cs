@@ -1,4 +1,4 @@
-using System;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,29 +18,17 @@ namespace CardGame.UI
         public CanvasGroup rootCanvasGroup;
         public RectTransform rootPanel;
         public Image coinImage;
-        public Button headsButton;
-        public Button tailsButton;
         public TextMeshProUGUI promptText;
-
-        private Action<bool> onSelectionCallback;
 #if DOTWEEN_AVAILABLE
         private Tween introFadeTween;
         private Tween introMoveTween;
         private Tween coinBounceTween;
+#else
+        private Coroutine fallbackPulseRoutine;
 #endif
 
         private void Start()
         {
-            if (headsButton != null)
-            {
-                headsButton.onClick.AddListener(() => Select(true));
-            }
-
-            if (tailsButton != null)
-            {
-                tailsButton.onClick.AddListener(() => Select(false));
-            }
-
             PlayIntro();
         }
 
@@ -50,6 +38,12 @@ namespace CardGame.UI
             introFadeTween?.Kill();
             introMoveTween?.Kill();
             coinBounceTween?.Kill();
+#else
+            if (fallbackPulseRoutine != null)
+            {
+                StopCoroutine(fallbackPulseRoutine);
+                fallbackPulseRoutine = null;
+            }
 #endif
         }
 
@@ -87,31 +81,26 @@ namespace CardGame.UI
                     .SetEase(Ease.OutSine)
                     .SetLoops(-1, LoopType.Yoyo);
             }
+#else
+            if (rootCanvasGroup != null)
+            {
+                rootCanvasGroup.alpha = 1f;
+            }
+
+            if (rootPanel != null)
+            {
+                rootPanel.anchoredPosition = Vector2.zero;
+            }
+
+            if (coinImage != null && fallbackPulseRoutine == null)
+            {
+                fallbackPulseRoutine = StartCoroutine(FallbackCoinPulse());
+            }
 #endif
         }
 
-        private void Select(bool isHeads)
+        public void Setup(string playerName)
         {
-            if (headsButton != null)
-            {
-                headsButton.interactable = false;
-            }
-
-            if (tailsButton != null)
-            {
-                tailsButton.interactable = false;
-            }
-
-            onSelectionCallback?.Invoke(isHeads);
-        }
-
-        /// <summary>
-        /// Injects the display name and callback that should be invoked when the player makes a choice.
-        /// </summary>
-        public void Setup(string playerName, Action<bool> callback)
-        {
-            onSelectionCallback = callback;
-
             if (promptText != null)
             {
                 promptText.enableAutoSizing = true;
@@ -126,15 +115,36 @@ namespace CardGame.UI
         /// Exposed so HUDSetup can wire the references if a prefab isn't used.
         /// </summary>
         public void InjectDependencies(CanvasGroup canvasGroup, RectTransform panel, Image image,
-            Button heads, Button tails, TextMeshProUGUI prompt)
+            TextMeshProUGUI prompt)
         {
             rootCanvasGroup = canvasGroup;
             rootPanel = panel;
             coinImage = image;
-            headsButton = heads;
-            tailsButton = tails;
             promptText = prompt;
         }
+
+#if !DOTWEEN_AVAILABLE
+        private IEnumerator FallbackCoinPulse()
+        {
+            RectTransform coinRect = coinImage != null ? coinImage.rectTransform : null;
+            if (coinRect == null)
+            {
+                yield break;
+            }
+
+            float t = 0f;
+            Vector3 baseScale = Vector3.one * 1.1f;
+            coinRect.localScale = baseScale;
+
+            while (true)
+            {
+                t += Time.unscaledDeltaTime;
+                float pulse = 0.1f * Mathf.Sin(t * Mathf.PI);
+                coinRect.localScale = baseScale * (1f + pulse);
+                yield return null;
+            }
+        }
+#endif
     }
 }
 

@@ -363,7 +363,8 @@ namespace CardGame.UI
             TMP_Text tilesRemainingLabel = hudRoot.Find("TilesRemainingLabel")?.GetComponent<TMP_Text>();
             if (tilesRemainingLabel != null)
             {
-                tilesRemainingLabel.text = "Open Fields: 16";
+                tilesRemainingLabel.text = string.Empty;
+                tilesRemainingLabel.gameObject.SetActive(false);
             }
             
             // Create turn indicators above each panel (like develop-5)
@@ -1295,7 +1296,7 @@ namespace CardGame.UI
             contentRect.anchorMin = new Vector2(0.5f, 0.5f);
             contentRect.anchorMax = new Vector2(0.5f, 0.5f);
             contentRect.pivot = new Vector2(0.5f, 0.5f);
-            contentRect.sizeDelta = new Vector2(650f, 550f);
+            contentRect.sizeDelta = new Vector2(750f, 650f);
             contentRect.anchoredPosition = Vector2.zero;
             
             // Add background to content panel
@@ -1328,10 +1329,10 @@ namespace CardGame.UI
             GameObject coinContainer = new GameObject("CoinContainer");
             coinContainer.transform.SetParent(contentPanel.transform, false);
             RectTransform coinRect = coinContainer.AddComponent<RectTransform>();
-            coinRect.sizeDelta = new Vector2(240, 240);
+            coinRect.sizeDelta = new Vector2(280, 280);
             UnityEngine.UI.LayoutElement coinLayout = coinContainer.AddComponent<UnityEngine.UI.LayoutElement>();
-            coinLayout.preferredWidth = 240;
-            coinLayout.preferredHeight = 240;
+            coinLayout.preferredWidth = 280;
+            coinLayout.preferredHeight = 280;
             
             // Create coin mesh background
             GameObject coinMeshObj = new GameObject("CoinMesh");
@@ -1340,7 +1341,7 @@ namespace CardGame.UI
             coinMeshRect.anchorMin = new Vector2(0.5f, 0.5f);
             coinMeshRect.anchorMax = new Vector2(0.5f, 0.5f);
             coinMeshRect.pivot = new Vector2(0.5f, 0.5f);
-            coinMeshRect.sizeDelta = new Vector2(180, 180);
+            coinMeshRect.sizeDelta = new Vector2(220, 220);
             coinMeshRect.anchoredPosition = Vector2.zero;
             
             UICoinGraphic coinMesh = coinMeshObj.AddComponent<UICoinGraphic>();
@@ -1352,7 +1353,7 @@ namespace CardGame.UI
             coinImageRect.anchorMin = new Vector2(0.5f, 0.5f);
             coinImageRect.anchorMax = new Vector2(0.5f, 0.5f);
             coinImageRect.pivot = new Vector2(0.5f, 0.5f);
-            coinImageRect.sizeDelta = new Vector2(180, 180);
+            coinImageRect.sizeDelta = new Vector2(200, 200);
             coinImageRect.anchoredPosition = Vector2.zero;
             
             UnityEngine.UI.Image coinImage = coinImageObj.AddComponent<UnityEngine.UI.Image>();
@@ -1443,7 +1444,7 @@ namespace CardGame.UI
             // Add CoinTossUI component
             CoinTossUI coinTossUI = coinTossPanel.AddComponent<CoinTossUI>();
             CoinTossUIController controller = coinTossPanel.AddComponent<CoinTossUIController>();
-            controller.InjectDependencies(panelCanvasGroup, contentRect, coinImage, headsButton, tailsButton, selectionPrompt);
+            controller.InjectDependencies(panelCanvasGroup, contentRect, coinImage, selectionPrompt);
             
             // Wire up references using reflection
             System.Type coinTossUIType = typeof(CoinTossUI);
@@ -1461,7 +1462,7 @@ namespace CardGame.UI
             
             // Auto-assign coin toss sprites (Heads inventor.png and Sheep tails.png)
             LoadCoinTossSprites(coinTossUI, coinTossUIType);
-            controller.Setup("Player 1", coinTossUI.OnSelectionMade);
+            controller.Setup("Player 1");
             
             // Verify the panel was created and parented correctly
             if (coinTossPanel.transform.parent != hudRoot)
@@ -1487,57 +1488,34 @@ namespace CardGame.UI
         private void LoadCoinTossSprites(CoinTossUI coinTossUI, System.Type coinTossUIType)
         {
             #if UNITY_EDITOR
-            // Try to load sprites using AssetDatabase (Editor only)
-            string headsPath = "Assets/Sprite/Heads inventor.png";
-            string tailsPath = "Assets/Sprite/Sheep tails.png";
-            
+            string headsPath = "Assets/Resources/Coin/Heads.png";
+            string tailsPath = "Assets/Resources/Coin/Tails.png";
             Sprite headsSprite = AssetDatabase.LoadAssetAtPath<Sprite>(headsPath);
             Sprite tailsSprite = AssetDatabase.LoadAssetAtPath<Sprite>(tailsPath);
-            
-            if (headsSprite != null)
-            {
-                SetPrivateField(coinTossUI, coinTossUIType, "headsSprite", headsSprite);
-                Debug.Log($"HUDSetup: ✓ Auto-assigned heads sprite from '{headsPath}'");
-            }
-            else
-            {
-                Debug.LogWarning($"HUDSetup: Could not load heads sprite from '{headsPath}'. Please assign manually in Inspector.");
-            }
-            
-            if (tailsSprite != null)
-            {
-                SetPrivateField(coinTossUI, coinTossUIType, "tailsSprite", tailsSprite);
-                Debug.Log($"HUDSetup: ✓ Auto-assigned tails sprite from '{tailsPath}'");
-            }
-            else
-            {
-                Debug.LogWarning($"HUDSetup: Could not load tails sprite from '{tailsPath}'. Please assign manually in Inspector.");
-            }
             #else
-            // Runtime: Try Resources.Load as fallback
-            Sprite headsSprite = Resources.Load<Sprite>("Sprite/Heads inventor");
-            Sprite tailsSprite = Resources.Load<Sprite>("Sprite/Sheep tails");
+            Sprite headsSprite = Resources.Load<Sprite>("Coin/Heads");
+            Sprite tailsSprite = Resources.Load<Sprite>("Coin/Tails");
+            #endif
             
             if (headsSprite != null)
             {
                 SetPrivateField(coinTossUI, coinTossUIType, "headsSprite", headsSprite);
-                Debug.Log("HUDSetup: ✓ Auto-assigned heads sprite from Resources");
+                Debug.Log("[HUDSetup] ✓ Auto-assigned custom coin heads sprite.");
             }
             else
             {
-                Debug.LogWarning("HUDSetup: Could not load heads sprite from Resources. Please assign manually in Inspector.");
+                Debug.LogWarning("[HUDSetup] Could not load custom coin heads sprite. Please assign manually.");
             }
             
             if (tailsSprite != null)
             {
                 SetPrivateField(coinTossUI, coinTossUIType, "tailsSprite", tailsSprite);
-                Debug.Log("HUDSetup: ✓ Auto-assigned tails sprite from Resources");
+                Debug.Log("[HUDSetup] ✓ Auto-assigned custom coin tails sprite.");
             }
             else
             {
-                Debug.LogWarning("HUDSetup: Could not load tails sprite from Resources. Please assign manually in Inspector.");
+                Debug.LogWarning("[HUDSetup] Could not load custom coin tails sprite. Please assign manually.");
             }
-            #endif
         }
         
         /// <summary>
@@ -1695,24 +1673,104 @@ namespace CardGame.UI
         
         private void SetupBoardBackdrop()
         {
-            GameObject dropAreas = GameObject.Find("Drop Areas");
-            if (dropAreas == null)
+            GameObject hudCanvas = GameObject.Find("HUDOverlayCanvas");
+            GameObject hudCanvasGO = GameObject.Find("HUDOverlayCanvas");
+            GameObject dropAreasRoot = GameObject.Find("Drop Areas");
+            if (hudCanvasGO == null || dropAreasRoot == null)
             {
-                Debug.LogWarning("HUDSetup: Could not find 'Drop Areas' to generate board backdrop.");
+                Debug.LogWarning("HUDSetup: Cannot create battleground backdrop because required roots were not found.");
                 return;
             }
 
-            ProceduralBoardBackdrop existing = dropAreas.GetComponentInChildren<ProceduralBoardBackdrop>(true);
-            if (existing != null)
+            // Remove old world-space backdrop
+            Transform oldWorldBackdrop = dropAreasRoot.transform.Find("BattlegroundSprite");
+            if (oldWorldBackdrop != null)
             {
-                existing.RefreshNow();
+                if (Application.isPlaying)
+                {
+                    Destroy(oldWorldBackdrop.gameObject);
+                }
+                else
+                {
+                    DestroyImmediate(oldWorldBackdrop.gameObject);
+                }
+            }
+
+            Sprite sprite = LoadBattlegroundSprite();
+            if (sprite == null)
+            {
+                Debug.LogWarning("[HUDSetup] Battle_Grounds sprite not found. Background will stay default.");
                 return;
             }
 
-            GameObject backdrop = new GameObject("ProceduralBoardBackdrop");
-            backdrop.transform.SetParent(dropAreas.transform, false);
-            ProceduralBoardBackdrop generator = backdrop.AddComponent<ProceduralBoardBackdrop>();
-            generator.RefreshNow();
+            Transform existing = dropAreasRoot.transform.Find("BattlegroundBackdrop");
+            GameObject backdropObj = existing != null ? existing.gameObject : new GameObject("BattlegroundBackdrop");
+            if (existing == null)
+            {
+                backdropObj.transform.SetParent(dropAreasRoot.transform, false);
+                SpriteRenderer renderer = backdropObj.AddComponent<SpriteRenderer>();
+                renderer.sortingOrder = -500;
+                renderer.color = Color.white;
+                renderer.sprite = sprite;
+            }
+            else if (backdropObj.transform.parent != dropAreasRoot.transform)
+            {
+                backdropObj.transform.SetParent(dropAreasRoot.transform, false);
+            }
+
+            SpriteRenderer spriteRenderer = backdropObj.GetComponent<SpriteRenderer>();
+            if (spriteRenderer == null)
+            {
+                spriteRenderer = backdropObj.AddComponent<SpriteRenderer>();
+            }
+            spriteRenderer.sprite = sprite;
+            spriteRenderer.sortingOrder = -500;
+            spriteRenderer.color = Color.white;
+            spriteRenderer.drawMode = SpriteDrawMode.Sliced;
+
+            Bounds bounds = CalculateDropAreaBounds(dropAreasRoot.transform);
+            if (bounds.size != Vector3.zero)
+            {
+                Vector2 boardSize = new Vector2(bounds.size.x + 2f, bounds.size.y + 2f);
+                backdropObj.transform.position = new Vector3(bounds.center.x, bounds.center.y, 0f);
+
+                Vector2 spriteSize = sprite.bounds.size;
+                if (spriteSize.x > 0.01f && spriteSize.y > 0.01f)
+                {
+                    backdropObj.transform.localScale = new Vector3(
+                        boardSize.x / spriteSize.x,
+                        boardSize.y / spriteSize.y,
+                        1f);
+                }
+            }
+        }
+
+        private Sprite LoadBattlegroundSprite()
+        {
+#if UNITY_EDITOR
+            Sprite editorSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/Backgrounds/Battle_Grounds.png");
+            if (editorSprite != null)
+            {
+                return editorSprite;
+            }
+#endif
+            return Resources.Load<Sprite>("Backgrounds/Battle_Grounds");
+        }
+
+        private Bounds CalculateDropAreaBounds(Transform dropAreasRoot)
+        {
+            if (dropAreasRoot == null || dropAreasRoot.childCount == 0)
+            {
+                return new Bounds(Vector3.zero, Vector3.zero);
+            }
+
+            Bounds bounds = new Bounds(dropAreasRoot.GetChild(0).position, Vector3.zero);
+            for (int i = 1; i < dropAreasRoot.childCount; i++)
+            {
+                bounds.Encapsulate(dropAreasRoot.GetChild(i).position);
+            }
+
+            return bounds;
         }
         
         private void BringCoinTossPanelToFront(Transform hudRoot)
