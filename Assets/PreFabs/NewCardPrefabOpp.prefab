@@ -343,17 +343,23 @@ MonoBehaviour:
   frontContainer: {fileID: 8331869115627169107}
   backContainer: {fileID: 3395844615914960357}
   backSpriteRenderer: {fileID: 0}
-  backImage: {fileID: 3748502334135818584}
+  backImage: {fileID: 0}
   defaultCardBackSprite: {fileID: 21300000, guid: 2110c87c8d9c74cf99a29407cce375ef, type: 3}
-  borderOverlayImage: {fileID: 0}
+  borderOverlayRenderer: {fileID: 0}
   p1BorderSprite: {fileID: 21300000, guid: daa928dab47756c408277194572b3fdc, type: 3}
   p2BorderSprite: {fileID: 21300000, guid: 68b7b68c01defbb4b8453d124d1b6742, type: 3}
   startFaceDown: 1
   autoFlipOnReveal: 1
   revealDelay: 0.2
   allowClickToFlip: 0
+  allowDrag: 1
   playerCapturedColor: {r: 1, g: 0.65, b: 0, a: 1}
   opponentCapturedColor: {r: 0, g: 0.8, b: 0, a: 1}
+  enableCardShadow: 1
+  shadowOffset: {x: 0.08, y: -0.08}
+  shadowScaleMultiplier: 1.05
+  shadowColor: {r: 0, g: 0, b: 0, a: 0.35}
+  cardShadow: {fileID: 0}
 --- !u!114 &396230099388163290
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -366,6 +372,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e1b5989fccb221429a7b71b0c12db65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  dragThreshold: 0.1
+  ownerSide: 1
 --- !u!114 &4139798117971288157
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -499,7 +507,7 @@ SpriteRenderer:
   m_Size: {x: 1, y: 1}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 0
+  m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!1 &3395844615914960357
@@ -1001,7 +1009,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 2110c87c8d9c74cf99a29407cce375ef, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1

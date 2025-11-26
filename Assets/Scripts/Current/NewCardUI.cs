@@ -827,34 +827,62 @@ namespace CardGame.UI
                 backSprite = runtimeDefaultBackSprite;
             }
             
-            // Ensure there is a UI Image under the back container to receive the
-            // back sprite. This keeps the card back fully visible in the UI
-            // regardless of how the front is rendered.
             if (backContainer != null && backSprite != null)
             {
-                if (backImage == null)
+                // Always use a SpriteRenderer for the card back so it behaves like
+                // the existing card sprites and works correctly with the flip
+                // animation / world space.
+                if (backSpriteRenderer == null)
                 {
-                    // Try to reuse an existing Image first.
-                    backImage = backContainer.GetComponentInChildren<Image>(true);
+                    // Try to reuse an existing child SpriteRenderer first.
+                    backSpriteRenderer = backContainer.GetComponentInChildren<SpriteRenderer>(true);
                 }
 
-                if (backImage == null)
+                if (backSpriteRenderer == null)
                 {
-                    GameObject cardBackVisual = new GameObject("CardBackImage");
+                    GameObject cardBackVisual = new GameObject("CardBackSprite");
                     cardBackVisual.transform.SetParent(backContainer.transform, false);
+                    cardBackVisual.transform.localPosition = Vector3.zero;
+                    cardBackVisual.transform.localRotation = Quaternion.identity;
+                    cardBackVisual.transform.localScale = Vector3.one;
 
-                    RectTransform rect = cardBackVisual.AddComponent<RectTransform>();
-                    rect.anchorMin = Vector2.zero;
-                    rect.anchorMax = Vector2.one;
-                    rect.sizeDelta = Vector2.zero;
-                    rect.anchoredPosition = Vector2.zero;
+                    backSpriteRenderer = cardBackVisual.AddComponent<SpriteRenderer>();
 
-                    backImage = cardBackVisual.AddComponent<Image>();
+                    // Match the background's sorting so the back sits in the same
+                    // render layer as the front of the card.
+                    if (cardBackground != null)
+                    {
+                        backSpriteRenderer.sortingLayerID = cardBackground.sortingLayerID;
+                        backSpriteRenderer.sortingOrder = cardBackground.sortingOrder;
+                    }
                 }
 
-                backImage.sprite = backSprite;
-                backImage.color = Color.white;
-                backImage.enabled = true;
+                backSpriteRenderer.sprite = backSprite;
+                backSpriteRenderer.color = Color.white;
+
+                // Fit the back sprite to the card background so it isn't huge.
+                if (cardBackground != null && cardBackground.sprite != null)
+                {
+                    Vector2 bgSize = cardBackground.sprite.bounds.size;
+                    Vector2 backSize = backSprite.bounds.size;
+                    if (backSize.x > 0.0001f && backSize.y > 0.0001f)
+                    {
+                        float scaleX = bgSize.x / backSize.x;
+                        float scaleY = bgSize.y / backSize.y;
+                        float uniform = Mathf.Min(scaleX, scaleY);
+                        backSpriteRenderer.transform.localScale = new Vector3(uniform, uniform, 1f);
+                    }
+                    else
+                    {
+                        backSpriteRenderer.transform.localScale = Vector3.one;
+                    }
+                }
+                else
+                {
+                    backSpriteRenderer.transform.localScale = Vector3.one;
+                }
+
+                Debug.Log($"[NewCardUI] Assigned back sprite '{backSprite.name}' to '{gameObject.name}' (renderer={backSpriteRenderer.name})");
             }
         }
 
