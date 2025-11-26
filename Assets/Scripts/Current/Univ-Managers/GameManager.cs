@@ -243,6 +243,9 @@ namespace CardGame.Managers
             
             // Wait for coin toss UI animation to complete (additional buffer)
             yield return new WaitForSeconds(1f);
+            
+            // Start the first turn once coin toss has resolved and fate has been set.
+            StartFirstTurn();
         }
         
         /// <summary>
@@ -318,6 +321,10 @@ namespace CardGame.Managers
             if (FateFlowController.Instance != null)
             {
                 FateSide startingSide = FateFlowController.Instance.CurrentFate;
+                
+                // Ensure decks are initialized and opening hands drawn at the very start
+                TryInitializeDecksAndDrawOpeningHands();
+                
                 if (startingSide == FateSide.Player)
                 {
                     ChangeState(GameState.PlayerTurn);
@@ -484,6 +491,29 @@ namespace CardGame.Managers
             }
             
             Debug.Log("[GameManager] Initial cards drawn for rematch");
+        }
+
+        /// <summary>
+        /// Ensures deck managers are initialized and opening hands are drawn
+        /// at the start of a game session (when the first turn begins).
+        /// </summary>
+        private void TryInitializeDecksAndDrawOpeningHands()
+        {
+            // Player 1
+            CardGame.Testing.NewCardSystemP1Tester tester = FindObjectOfType<CardGame.Testing.NewCardSystemP1Tester>();
+            if (tester != null)
+            {
+                tester.InitializeDeck();
+                tester.DrawInitialCards();
+            }
+
+            // Player 2
+            CardGame.Testing.NewCardSystemP2 oppTester = FindObjectOfType<CardGame.Testing.NewCardSystemP2>();
+            if (oppTester != null)
+            {
+                oppTester.InitializeDeck();
+                oppTester.DrawInitialCards();
+            }
         }
         
         /// <summary>

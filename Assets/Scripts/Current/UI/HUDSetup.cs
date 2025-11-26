@@ -1361,21 +1361,11 @@ namespace CardGame.UI
             coinLayout.preferredWidth = 280;
             coinLayout.preferredHeight = 280;
             
-            // Create coin mesh background
-            GameObject coinMeshObj = new GameObject("CoinMesh");
-            coinMeshObj.transform.SetParent(coinContainer.transform, false);
-            RectTransform coinMeshRect = coinMeshObj.AddComponent<RectTransform>();
-            coinMeshRect.anchorMin = new Vector2(0.5f, 0.5f);
-            coinMeshRect.anchorMax = new Vector2(0.5f, 0.5f);
-            coinMeshRect.pivot = new Vector2(0.5f, 0.5f);
-            coinMeshRect.sizeDelta = new Vector2(220, 220);
-            coinMeshRect.anchoredPosition = Vector2.zero;
-            
-            UICoinGraphic coinMesh = coinMeshObj.AddComponent<UICoinGraphic>();
-            
-            // Create coin face image (heads/tails artwork)
+            // Create coin face image (heads/tails artwork) directly under the container.
+            // We intentionally skip the extra UICoinGraphic background so the coin
+            // appears as a single, clean sprite without a secondary disk behind it.
             GameObject coinImageObj = new GameObject("CoinImage");
-            coinImageObj.transform.SetParent(coinMeshObj.transform, false);
+            coinImageObj.transform.SetParent(coinContainer.transform, false);
             RectTransform coinImageRect = coinImageObj.AddComponent<RectTransform>();
             coinImageRect.anchorMin = new Vector2(0.5f, 0.5f);
             coinImageRect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -1384,6 +1374,8 @@ namespace CardGame.UI
             coinImageRect.anchoredPosition = Vector2.zero;
             
             UnityEngine.UI.Image coinImage = coinImageObj.AddComponent<UnityEngine.UI.Image>();
+            // Leave coin image untinted; CoinTossUI drives sprites and uses white so
+            // the artwork shows in its original colors.
             coinImage.color = Color.white;
             coinImage.preserveAspect = true;
             
@@ -1608,7 +1600,7 @@ namespace CardGame.UI
             titleLabelText.enableWordWrapping = false;
             titleLabelText.overflowMode = TMPro.TextOverflowModes.Overflow;
             
-            // Create Counter Label
+            // Create Counter Label (kept for CardFrontlineUI logic/tests but hidden by default)
             GameObject counterLabelObj = new GameObject("CounterLabel");
             counterLabelObj.transform.SetParent(frontlineBar.transform, false);
             RectTransform counterRect = counterLabelObj.AddComponent<RectTransform>();
@@ -1619,11 +1611,13 @@ namespace CardGame.UI
             counterRect.anchoredPosition = new Vector2(0f, -28f);
             
             TextMeshProUGUI counterLabelText = counterLabelObj.AddComponent<TextMeshProUGUI>();
-            counterLabelText.text = "16";
+            counterLabelText.text = string.Empty; // no default "16" visible
             counterLabelText.fontSize = 24;
             counterLabelText.fontStyle = TMPro.FontStyles.Bold;
             counterLabelText.alignment = TMPro.TextAlignmentOptions.Center;
-            counterLabelText.color = new Color(0.87f, 0.94f, 1f, 0.9f);
+            // Start fully transparent so the numeric label doesn't appear over the bar;
+            // CardFrontlineUI can still drive this label if desired by changing its color.
+            counterLabelText.color = new Color(0.87f, 0.94f, 1f, 0f);
             counterLabelText.enableWordWrapping = false;
             counterLabelText.overflowMode = TMPro.TextOverflowModes.Overflow;
             
@@ -1681,6 +1675,44 @@ namespace CardGame.UI
             
             Image dividerImage = dividerObj.AddComponent<Image>();
             dividerImage.color = Color.white;
+
+            // Create simple placeholder lagging markers (triangles) that visually match the HUD
+            GameObject triangleTopObj = new GameObject("TriangleTop");
+            triangleTopObj.transform.SetParent(frontlineBar.transform, false);
+            RectTransform triangleTopRect = triangleTopObj.AddComponent<RectTransform>();
+            triangleTopRect.anchorMin = new Vector2(0.5f, 0.5f);
+            triangleTopRect.anchorMax = new Vector2(0.5f, 0.5f);
+            // Centered on the divider line with a small vertical offset so it hugs the bar
+            triangleTopRect.pivot = new Vector2(0.5f, 0.5f);
+            triangleTopRect.anchoredPosition = new Vector2(0f, 6f);
+            triangleTopRect.sizeDelta = new Vector2(24f, 24f);
+
+            TextMeshProUGUI triangleTopLabel = triangleTopObj.AddComponent<TextMeshProUGUI>();
+            triangleTopLabel.text = "▼";
+            triangleTopLabel.fontSize = 24;
+            triangleTopLabel.fontStyle = FontStyles.Bold;
+            triangleTopLabel.alignment = TextAlignmentOptions.Center;
+            triangleTopLabel.color = new Color(1f, 0.8f, 0f, 1f); // gold, same family as turn indicator
+            triangleTopLabel.raycastTarget = false;
+
+            GameObject triangleBottomObj = new GameObject("TriangleBottom");
+            triangleBottomObj.transform.SetParent(frontlineBar.transform, false);
+            RectTransform triangleBottomRect = triangleBottomObj.AddComponent<RectTransform>();
+            triangleBottomRect.anchorMin = new Vector2(0.5f, 0.5f);
+            triangleBottomRect.anchorMax = new Vector2(0.5f, 0.5f);
+            // Keep X aligned with the top triangle/divider, but push further down so it
+            // sits at the lower edge of the bar instead of hugging the center line.
+            triangleBottomRect.pivot = new Vector2(0.5f, 0.5f);
+            triangleBottomRect.anchoredPosition = new Vector2(0f, -14f);
+            triangleBottomRect.sizeDelta = new Vector2(24f, 24f);
+
+            TextMeshProUGUI triangleBottomLabel = triangleBottomObj.AddComponent<TextMeshProUGUI>();
+            triangleBottomLabel.text = "▲";
+            triangleBottomLabel.fontSize = 24;
+            triangleBottomLabel.fontStyle = FontStyles.Bold;
+            triangleBottomLabel.alignment = TextAlignmentOptions.Center;
+            triangleBottomLabel.color = new Color(1f, 0.8f, 0f, 1f);
+            triangleBottomLabel.raycastTarget = false;
             
             // Add CardFrontlineUI component
             CardFrontlineUI frontlineUI = frontlineBar.AddComponent<CardFrontlineUI>();
@@ -1692,6 +1724,8 @@ namespace CardGame.UI
             SetPrivateField(frontlineUI, uiType, "p1Fill", p1FillImage);
             SetPrivateField(frontlineUI, uiType, "p2Fill", p2FillImage);
             SetPrivateField(frontlineUI, uiType, "midDivider", dividerRect);
+            SetPrivateField(frontlineUI, uiType, "triangleTop", triangleTopRect);
+            SetPrivateField(frontlineUI, uiType, "triangleBottom", triangleBottomRect);
             
             Debug.Log("HUDSetup: Created CardFrontlineUI bar");
             
@@ -1770,6 +1804,12 @@ namespace CardGame.UI
             rect.SetSiblingIndex(0);
 
             UnityEngine.UI.Image image = backdropObj.GetComponent<UnityEngine.UI.Image>();
+            if (image == null)
+            {
+                // In case the existing BattlegroundBackdrop lost its Image component in the scene,
+                // recreate it so we never hit a null reference here.
+                image = backdropObj.AddComponent<UnityEngine.UI.Image>();
+            }
             image.sprite = sprite;
             image.color = Color.white;
             image.type = UnityEngine.UI.Image.Type.Simple;

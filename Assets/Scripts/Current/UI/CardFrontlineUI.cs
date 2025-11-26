@@ -18,6 +18,22 @@ namespace CardGame.UI
         [SerializeField] private Image p2Fill;
         [SerializeField] private RectTransform midDivider;
         
+        [Header("Lagging Marker Settings")]
+        [Tooltip("Top gold triangle that lags behind the pivot line and snaps with a spring.")]
+        [SerializeField] private RectTransform triangleTop;
+        [Tooltip("Bottom gold triangle that lags behind the pivot line and snaps with a spring.")]
+        [SerializeField] private RectTransform triangleBottom;
+        [Tooltip("Vertical offset (in local UI units) to position triangles above/below the bar center.")]
+        [SerializeField] private float triangleVerticalOffset = 30f;
+        [Tooltip("Duration of the pivot (divider) movement when influence shifts.")]
+        [SerializeField] private float pivotMoveDuration = 0.25f;
+        [Tooltip("Delay before triangles start moving after the pivot moves, to create a lagging effect.")]
+        [SerializeField] private float triangleLagDelay = 0.1f;
+        [Tooltip("Duration of the triangle horizontal movement towards the new pivot position.")]
+        [SerializeField] private float triangleMoveDuration = 0.4f;
+        [Tooltip("Duration of the spin animation on the triangles as they catch up.")]
+        [SerializeField] private float triangleSpinDuration = 0.35f;
+        
         [Header("Text Settings")]
         [SerializeField] private string titleText = "Battle Front Influence";
         [SerializeField] private string remainingFormat = "{0}";
@@ -29,6 +45,7 @@ namespace CardGame.UI
         
         private int lastRemainingFields = -1;
         private Coroutine flipCoroutine;
+        private float lastPivotAnchorX = -1f;
         
         private void Start()
         {
@@ -38,6 +55,26 @@ namespace CardGame.UI
             }
             
             UpdateRemainingFields(16); // Default for 4x4 board
+            
+            // Initialize lagging triangles at the current pivot position, if assigned
+            if (midDivider != null && (triangleTop != null || triangleBottom != null))
+            {
+                lastPivotAnchorX = midDivider.anchorMin.x;
+                float initialPivotX = GetPivotLocalX();
+                
+                if (triangleTop != null)
+                {
+                    Vector2 topPos = triangleTop.anchoredPosition;
+                    triangleTop.anchoredPosition = new Vector2(initialPivotX, Mathf.Abs(topPos.y) > 0.001f ? topPos.y : triangleVerticalOffset);
+                }
+                
+                if (triangleBottom != null)
+                {
+                    Vector2 bottomPos = triangleBottom.anchoredPosition;
+                    float defaultY = -Mathf.Abs(triangleVerticalOffset);
+                    triangleBottom.anchoredPosition = new Vector2(initialPivotX, Mathf.Abs(bottomPos.y) > 0.001f ? bottomPos.y : defaultY);
+                }
+            }
         }
         
         /// <summary>
@@ -120,6 +157,68 @@ namespace CardGame.UI
             
             // Start coroutine to animate fill amounts
             StartCoroutine(AnimateBarFill(p1Ratio, p2Ratio, p1Ratio));
+            
+            // Also drive the lagging triangles based on the new pivot (p1Ratio)
+            AnimateLaggingMarkers(p1Ratio);
+        }
+
+        /// <summary>
+        /// Computes the current local X position of the pivot (midDivider) in its parent space.
+        /// Uses the divider's anchoredPosition, which reflects its current anchor/position.
+        /// </summary>
+        private float GetPivotLocalX()
+        {
+            if (midDivider == null) return 0f;
+            return midDivider.anchoredPosition.x;
+        }
+        
+        /// <summary>
+        /// Animates the lagging gold triangle markers to follow the pivot line with a slight delay
+        /// and a springy "snap" using DOTween. This produces the desired Dynasty Warriors-style
+        /// morale swing effect where the pivot moves first and the markers catch up.
+        /// </summary>
+        /// <param name="targetPivotAnchorX">Target pivot position as an anchor ratio (0..1).</param>
+        private void AnimateLaggingMarkers(float targetPivotAnchorX)
+        {
+            if (midDivider == null || (triangleTop == null && triangleBottom == null))
+            {
+                return;
+            }
+            
+            // Only react when the pivot actually changes meaningfully
+            if (Mathf.Approximately(lastPivotAnchorX, targetPivotAnchorX))
+            {
+                return;
+            }
+            
+            lastPivotAnchorX = targetPivotAnchorX;
+            
+            // Smoothly move the pivot's anchors (divider) using DOTween instead of manual lerp.
+            // This keeps the existing behaviour (barLerpSpeed) but adds a bit more polish.
+            float startMinX = midDivider.anchorMin.x;
+            float startMaxX = midDivider.anchorMax.x;
+
+            // Instantly move the divider pivot to the target anchor position.
+            // We keep the original width by preserving the delta between min and max.
+            float width = startMaxX - startMinX;
+            midDivider.anchorMin = new Vector2(targetPivotAnchorX, 0f);
+            midDivider.anchorMax = new Vector2(targetPivotAnchorX + width, 1f);
+            
+            // Compute the actual local X position for the triangles to move toward.
+            float targetLocalX = GetPivotLocalX();
+            
+            // Move triangles to align with the new pivot (no tween dependency).
+            if (triangleTop != null)
+            {
+                Vector2 topPos = triangleTop.anchoredPosition;
+                triangleTop.anchoredPosition = new Vector2(targetLocalX, topPos.y);
+            }
+            
+            if (triangleBottom != null)
+            {
+                Vector2 bottomPos = triangleBottom.anchoredPosition;
+                triangleBottom.anchoredPosition = new Vector2(targetLocalX, bottomPos.y);
+            }
         }
         
         private IEnumerator AnimateBarFill(float targetP1Ratio, float targetP2Ratio, float targetDividerPos)

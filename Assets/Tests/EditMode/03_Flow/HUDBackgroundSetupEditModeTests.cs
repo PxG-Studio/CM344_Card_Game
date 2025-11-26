@@ -81,6 +81,33 @@ namespace Tests.EditMode.Flow
                 "Drop Areas should no longer host the BattlegroundBackdrop after setup.");
         }
 
+        [Test]
+        public void DeltaEmitter_EnsureReady_LoadsConfigAndPrefabFromResources()
+        {
+            var hudCanvas = CreateNamedGO("HUDOverlayCanvas");
+            hudCanvas.AddComponent<Canvas>();
+
+            var emitterGO = CreateNamedGO("DeltaEmitter");
+            var emitter = emitterGO.AddComponent<DeltaMarkerEmitter>();
+
+            emitter.EnsureReady();
+
+            var configField = typeof(DeltaMarkerEmitter)
+                .GetField("config", BindingFlags.Instance | BindingFlags.NonPublic);
+            var prefabField = typeof(DeltaMarkerEmitter)
+                .GetField("deltaMarkerPrefab", BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.NotNull(configField, "Missing config field via reflection.");
+            Assert.NotNull(prefabField, "Missing prefab field via reflection.");
+
+            var config = configField.GetValue(emitter) as Object;
+            var prefab = prefabField.GetValue(emitter) as GameObject;
+
+            Assert.IsNotNull(config, "Config should be sourced from Resources/DeltaMarker/DeltaMarkerConfig.");
+            Assert.IsNotNull(prefab, "Prefab should be sourced from Resources/DeltaMarker/DeltaMarkerPopup.");
+            Assert.AreEqual("DeltaMarkerPopup", prefab.name, "Unexpected prefab name loaded for delta marker.");
+        }
+
         private HUDSetup CreateHUDSetup()
         {
             var go = CreateNamedGO("HUDSetup_TestRunner");
