@@ -91,14 +91,53 @@ namespace CardGame.Tests
             CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length >= 2, "Need at least 2 drop areas for capture test");
             
+            // Choose a pair of strictly adjacent tiles so that the battle actually triggers.
+            // Preferred: use a central area (index 7) with a right neighbor, mirroring multi‑direction tests.
             CardDropArea attackerArea = dropAreas[0];
-            CardDropArea defenderArea = dropAreas[1];
-            
-            // Ensure areas are adjacent (or find adjacent ones)
-            CardDropArea adjacentArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right");
-            if (adjacentArea != null)
+            CardDropArea defenderArea = null;
+
+            if (dropAreas.Length > 7)
             {
-                defenderArea = adjacentArea;
+                CardDropArea centerArea = dropAreas[7];
+                CardDropArea rightNeighbor = CardTestHelper.GetAdjacentDropArea(centerArea, "right");
+                if (rightNeighbor != null)
+                {
+                    attackerArea = centerArea;
+                    defenderArea = rightNeighbor;
+                }
+            }
+
+            // Fallback: find ANY orthogonal neighbor of attackerArea within adjacency distance.
+            if (defenderArea == null)
+            {
+                const float adjacentDistance = 3.5f;
+                Vector3 aPos = attackerArea.transform.position;
+
+                foreach (CardDropArea area in dropAreas)
+                {
+                    if (area == attackerArea) continue;
+
+                    Vector3 delta = area.transform.position - aPos;
+                    float dx = Mathf.Abs(delta.x);
+                    float dy = Mathf.Abs(delta.y);
+                    float dist = Vector3.Distance(aPos, area.transform.position);
+
+                    bool isOrthogonalNeighbor =
+                        ((dy < 0.5f && dx > 0.1f) || (dx < 0.5f && dy > 0.1f)) &&
+                        dist <= adjacentDistance + 0.1f;
+
+                    if (isOrthogonalNeighbor)
+                    {
+                        defenderArea = area;
+                        break;
+                    }
+                }
+            }
+
+            if (defenderArea == null)
+            {
+                Assert.Inconclusive("Could not find adjacent attacker/defender drop areas for capture test.");
+                yield break;
             }
             
             // Create test cards: Attacker has higher right stat (5) than defender's left stat (2)
@@ -117,39 +156,109 @@ namespace CardGame.Tests
                 CardTestHelper.AddCardToDeckManagerHand(p2Deck, defenderCard);
             }
             
-            // Set Player 1's turn
+            // We'll place the defender (P2) first, then the attacker (P1) so that the stronger
+            // attacker is the most recently placed card and is treated as the "attacker" in battle logic.
             FateFlowController fateController = FateFlowController.Instance;
+            if (fateController != null)
+            {
+                fateController.SetFate(FateSide.P2);
+            }
+            yield return null;
+            
+            // Place defender card (opponent card) first
+            CardMoverP2 defenderMover = CardTestHelper.CreateCardMoverP2WithCard(defenderCard, defenderArea.transform.position);
+            bool defenderPlaced = CardTestHelper.PlaceP2CardOnDropArea(defenderMover, defenderArea, true);
+            Assert.IsTrue(defenderPlaced, "Defender card should be placed successfully");
+            yield return new WaitForSeconds(0.5f);
+
+            // HARD CHECK: board invariants before capture
+            // - only our one defender card is on the board
+            // - defender tile is occupied and currently owned by P2 (not P1)
+            CardMoverP1[] allP1Before = Object.FindObjectsOfType<CardMoverP1>();
+            CardMoverP2[] allP2Before = Object.FindObjectsOfType<CardMoverP2>();
+
+            int onBoardBefore = 0;
+            foreach (var m in allP1Before)
+            {
+                if (m != null && Mathf.Abs(m.transform.position.z) < 1f) onBoardBefore++;
+            }
+            foreach (var m in allP2Before)
+            {
+                if (m != null && Mathf.Abs(m.transform.position.z) < 1f) onBoardBefore++;
+            }
+            Assert.AreEqual(1, onBoardBefore,
+                $"Exactly one card should be on the board before the attack. Found {onBoardBefore}.");
+
+            GameObject defenderBeforeGO = defenderArea.GetOccupyingCard();
+            Assert.IsNotNull(defenderBeforeGO,
+                "[TEST] Defender tile should be occupied immediately after defender placement.");
+
+            // Use CardDropArea.IsPlayerCard to confirm this tile is NOT owned by P1 before the attack.
+            var isPlayerCardMethod = typeof(CardDropArea).GetMethod("IsPlayerCard",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            Assert.IsNotNull(isPlayerCardMethod,
+                "[TEST] CardDropArea.IsPlayerCard should exist for ownership checks.");
+
+            bool defenderOwnedByP1_Before =
+                (bool)isPlayerCardMethod.Invoke(defenderArea, new object[] { defenderBeforeGO });
+            Assert.IsFalse(defenderOwnedByP1_Before,
+                "[TEST] Before the attack, defender tile must NOT be owned by P1 (it should belong to P2).");
+            
+            // Switch to Player 1 and place attacker card to trigger capture
             if (fateController != null)
             {
                 fateController.SetFate(FateSide.Player);
             }
             yield return null;
             
-            // Get initial score
+            // Get initial score before capture
             int initialPlayerScore = CardTestHelper.GetPlayerScore(true);
             
-            // Act: Place attacker card first
             CardMoverP1 attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
             bool attackerPlaced = CardTestHelper.PlaceP1CardOnDropArea(attackerMover, attackerArea, true);
             Assert.IsTrue(attackerPlaced, "Attacker card should be placed successfully");
-            yield return new WaitForSeconds(0.5f);
-            
-            // Place defender card (opponent card) adjacent to attacker
-            // Helper now ensures collider exists automatically
-            CardMoverP2 defenderMover = CardTestHelper.CreateCardMoverP2WithCard(defenderCard, defenderArea.transform.position);
-            bool defenderPlaced = CardTestHelper.PlaceP2CardOnDropArea(defenderMover, defenderArea, true);
-            Assert.IsTrue(defenderPlaced, "Defender card should be placed successfully");
+
+            // Log the exact GameObjects and positions used for capture
+            Debug.Log($"[TestCapture] Attacker GO = {attackerMover.gameObject.name}, z={attackerMover.transform.position.z}, pos={attackerMover.transform.position}");
+            Debug.Log($"[TestCapture] Defender GO = {defenderMover.gameObject.name}, z={defenderMover.transform.position.z}, pos={defenderMover.transform.position}");
             
             // Wait for capture animation
             yield return CardTestHelper.WaitForCaptureAnimations(3f);
             
-            // Assert: Defender should be captured (attacker's right 5 > defender's left 2)
-            bool defenderCaptured = CardTestHelper.IsCardCaptured(defenderMover.gameObject);
-            Assert.IsTrue(defenderCaptured, 
-                $"Defender should be captured when attacker's right stat (5) > defender's left stat (2). " +
+            // ------------------------------------------------------------------
+            // Assert: Defender should be captured (attacker's right > defender's left)
+            // Board‑centric: who owns the defender tile after the battle?
+            // ------------------------------------------------------------------
+            GameObject defenderGOOnTile = defenderArea.GetOccupyingCard();
+            Assert.IsNotNull(defenderGOOnTile,
+                "[TEST] Defender tile should be occupied after capture sequence.");
+
+            bool defenderNowP1Owned =
+                (bool)isPlayerCardMethod.Invoke(defenderArea, new object[] { defenderGOOnTile });
+
+            // Secondary signal for diagnostics only.
+            bool defenderCapturedHelper = CardTestHelper.IsCardCaptured(defenderGOOnTile);
+
+            Debug.Log($"[TestCapture] SingleSideCapture board state: " +
+                      $"defenderNowP1Owned={defenderNowP1Owned}, " +
+                      $"defenderCapturedHelper={defenderCapturedHelper}, " +
+                      $"attackerRight={attackerCard.CurrentRightStat}, " +
+                      $"defenderLeft={defenderCard.CurrentLeftStat}, " +
+                      $"defenderGOOnTile={defenderGOOnTile.name}");
+
+            Assert.IsTrue(defenderNowP1Owned,
+                $"Defender should be captured when attacker's right stat ({attackerCard.CurrentRightStat}) > defender's left stat ({defenderCard.CurrentLeftStat}). " +
                 $"Attacker: Right={attackerCard.CurrentRightStat}, Defender: Left={defenderCard.CurrentLeftStat}");
             
-            // Score should increase
+            // [CardFront] Scores are calculated in an end‑game style via ScoreManager.RecalculateScores.
+            // To verify that this single‑side capture affects the score, force a recalculation now.
+            var scoreManager = CardGame.Managers.ScoreManager.Instance;
+            if (scoreManager != null)
+            {
+                scoreManager.RecalculateScores();
+            }
+            
+            // Score should increase after capture + recalculation
             int newPlayerScore = CardTestHelper.GetPlayerScore(true);
             Assert.Greater(newPlayerScore, initialPlayerScore, 
                 "Player score should increase after capturing opponent card");
@@ -400,8 +509,9 @@ namespace CardGame.Tests
             Assert.Greater(actualCardDistance, 3.5f, $"Cards should be far apart. Actual distance: {actualCardDistance:F3}");
             
             // CRITICAL: Verify strict adjacency check would reject this
-            // The strict adjacency tolerance is 1.6f, so cards at 7.66 units should be rejected
-            const float strictAdjacencyTolerance = 1.6f;
+            // The strict adjacency tolerance matches CardDropArea.AreCardsStrictlyAdjacent (currently 3.5f),
+            // so cards at ~7.66 units should be rejected.
+            const float strictAdjacencyTolerance = 3.5f;
             bool wouldPassStrictAdjacency = actualCardDistance <= strictAdjacencyTolerance;
             Assert.IsFalse(wouldPassStrictAdjacency, 
                 $"Cards at distance {actualCardDistance:F3} should NOT pass strict adjacency check (tolerance: {strictAdjacencyTolerance:F3})");
@@ -626,7 +736,7 @@ namespace CardGame.Tests
             
             // Wait for all captures
             yield return CardTestHelper.WaitForCaptureAnimations(5f);
-            
+                        
             // Assert: Multiple cards should be captured
             int capturesExpected = 0;
             if (rightArea != null) capturesExpected++;
@@ -634,7 +744,15 @@ namespace CardGame.Tests
             if (topArea != null) capturesExpected++;
             if (bottomArea != null) capturesExpected++;
             
-            // Get new player score after captures
+            // [CardFront] Scores are calculated in an end‑game style via ScoreManager.RecalculateScores.
+            // To verify that multi‑direction captures affect the score, force a recalculation now.
+            var scoreManager = CardGame.Managers.ScoreManager.Instance;
+            if (scoreManager != null)
+            {
+                scoreManager.RecalculateScores();
+            }
+            
+            // Get new player score after captures + recalculation
             int newPlayerScore = CardTestHelper.GetPlayerScore(true);
             
             // Player should have captured multiple opponent cards (score should increase)
@@ -1120,6 +1238,12 @@ namespace CardGame.Tests
             
             // Additional wait to ensure flip animations complete
             yield return new WaitForSeconds(2f);
+
+            // The chain logic intentionally prevents invalid captures and logs a diagnostic when a weak link
+            // attempts to capture a stronger card. Expect that safeguard log here so the test runner does not
+            // treat it as an unhandled error.
+            UnityEngine.TestTools.LogAssert.Expect(UnityEngine.LogType.Warning,
+                new System.Text.RegularExpressions.Regex(".*LOGIC ERROR PREVENTED.*Attempted to create flip target when attacker did NOT win.*"));
             
             bool weak1Captured = CardTestHelper.IsCardCaptured(weak1CardObject);
             bool weak2Captured = CardTestHelper.IsCardCaptured(weak2CardObject);

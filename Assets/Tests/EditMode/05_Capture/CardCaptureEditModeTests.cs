@@ -106,6 +106,107 @@ namespace CardGame.Tests
             Object.DestroyImmediate(placedCardObj);
             Object.DestroyImmediate(otherCardObj);
         }
+
+        [Test]
+        public void CheckBattleBetweenCardsForRipple_AttackerWins_OnRightSide_ReturnsFlipTarget()
+        {
+            // Attacker is to the LEFT of defender (defender is to the right),
+            // so we compare attacker.Right vs defender.Left and expect a capture when 5 > 3.
+            GameObject testObj = new GameObject("TestCardDropArea");
+            CardDropArea dropArea = testObj.AddComponent<CardDropArea>();
+
+            MethodInfo method = typeof(CardDropArea).GetMethod("CheckBattleBetweenCardsForRipple",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(method, "CheckBattleBetweenCardsForRipple method should exist");
+
+            // Create cards
+            NewCardData.NewCardData attackerData = ScriptableObject.CreateInstance<NewCardData.NewCardData>();
+            attackerData.cardName = "Attacker";
+            attackerData.TopStat = 3;
+            attackerData.RightStat = 5;
+            attackerData.DownStat = 3;
+            attackerData.LeftStat = 3;
+            NewCard attacker = new NewCard(attackerData);
+
+            NewCardData.NewCardData defenderData = ScriptableObject.CreateInstance<NewCardData.NewCardData>();
+            defenderData.cardName = "Defender";
+            defenderData.TopStat = 3;
+            defenderData.RightStat = 2;
+            defenderData.DownStat = 3;
+            defenderData.LeftStat = 3;
+            NewCard defender = new NewCard(defenderData);
+
+            // GameObjects and ownership: attacker = P1, defender = P2
+            GameObject attackerObj = new GameObject("AttackerGO");
+            GameObject defenderObj = new GameObject("DefenderGO");
+            attackerObj.AddComponent<CardMoverP1>(); // marks as player card
+            defenderObj.AddComponent<CardMoverP2>(); // marks as opponent card
+
+            Vector3 attackerPos = new Vector3(0, 0, 0);
+            Vector3 defenderPos = new Vector3(2.5f, 0, 0); // adjacent on the right
+
+            object result = method.Invoke(dropArea, new object[]
+            {
+                attackerPos, attacker, defenderPos, defender, defenderObj, attackerObj
+            });
+
+            Assert.IsNotNull(result, "Attacker with right 5 adjacent to defender left 3 should produce a FlipTarget (capture).");
+
+            // Cleanup
+            Object.DestroyImmediate(testObj);
+            Object.DestroyImmediate(attackerObj);
+            Object.DestroyImmediate(defenderObj);
+        }
+
+        [Test]
+        public void CheckBattleBetweenCardsForRipple_AttackerDoesNotWin_OnRightSide_ReturnsNull()
+        {
+            // Same positioning as previous test, but attacker.Right <= defender.Left
+            // so no capture should occur and method should return null.
+            GameObject testObj = new GameObject("TestCardDropArea");
+            CardDropArea dropArea = testObj.AddComponent<CardDropArea>();
+
+            MethodInfo method = typeof(CardDropArea).GetMethod("CheckBattleBetweenCardsForRipple",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(method, "CheckBattleBetweenCardsForRipple method should exist");
+
+            // Create cards
+            NewCardData.NewCardData attackerData = ScriptableObject.CreateInstance<NewCardData.NewCardData>();
+            attackerData.cardName = "WeakAttacker";
+            attackerData.TopStat = 3;
+            attackerData.RightStat = 2; // not greater than defender's left
+            attackerData.DownStat = 3;
+            attackerData.LeftStat = 3;
+            NewCard attacker = new NewCard(attackerData);
+
+            NewCardData.NewCardData defenderData = ScriptableObject.CreateInstance<NewCardData.NewCardData>();
+            defenderData.cardName = "StrongDefender";
+            defenderData.TopStat = 3;
+            defenderData.RightStat = 2;
+            defenderData.DownStat = 3;
+            defenderData.LeftStat = 3;
+            NewCard defender = new NewCard(defenderData);
+
+            GameObject attackerObj = new GameObject("WeakAttackerGO");
+            GameObject defenderObj = new GameObject("StrongDefenderGO");
+            attackerObj.AddComponent<CardMoverP1>();
+            defenderObj.AddComponent<CardMoverP2>();
+
+            Vector3 attackerPos = new Vector3(0, 0, 0);
+            Vector3 defenderPos = new Vector3(2.5f, 0, 0); // adjacent on the right
+
+            object result = method.Invoke(dropArea, new object[]
+            {
+                attackerPos, attacker, defenderPos, defender, defenderObj, attackerObj
+            });
+
+            Assert.IsNull(result, "Attacker with right 2 adjacent to defender left 3 should NOT produce a FlipTarget (no capture).");
+
+            // Cleanup
+            Object.DestroyImmediate(testObj);
+            Object.DestroyImmediate(attackerObj);
+            Object.DestroyImmediate(defenderObj);
+        }
         
         [Test]
         public void CheckBattleBetweenCardsForRipple_AcceptsCardsAdjacent_UnitTest()

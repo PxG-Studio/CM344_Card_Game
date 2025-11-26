@@ -426,6 +426,10 @@ namespace CardGame.Tests
                 Assert.Fail("INTEGRATION BUG: ScoreManager.Instance is null! Cannot verify score update.");
             }
             
+            // [CardFront] Scores are now calculated at game end via ScoreManager.RecalculateScores().
+            // For this integration test, recompute scores from board state before asserting.
+            finalScoreManager.RecalculateScores();
+            
             int newPlayerScore = finalScoreManager.P1Score;
             int newOpponentScore = finalScoreManager.P2Score;
             

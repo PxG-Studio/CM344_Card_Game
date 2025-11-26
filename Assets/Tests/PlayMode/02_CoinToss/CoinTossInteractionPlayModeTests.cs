@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using CardGame.Managers;
 using CardGame.UI;
 using NUnit.Framework;
@@ -48,6 +49,14 @@ namespace Tests.PlayMode.CoinToss
         [UnityTest]
         public IEnumerator HeadsSelectionRegistersThroughCoinTossUI()
         {
+            // CoinTossUI logs errors when its serialized button fields are null in Awake();
+            // in this test we intentionally wire them up via reflection after AddComponent,
+            // so we explicitly expect those one-time editor diagnostics.
+            LogAssert.Expect(UnityEngine.LogType.Error,
+                new Regex(@".*\[CoinTossUI\] headsButton is NULL!.*"));
+            LogAssert.Expect(UnityEngine.LogType.Error,
+                new Regex(@".*\[CoinTossUI\] tailsButton is NULL!.*"));
+
             var ui = BuildCoinTossUI(out var headsButton, out var tailsButton, out var selectionPanel);
 
             yield return null; // Allow Unity lifecycle (Awake/Start) to run

@@ -76,67 +76,39 @@ namespace CardGame.Tests
         [UnityTest]
         public IEnumerator UIUpdate_ScoreUI_UpdatesWhenScoreChanges()
         {
-            // UI TEST: ScoreUI MUST update when ScoreManager score changes
-            yield return CardTestHelper.WaitForCoinTossToComplete();
-            yield return new WaitForSeconds(1.0f);
+            // UNIT-STYLE UI TEST: validate that ScoreUI updates its visible text when
+            // its SetScores/UpdateScoreDisplay APIs are called, independent of the scene wiring.
+            yield return null;
+
+            ScoreUI scoreUI = CreateTestScoreUI(out TextMeshProUGUI player1ScoreText, out TextMeshProUGUI player2ScoreText);
             
-            ScoreManager scoreManager = ScoreManager.Instance;
-            ScoreUI scoreUI = Object.FindObjectOfType<ScoreUI>(true);
-            
-            Assert.IsNotNull(scoreManager, "ScoreManager should exist");
-            
-            if (scoreUI == null)
-            {
-                yield return new WaitForSeconds(1.0f);
-                scoreUI = Object.FindObjectOfType<ScoreUI>(true);
-            }
-            
-            if (scoreUI == null)
-            {
-                Assert.Inconclusive("ScoreUI not found - may be created dynamically");
-                yield break;
-            }
-            
-            // Get score text components
-            var player1ScoreField = typeof(ScoreUI).GetField("player1Score", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var player2ScoreField = typeof(ScoreUI).GetField("player2Score", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
-            TextMeshProUGUI player1ScoreText = player1ScoreField?.GetValue(scoreUI) as TextMeshProUGUI;
-            TextMeshProUGUI player2ScoreText = player2ScoreField?.GetValue(scoreUI) as TextMeshProUGUI;
-            
-            if (player1ScoreText == null)
-            {
-                Assert.Inconclusive("Player 1 score text not found");
-                yield break;
-            }
-            
-            // Get initial values
-            int initialManagerScore = scoreManager.P1Score;
+            // Get initial value from the UI (should default to 0/empty)
+            int initialManagerScore = 0;
             int initialDisplayedScore = 0;
             if (int.TryParse(player1ScoreText.text, out int parsed))
             {
                 initialDisplayedScore = parsed;
             }
             
-            // Change score
-            scoreManager.AddScore(true);
-            yield return new WaitForSeconds(0.5f); // Wait for UI update
+            // For this UI-focused test, drive the UI directly via its public API rather than
+            // depending on the full event pipeline (which is covered by higher-level tests).
+            // We treat "score changes" as "ScoreUI.SetScores is called with a new value".
+            int targetManagerScore = initialManagerScore + 1;
+            int currentP2Score = 0;
+            scoreUI.SetScores(targetManagerScore, currentP2Score);
+            yield return null; // Allow layout/text to refresh
             
-            int newManagerScore = scoreManager.P1Score;
-            
-            // UI ASSERTION: Displayed score MUST match manager score
+            // UI ASSERTION: Displayed score MUST match the value passed to ScoreUI
             int newDisplayedScore = 0;
             if (int.TryParse(player1ScoreText.text, out int parsedNew))
             {
                 newDisplayedScore = parsedNew;
             }
             
-            Assert.AreEqual(newManagerScore, newDisplayedScore, 
-                $"UI NOT UPDATING: ScoreUI text ({newDisplayedScore}) does not match ScoreManager score ({newManagerScore}). " +
+            Assert.AreEqual(targetManagerScore, newDisplayedScore, 
+                $"UI NOT UPDATING: ScoreUI text ({newDisplayedScore}) does not match expected score ({targetManagerScore}) after SetScores(). " +
                 $"Initial: Manager={initialManagerScore}, UI={initialDisplayedScore}. " +
-                "This indicates UI is not updating when score changes.");
+                "This indicates the ScoreUI display is not updating when its scores are changed.");
         }
 
         [UnityTest]
@@ -311,30 +283,9 @@ namespace CardGame.Tests
         public IEnumerator UIUpdate_ScoreUI_Player2Score_UpdatesWhenScoreChanges()
         {
             // UI TEST: Player 2 score UI MUST update when opponent score changes
-            yield return CardTestHelper.WaitForCoinTossToComplete();
-            yield return new WaitForSeconds(1.0f);
+            yield return null;
             
-            ScoreManager scoreManager = ScoreManager.Instance;
-            ScoreUI scoreUI = Object.FindObjectOfType<ScoreUI>(true);
-            
-            Assert.IsNotNull(scoreManager, "ScoreManager should exist");
-            
-            if (scoreUI == null)
-            {
-                yield return new WaitForSeconds(1.0f);
-                scoreUI = Object.FindObjectOfType<ScoreUI>(true);
-            }
-            
-            if (scoreUI == null)
-            {
-                Assert.Inconclusive("ScoreUI not found");
-                yield break;
-            }
-            
-            var player2ScoreField = typeof(ScoreUI).GetField("player2Score", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
-            TextMeshProUGUI player2ScoreText = player2ScoreField?.GetValue(scoreUI) as TextMeshProUGUI;
+            ScoreUI scoreUI = CreateTestScoreUI(out TextMeshProUGUI player1ScoreText, out TextMeshProUGUI player2ScoreText);
             
             if (player2ScoreText == null)
             {
@@ -343,30 +294,58 @@ namespace CardGame.Tests
             }
             
             // Get initial values
-            int initialManagerScore = scoreManager.P2Score;
+            int initialManagerScore = 0;
             int initialDisplayedScore = 0;
             if (int.TryParse(player2ScoreText.text, out int parsed))
             {
                 initialDisplayedScore = parsed;
             }
             
-            // Change opponent score
-            scoreManager.AddScore(false);
-            yield return new WaitForSeconds(0.5f);
+            // Drive the UI directly via SetScores, keeping P1's score constant and bumping P2.
+            int targetP2Score = initialManagerScore + 1;
+            int currentP1Score = 0;
+            scoreUI.SetScores(currentP1Score, targetP2Score);
+            yield return null;
             
-            int newManagerScore = scoreManager.P2Score;
-            
-            // UI ASSERTION: Player 2 score UI MUST match manager score
             int newDisplayedScore = 0;
             if (int.TryParse(player2ScoreText.text, out int parsedNew))
             {
                 newDisplayedScore = parsedNew;
             }
             
-            Assert.AreEqual(newManagerScore, newDisplayedScore, 
-                $"UI NOT UPDATING: Player 2 ScoreUI text ({newDisplayedScore}) does not match ScoreManager opponent score ({newManagerScore}). " +
+            Assert.AreEqual(targetP2Score, newDisplayedScore, 
+                $"UI NOT UPDATING: Player 2 ScoreUI text ({newDisplayedScore}) does not match expected opponent score ({targetP2Score}) after SetScores(). " +
                 $"Initial: Manager={initialManagerScore}, UI={initialDisplayedScore}. " +
-                "This indicates Player 2 score UI is not updating when score changes.");
+                "This indicates Player 2 score UI is not updating when its score is changed.");
+        }
+
+        /// <summary>
+        /// Helper: creates a minimal ScoreUI instance with two TextMeshProUGUI fields wired
+        /// into its private player1Score/player2Score fields so we can unit-test its behavior
+        /// without depending on the scene HUD wiring.
+        /// </summary>
+        private static ScoreUI CreateTestScoreUI(out TextMeshProUGUI player1ScoreText, out TextMeshProUGUI player2ScoreText)
+        {
+            var scoreUiGO = new GameObject("TestScoreUI_Helper");
+            var scoreUI = scoreUiGO.AddComponent<ScoreUI>();
+
+            var p1GO = new GameObject("P1ScoreText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            var p2GO = new GameObject("P2ScoreText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            p1GO.transform.SetParent(scoreUiGO.transform, false);
+            p2GO.transform.SetParent(scoreUiGO.transform, false);
+
+            player1ScoreText = p1GO.GetComponent<TextMeshProUGUI>();
+            player2ScoreText = p2GO.GetComponent<TextMeshProUGUI>();
+
+            var p1Field = typeof(ScoreUI).GetField("player1Score",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var p2Field = typeof(ScoreUI).GetField("player2Score",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            p1Field?.SetValue(scoreUI, player1ScoreText);
+            p2Field?.SetValue(scoreUI, player2ScoreText);
+
+            return scoreUI;
         }
 
         [UnityTest]
@@ -457,6 +436,100 @@ namespace CardGame.Tests
                         "This indicates coin toss result is not being displayed.");
                 }
             }
+        }
+
+        // --------------------------------------------------------------------
+        // Integration-style sanity checks: real scene ScoreUI + ScoreManager
+        // --------------------------------------------------------------------
+
+        [UnityTest]
+        public IEnumerator UIIntegration_ScoreUI_FollowsScoreManager_P1()
+        {
+            // Ensure scene systems are initialized
+            yield return CardTestHelper.WaitForCoinTossToComplete();
+            yield return new WaitForSeconds(1.0f);
+
+            ScoreManager scoreManager = ScoreManager.Instance;
+            ScoreUI scoreUI = Object.FindObjectOfType<ScoreUI>(true);
+
+            Assert.IsNotNull(scoreManager, "ScoreManager should exist for integration test");
+
+            if (scoreUI == null)
+            {
+                Assert.Inconclusive("ScoreUI not found in scene HUD (integration wiring may be different).");
+                yield break;
+            }
+
+            var p1Field = typeof(ScoreUI).GetField("player1Score",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            TextMeshProUGUI p1Text = p1Field?.GetValue(scoreUI) as TextMeshProUGUI;
+
+            if (p1Text == null)
+            {
+                Assert.Inconclusive("Player 1 score text not found on scene ScoreUI.");
+                yield break;
+            }
+
+            int before = scoreManager.P1Score;
+            int beforeDisplayed = 0;
+            int.TryParse(p1Text.text, out beforeDisplayed);
+
+            // Act: change score via real manager API
+            scoreManager.AddScore(true);
+            yield return new WaitForSeconds(0.5f);
+
+            int after = scoreManager.P1Score;
+            int afterDisplayed = 0;
+            int.TryParse(p1Text.text, out afterDisplayed);
+
+            Assert.AreEqual(after, afterDisplayed,
+                $"INTEGRATION: Scene ScoreUI text for P1 ({afterDisplayed}) must follow ScoreManager.P1Score ({after}). " +
+                $"Initial: Manager={before}, UI={beforeDisplayed}.");
+        }
+
+        [UnityTest]
+        public IEnumerator UIIntegration_ScoreUI_FollowsScoreManager_P2()
+        {
+            // Ensure scene systems are initialized
+            yield return CardTestHelper.WaitForCoinTossToComplete();
+            yield return new WaitForSeconds(1.0f);
+
+            ScoreManager scoreManager = ScoreManager.Instance;
+            ScoreUI scoreUI = Object.FindObjectOfType<ScoreUI>(true);
+
+            Assert.IsNotNull(scoreManager, "ScoreManager should exist for integration test");
+
+            if (scoreUI == null)
+            {
+                Assert.Inconclusive("ScoreUI not found in scene HUD (integration wiring may be different).");
+                yield break;
+            }
+
+            var p2Field = typeof(ScoreUI).GetField("player2Score",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            TextMeshProUGUI p2Text = p2Field?.GetValue(scoreUI) as TextMeshProUGUI;
+
+            if (p2Text == null)
+            {
+                Assert.Inconclusive("Player 2 score text not found on scene ScoreUI.");
+                yield break;
+            }
+
+            int before = scoreManager.P2Score;
+            int beforeDisplayed = 0;
+            int.TryParse(p2Text.text, out beforeDisplayed);
+
+            // Act: change opponent score via real manager API
+            scoreManager.AddScore(false);
+            yield return new WaitForSeconds(0.5f);
+
+            int after = scoreManager.P2Score;
+            int afterDisplayed = 0;
+            int.TryParse(p2Text.text, out afterDisplayed);
+
+            Assert.AreEqual(after, afterDisplayed,
+                $"INTEGRATION: Scene ScoreUI text for P2 ({afterDisplayed}) must follow ScoreManager.P2Score ({after}). " +
+                $"Initial: Manager={before}, UI={beforeDisplayed}.");
         }
     }
 }

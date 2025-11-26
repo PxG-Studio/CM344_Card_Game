@@ -238,10 +238,10 @@ namespace CardGame.Tests
                         Debug.Log($"[CompleteFlow_CoinToss_To_CardPlacement_To_Capture_To_ScoreUpdate] " +
                             $"Manually triggering CheckCardBattlesP2 after position adjustment...");
                         
-                        // Expect that invalid capture attempts may be logged as errors (this is expected behavior)
-                        // The code correctly prevents captures when attacker doesn't win
-                        // This handles the case where CheckBattleBetweenCardsForRipple prevents invalid captures
-                        LogAssert.Expect(LogType.Error, 
+                        // Expect that invalid capture attempts may be logged (as warnings) when the safeguard
+                        // in CheckBattleBetweenCardsForRipple detects an attacker that did not actually win.
+                        // This ensures the diagnostic path is exercised without failing the test run.
+                        LogAssert.Expect(LogType.Warning, 
                             new System.Text.RegularExpressions.Regex(".*LOGIC ERROR PREVENTED.*|.*Attempted to create flip target when attacker did NOT win.*"));
                         
                         checkBattlesOppMethod.Invoke(area2, new object[] { defenderMover, defenderCard });
@@ -271,6 +271,9 @@ namespace CardGame.Tests
                         $"Defender should be captured when attacker is higher. Distance: {finalDistance:F2}");
                     
                     // Step 6: Verify score updated
+                    // [CardFront] Scores are now calculated at end-game via ScoreManager.RecalculateScores().
+                    // For this test we trigger a manual recompute so the capture is reflected in P1's score.
+                    scoreManager.RecalculateScores();
                     int newPlayerScore = scoreManager.P1Score;
                     Assert.Greater(newPlayerScore, initialPlayerScore, 
                         $"Player score should increase after capture. Was: {initialPlayerScore}, Now: {newPlayerScore}");
