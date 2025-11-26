@@ -1610,9 +1610,9 @@ namespace CardGame.UI
             barRect.anchorMax = new Vector2(0.5f, 0f);
             barRect.pivot = new Vector2(0.5f, 0f);
             barRect.sizeDelta = new Vector2(boardWidth, 80f);
-            // Offset the influence bar slightly down and just a small amount left of center.
-            // (Previously -120 on X; this nudges it back toward the middle.)
-            barRect.anchoredPosition = new Vector2(-80f, 40f);
+            // Move the influence bar slightly down and half a grid unit to the left
+            // from the centered position so it aligns with the board framing.
+            barRect.anchoredPosition = new Vector2(-20f, 40f);
             
             // Create Title Label
             GameObject titleLabelObj = new GameObject("TitleLabel");
