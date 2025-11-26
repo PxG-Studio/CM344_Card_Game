@@ -105,79 +105,29 @@ namespace CardGame.Managers
         }
         
         /// <summary>
-        /// [CardFront] Recalculates scores by counting spaces controlled by each player out of 16 total spaces
+        /// [CardFront] Recalculates scores by counting spaces controlled by each player
+        /// using the same ownership logic as CardDropArea / frontline UI.
         /// </summary>
         public void RecalculateScores()
         {
             p1Score = 0;
             p2Score = 0;
             
-            // Find all CardDropArea instances (should be 16 total spaces on the board)
-            CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>();
+            // Use CardDropArea helpers so score, frontline bar, and field control
+            // all agree on who owns which tiles.
+            (int occupiedSpaces, int totalSpaces) = CardDropArea.GetBoardOccupancy();
+            (int p1Control, int p2Control) = CardDropArea.GetBoardControl();
             
-            if (allDropAreas == null || allDropAreas.Length == 0)
-            {
-                Debug.LogWarning("[ScoreManager] No CardDropArea instances found! Cannot calculate scores.");
-                OnScoreChanged?.Invoke(true, p1Score);
-                OnScoreChanged?.Invoke(false, p2Score);
-                OnScoreUpdated?.Invoke(p1Score, p2Score);
-                return;
-            }
+            p1Score = p1Control;
+            p2Score = p2Control;
             
-            Debug.Log($"[ScoreManager] Found {allDropAreas.Length} CardDropArea instances. Calculating scores based on spaces controlled...");
-            
-            // Count spaces controlled by each player
-            foreach (CardDropArea dropArea in allDropAreas)
-            {
-                if (dropArea == null) continue;
-                
-                // Check if this space is occupied
-                if (!dropArea.IsOccupied)
-                {
-                    // Empty space - no points for either player
-                    continue;
-                }
-                
-                // Get the occupying card
-                // Use reflection to access the private 'occupyingCard' field
-                var occupyingCardField = typeof(CardDropArea).GetField("occupyingCard",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                
-                if (occupyingCardField == null)
-                {
-                    Debug.LogWarning($"[ScoreManager] Could not access 'occupyingCard' field on CardDropArea '{dropArea.gameObject.name}'. Skipping.");
-                    continue;
-                }
-                
-                GameObject occupyingCard = occupyingCardField.GetValue(dropArea) as GameObject;
-                
-                if (occupyingCard == null)
-                {
-                    // Space is marked as occupied but no card reference - skip
-                    continue;
-                }
-                
-                // Determine who controls this space based on the card's capture color/owner
-                bool isPlayerControlled = IsPlayerCard(occupyingCard);
-                
-                if (isPlayerControlled)
-                {
-                    p1Score++;
-                }
-                else
-                {
-                    p2Score++;
-                }
-            }
-            
-            int totalSpaces = allDropAreas.Length;
-            int emptySpaces = totalSpaces - p1Score - p2Score;
+            int emptySpaces = totalSpaces - occupiedSpaces;
             
             OnScoreChanged?.Invoke(true, p1Score);
             OnScoreChanged?.Invoke(false, p2Score);
             OnScoreUpdated?.Invoke(p1Score, p2Score);
             
-            Debug.Log($"[ScoreManager] Recalculated scores based on {totalSpaces} spaces: P1 controls {p1Score}/{totalSpaces}, P2 controls {p2Score}/{totalSpaces}, Empty: {emptySpaces}/{totalSpaces}");
+            Debug.Log($"[ScoreManager] Recalculated scores from board control: P1 controls {p1Score}/{totalSpaces}, P2 controls {p2Score}/{totalSpaces}, Empty: {emptySpaces}/{totalSpaces}");
         }
         
         /// <summary>

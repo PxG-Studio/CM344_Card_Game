@@ -1679,7 +1679,8 @@ namespace CardGame.UI
             p1FillImage.color = new Color(1f, 0.62f, 0.27f, 1f); // #FF9F45 ember
             p1FillImage.type = Image.Type.Filled;
             p1FillImage.fillMethod = Image.FillMethod.Horizontal;
-            p1FillImage.fillAmount = 0.5f; // Start at 50%
+            // Start empty; CardFrontlineUI will drive fill amounts as tiles are captured.
+            p1FillImage.fillAmount = 0f;
             
             // Create P2Fill
             GameObject p2FillObj = new GameObject("P2Fill");
@@ -1695,7 +1696,8 @@ namespace CardGame.UI
             p2FillImage.type = Image.Type.Filled;
             p2FillImage.fillMethod = Image.FillMethod.Horizontal;
             p2FillImage.fillOrigin = 1; // Fill from right
-            p2FillImage.fillAmount = 0.5f; // Start at 50%
+            // Start empty; CardFrontlineUI will drive fill amounts as tiles are captured.
+            p2FillImage.fillAmount = 0f;
             
             // Create MidDivider
             GameObject dividerObj = new GameObject("MidDivider");

@@ -75,6 +75,13 @@ namespace CardGame.UI
             {
                 ShowGameEnd(false, false);
             }
+            else if (newState == GameState.Draw)
+            {
+                // Draws are handled explicitly with the statistics-aware overload
+                // via GameEndManager, but we keep this path for safety so that a
+                // direct state change to Draw still shows a tie screen.
+                ShowGameEnd(false, true);
+            }
         }
         
         /// <summary>
@@ -117,6 +124,30 @@ namespace CardGame.UI
             }
             
             endGamePanel.SetActive(true);
+            
+            // Ensure all child content stays visually contained within the panel
+            // bounds regardless of resolution. This is done at runtime so it also
+            // works when the panel is created via HUDSetup.
+            RectTransform panelRect = endGamePanel.GetComponent<RectTransform>();
+            if (panelRect != null)
+            {
+                // Clamp anchors to stretch inside the parent without overflowing.
+                panelRect.anchorMin = new Vector2(0.15f, 0.1f);
+                panelRect.anchorMax = new Vector2(0.85f, 0.9f);
+                panelRect.pivot = new Vector2(0.5f, 0.5f);
+                // Slight nudge to the left (~half a "grid unit" in your layout).
+                panelRect.anchoredPosition = new Vector2(-40f, 0f);
+                
+                // Optional: make sure a VerticalLayout/ContentSizeFitter can't
+                // push children outside the panel by forcing them to stay inside
+                // padding. If a Mask exists on the panel, this will also clip.
+                Mask panelMask = endGamePanel.GetComponent<Mask>();
+                if (panelMask == null)
+                {
+                    panelMask = endGamePanel.AddComponent<Mask>();
+                    panelMask.showMaskGraphic = true;
+                }
+            }
             
             // Get final scores
             int p1Score = 0;

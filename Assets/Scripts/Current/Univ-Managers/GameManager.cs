@@ -103,6 +103,12 @@ namespace CardGame.Managers
                 case GameState.Defeat:
                     HandleDefeat();
                     break;
+                case GameState.Draw:
+                    // For now, treat Draw similarly to Victory in terms of flow:
+                    // the dedicated GameEndUI will display the correct "IT'S A TIE!"
+                    // messaging based on the isTie flag passed from GameEndManager.
+                    HandleVictory();
+                    break;
             }
         }
         
@@ -494,25 +500,30 @@ namespace CardGame.Managers
         }
 
         /// <summary>
-        /// Ensures deck managers are initialized and opening hands are drawn
-        /// at the start of a game session (when the first turn begins).
+        /// Verifies that deck systems exist at the start of a game session.
+        /// 
+        /// NOTE:
+        /// NewCardSystemP1Tester/NewCardSystemP2 already handle InitializeDeck()
+        /// and DrawInitialCards() as part of their own startup flow (after the
+        /// coin toss). Re-initializing decks here would clear logical hands while
+        /// the hand UI still shows cards, causing mismatches like
+        /// "card is not in hand" and preventing turn advancement.
+        /// 
+        /// To avoid that desync this method now only logs the presence (or
+        /// absence) of the tester components and does not modify deck state.
         /// </summary>
         private void TryInitializeDecksAndDrawOpeningHands()
         {
-            // Player 1
             CardGame.Testing.NewCardSystemP1Tester tester = FindObjectOfType<CardGame.Testing.NewCardSystemP1Tester>();
-            if (tester != null)
-            {
-                tester.InitializeDeck();
-                tester.DrawInitialCards();
-            }
-
-            // Player 2
             CardGame.Testing.NewCardSystemP2 oppTester = FindObjectOfType<CardGame.Testing.NewCardSystemP2>();
-            if (oppTester != null)
+            
+            if (tester == null || oppTester == null)
             {
-                oppTester.InitializeDeck();
-                oppTester.DrawInitialCards();
+                Debug.LogWarning("[GameManager] Deck tester components not found. Decks may not be initialized correctly.");
+            }
+            else
+            {
+                Debug.Log("[GameManager] Deck systems detected (P1/P2). Initialization and opening draws are handled by testers.");
             }
         }
         
@@ -647,6 +658,7 @@ namespace CardGame.Managers
         EnemyTurn,
         Victory,
         Defeat,
+        Draw,
         Paused
     }
 }

@@ -193,11 +193,10 @@ namespace CardGame.Managers
             }
             else
             {
-                // Tie - you may want to handle this differently
+                // Proper draw handling: neither side wins, but the game ends in a tie.
                 Debug.Log("It's a tie!");
-                // Default to player victory for ties, or you could add a Tie state
-                GameManager.Instance.ChangeState(GameState.Victory);
-                ShowWinnerUI(true, true, cardsPlayed, capturesMade, longestChain, scoreMargin);
+                GameManager.Instance.ChangeState(GameState.Draw);
+                ShowWinnerUI(false, true, cardsPlayed, capturesMade, longestChain, scoreMargin);
             }
         }
         

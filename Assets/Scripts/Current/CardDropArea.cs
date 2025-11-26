@@ -63,8 +63,11 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     /// </summary>
     public GameObject GetOccupyingCard() => occupyingCard;
     
-    // Track cards played this turn (cannot be captured during same turn)
-    private HashSet<GameObject> cardsPlayedThisTurn = new HashSet<GameObject>();
+    // Track cards played this turn (cannot be captured during same turn).
+    // Static so that ALL CardDropArea instances share the same protection set;
+    // otherwise a flip triggered from a neighbouring tile would not see the
+    // freshly played card in its local HashSet.
+    private static HashSet<GameObject> cardsPlayedThisTurn = new HashSet<GameObject>();
     
     // Track cards currently being processed in chain captures (to prevent infinite loops)
     private HashSet<GameObject> cardsInCurrentChain = new HashSet<GameObject>();
@@ -231,19 +234,10 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 Debug.LogWarning("CardDropArea: GameEndManager not found! Game end detection will not work.");
             }
         }
-        
-        if (FateFlowController.Instance != null)
-        {
-            FateFlowController.Instance.OnFateChanged += HandleFateWindowShift;
-        }
     }
     
     private void OnDestroy()
     {
-        if (FateFlowController.Instance != null)
-        {
-            FateFlowController.Instance.OnFateChanged -= HandleFateWindowShift;
-        }
     }
     
     /// <summary>
@@ -302,35 +296,17 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         }
     }
     
-    // [CardFront] Static tracking to prevent duplicate logs when multiple CardDropArea instances exist
-    private static FateSide lastClearedFate = (FateSide)(-1); // Invalid initial value
-    
-    /// <summary>
-    /// Clears the tracking of cards played this turn
-    /// </summary>
-    private void ClearTurnTracking(FateSide currentFate)
-    {
-        cardsPlayedThisTurn.Clear();
-        
-        // [CardFront] Only log once per fate change, not once per CardDropArea instance
-        if (debugBattles && lastClearedFate != currentFate)
-        {
-            lastClearedFate = currentFate;
-            Debug.Log($"[CardDropArea] Turn tracking cleared for {currentFate} - new cards can now be captured");
-        }
-    }
-    
-    private void HandleFateWindowShift(FateSide side)
-    {
-        ClearTurnTracking(side);
-    }
-    
     public void OnCardDrop(CardMoverP1 cardMover)
     {
         if (cardMover == null)
         {
             return;
         }
+
+        // Start of a new placement: clear last turn's protection so previously
+        // played cards can now be captured, but the card we are about to add
+        // this call will remain protected through its own battle/ripple.
+        cardsPlayedThisTurn.Clear();
 
         if (!CanCardAct(cardMover.OwnerSide))
         {
@@ -409,9 +385,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 // Show alert marker for newly placed card
                 DeltaMarkerSystem.ShowAlert(cardMover.transform, "!");
                 
-                // Update CardFrontlineUI after card placement
-                UpdateFrontlineUI();
-                
                 // Draw a card for the placing player after successful placement
                 if (deckManagerP1 != null && deckManagerP1.DrawPileCount > 0)
                 {
@@ -432,6 +405,14 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 {
                     CheckCardBattlesP1(cardMover, card);
                 }
+
+                // Update scoring and frontline UI after any successful placement so
+                // Field Control and the influence bar reflect current tiles.
+                if (scoreManager != null)
+                {
+                    scoreManager.RecalculateScores();
+                }
+                UpdateFrontlineUI();
 
                 GameManager.Instance?.NotifyCardPlaced(this, card);
                 FateFlowController.Instance?.AdvanceFateFlow();
@@ -890,6 +871,11 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             return;
         }
 
+        // New placement for P2: clear previous protection so older cards can
+        // now be captured. The freshly added card for this call will be added
+        // back into cardsPlayedThisTurn and protected for its own battle.
+        cardsPlayedThisTurn.Clear();
+
         if (!CanCardAct(cardMoverP2.OwnerSide))
         {
             if (debugBattles)
@@ -987,6 +973,14 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 {
                     CheckCardBattlesP2(cardMoverP2, card);
                 }
+
+                // Update scoring and frontline UI after any successful placement so
+                // Field Control and the influence bar reflect current tiles.
+                if (scoreManager != null)
+                {
+                    scoreManager.RecalculateScores();
+                }
+                UpdateFrontlineUI();
 
                 GameManager.Instance?.NotifyCardPlaced(this, card);
                 FateFlowController.Instance?.AdvanceFateFlow();
@@ -1403,24 +1397,20 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         
         if (!attackerWins)
         {
-            // Defender wins or tie - NO capture should occur
-            // If defender's stat > attacker's stat, defender wins and attacker should flip (if this is called from attacker's perspective)
-            // If defender's stat == attacker's stat, it's a tie and no one flips
+            // Basic Triple Triad rule:
+            // - Only the ATTACKER (placed card) can ever capture the defender.
+            // - If attacker stat <= defender stat, then NOTHING flips. The defender
+            //   never counter‑captures the placed card as part of this comparison.
+            //
+            // That means:
+            // - Defender strictly higher  → no flip (attacker fails, card stays)
+            // - Equal stats               → no flip
+            // - Only attackerWins (>)     → defender flips
             Debug.Log($"[CheckBattleBetweenCards] ❌ NO CAPTURE: {placedCard.Data.cardName} ({placedCardStat}) <= {otherCard.Data.cardName} ({otherCardStat}). " +
-                $"Defender has equal or higher stat - placed card did NOT win. " +
-                $"Rule: Attacker must have higher stat to capture defender.");
+                $"Defender has equal or higher stat - placed card did NOT win and no one flips. " +
+                $"Rule: Only the attacking card can capture, never the defender.");
             
-            // Return true if placed card lost (defender's stat > attacker's stat), false if tie
-            if (otherCardStat > placedCardStat)
-            {
-                Debug.Log($"[CheckBattleBetweenCards] Defender wins: {otherCard.Data.cardName} ({otherCardStat}) > {placedCard.Data.cardName} ({placedCardStat}). Placed card should flip.");
-                return true; // Placed card lost, should flip
-            }
-            else
-            {
-                Debug.Log($"[CheckBattleBetweenCards] Tie: Both stats are equal ({placedCardStat} = {otherCardStat}), no capture");
-                return false; // Tie, no flip
-            }
+            return false; // No flip in basic rules when attacker does not win
         }
         
         // If placed card wins (attacker stat > defender stat), other card should flip
@@ -1478,6 +1468,40 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     }
 
     /// <summary>
+    /// Returns true if the given GameObject belongs to a card that was played
+    /// this turn on this drop area. This is tolerant of being passed either the
+    /// CardMover root or any child (e.g. NewCardUI, flip animation container).
+    /// </summary>
+    private bool IsFreshlyPlayedThisTurn(GameObject cardObject)
+    {
+        if (cardObject == null)
+        {
+            return false;
+        }
+        
+        if (cardsPlayedThisTurn.Contains(cardObject))
+        {
+            return true;
+        }
+        
+        // Check parent CardMover components, which are what we register in
+        // cardsPlayedThisTurn when a card is dropped from hand.
+        CardMoverP1 moverP1 = cardObject.GetComponentInParent<CardMoverP1>();
+        if (moverP1 != null && cardsPlayedThisTurn.Contains(moverP1.gameObject))
+        {
+            return true;
+        }
+        
+        CardMoverP2 moverP2 = cardObject.GetComponentInParent<CardMoverP2>();
+        if (moverP2 != null && cardsPlayedThisTurn.Contains(moverP2.gameObject))
+        {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /// <summary>
     /// Flips a card GameObject with directional flip animation
     /// </summary>
     private void FlipCardGameObject(GameObject cardObject, NewCard card, Color captureColor, CardGame.UI.FlipDirection direction)
@@ -1487,7 +1511,17 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             Debug.LogWarning("FlipCardGameObject: cardObject is null!");
             return;
         }
-        
+
+        // Safety: Never allow the freshly placed card for the current turn to be
+        // flipped, regardless of battle outcome. This enforces the rule that the
+        // card being dropped cannot itself be captured on that same turn for
+        // either player.
+        if (IsFreshlyPlayedThisTurn(cardObject))
+        {
+            Debug.Log($"[FlipCardGameObject] Skipping flip for {card?.Data?.cardName ?? cardObject.name} because it was just played this turn (or is a child of that card).");
+            return;
+        }
+
         // CRITICAL LOGGING: Always log when FlipCardGameObject is called to track score update path
         Debug.Log($"[FlipCardGameObject] ENTRY for {card?.Data?.cardName ?? "unknown"}. " +
             $"Capture color: ({captureColor.r:F2}, {captureColor.g:F2}, {captureColor.b:F2}, {captureColor.a:F2}). " +
@@ -1907,44 +1941,16 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         int p1Control = 0;
         int p2Control = 0;
         
-        // Helper to determine if a card belongs to P1
-        bool IsPlayerCardHelper(GameObject cardObject)
-        {
-            if (cardObject == null) return true; // Default to P1
-            
-            // Check for CardMover (P1) or CardMoverP2 (P2)
-            CardMoverP1 cardMover = cardObject.GetComponent<CardMoverP1>();
-            if (cardMover != null) return true;
-            
-            CardMoverP2 cardMoverP2 = cardObject.GetComponent<CardMoverP2>();
-            if (cardMoverP2 != null) return false;
-            
-            // Check children/parents
-            cardMover = cardObject.GetComponentInChildren<CardMoverP1>();
-            if (cardMover != null) return true;
-            
-            cardMoverP2 = cardObject.GetComponentInChildren<CardMoverP2>();
-            if (cardMoverP2 != null) return false;
-            
-            cardMover = cardObject.GetComponentInParent<CardMoverP1>();
-            if (cardMover != null) return true;
-            
-            cardMoverP2 = cardObject.GetComponentInParent<CardMoverP2>();
-            if (cardMoverP2 != null) return false;
-            
-            // Default: assume player card
-            return true;
-        }
-        
         foreach (CardDropArea dropArea in allDropAreas)
         {
             if (dropArea == null || !dropArea.IsOccupied) continue;
             
             GameObject occupyingCard = dropArea.GetOccupyingCard();
             if (occupyingCard == null) continue;
-            
-            // Determine control based on card ownership
-            bool isPlayerCard = IsPlayerCardHelper(occupyingCard);
+
+            // Determine control based on current ownership (capture color / flip state),
+            // not original owner. This matches ScoreManager and what the player sees.
+            bool isPlayerCard = dropArea.IsPlayerCard(occupyingCard);
             if (isPlayerCard)
             {
                 p1Control++;

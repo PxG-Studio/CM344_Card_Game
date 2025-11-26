@@ -107,7 +107,7 @@ namespace CardGame.Managers
         /// </summary>
         public string GetWinLossRecord()
         {
-            return $"Wins: {wins} | Losses: {losses}";
+            return $"Wins: {wins} | Losses: {losses} | Ties: {ties}";
         }
     }
 }

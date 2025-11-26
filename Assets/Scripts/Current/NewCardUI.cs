@@ -81,6 +81,12 @@ namespace CardGame.UI
         public NewCard Card => card;
         public System.Action<NewCardUI> OnCardClicked;
         public System.Action<NewCardUI> OnCardPlayed;
+
+        // Shared runtime default sprite for card backs, so that any card which
+        // has neither a per-card back nor an assigned default will still show a
+        // consistent back image instead of being invisible.
+        private static Sprite runtimeDefaultBackSprite;
+
         
         private void Awake()
         {
@@ -726,6 +732,19 @@ namespace CardGame.UI
             else if (defaultCardBackSprite != null)
             {
                 backSprite = defaultCardBackSprite;
+            }
+            else
+            {
+                // Ensure we have a shared runtime default sprite so every card
+                // shows SOME back even if assets are not fully wired.
+                if (runtimeDefaultBackSprite == null)
+                {
+                    Texture2D tex = new Texture2D(1, 1);
+                    tex.SetPixel(0, 0, Color.white);
+                    tex.Apply();
+                    runtimeDefaultBackSprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f));
+                }
+                backSprite = runtimeDefaultBackSprite;
             }
             
             // Assign to SpriteRenderer or Image (whichever exists)

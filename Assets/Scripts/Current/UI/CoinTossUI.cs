@@ -707,10 +707,11 @@ namespace CardGame.UI
             {
                 // Get current rotation
                 Quaternion startRotation = coinImage.transform.rotation;
-                // Calculate final rotation based on result
-                // For heads, show heads sprite at 0 rotation
-                // For tails, show tails sprite at 180 degrees X rotation
-                Quaternion targetRotation = isHeads ? Quaternion.identity : Quaternion.Euler(180f, 0f, 0f);
+                // Calculate final rotation.
+                // DESIGN CHANGE: Always end with an upright coin so that both HEADS and TAILS
+                // are easy to read. We now rely purely on the sprite to indicate the result,
+                // not on a 180-degree flip which could leave the art visually upside down.
+                Quaternion targetRotation = Quaternion.identity;
                 
                 // Smoothly rotate to final orientation
                 float snapDuration = 0.3f;
@@ -720,12 +721,9 @@ namespace CardGame.UI
                     snapElapsed += Time.deltaTime;
                     float t = Mathf.SmoothStep(0f, 1f, snapElapsed / snapDuration);
                     coinImage.transform.rotation = Quaternion.Lerp(startRotation, targetRotation, t);
-                    
-                    // Update sprite during snap rotation
-                    float xRotation = coinImage.transform.rotation.eulerAngles.x;
-                    bool showHeads = (Mathf.FloorToInt(xRotation / 180f) % 2) == 0;
-                    coinImage.sprite = showHeads ? headsSprite : tailsSprite;
-                    coinImage.color = showHeads ? headsColor : tailsColor;
+                    // Keep the final side locked in during the settle phase
+                    coinImage.sprite = isHeads ? headsSprite : tailsSprite;
+                    coinImage.color = isHeads ? headsColor : tailsColor;
                     
                     yield return null;
                 }
@@ -785,7 +783,8 @@ namespace CardGame.UI
             {
                 coinImage.sprite = isHeads ? headsSprite : tailsSprite;
                 coinImage.color = isHeads ? headsColor : tailsColor;
-                coinImage.transform.rotation = isHeads ? Quaternion.identity : Quaternion.Euler(180f, 0f, 0f);
+                // Always keep the coin upright for the final display so artwork is never upside down.
+                coinImage.transform.rotation = Quaternion.identity;
             }
 
             // Only show result text if animation is NOT running (fallback for edge cases)
