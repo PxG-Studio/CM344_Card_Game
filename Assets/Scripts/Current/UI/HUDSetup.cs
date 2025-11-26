@@ -466,7 +466,8 @@ namespace CardGame.UI
                 rectTransform.anchorMin = new Vector2(0.5f, 1);
                 rectTransform.anchorMax = new Vector2(0.5f, 1);
                 rectTransform.pivot = new Vector2(1, 1); // Right pivot so it grows left from center
-                rectTransform.anchoredPosition = new Vector2(-120, -80); // 120px left of center
+                // Shifted slightly further left so it clears the board more comfortably
+                rectTransform.anchoredPosition = new Vector2(-160, -80);
             }
             else
             {
@@ -1288,7 +1289,35 @@ namespace CardGame.UI
             CoinTossUI existingUI = hudRoot.GetComponentInChildren<CoinTossUI>(true);
             if (existingUI != null)
             {
-                Debug.Log($"HUDSetup: CoinTossUI already exists on '{existingUI.gameObject.name}'. Skipping creation.");
+                Debug.Log($"HUDSetup: CoinTossUI already exists on '{existingUI.gameObject.name}'. Updating layout and skipping creation.");
+
+                // If the panel already exists in the scene (prefab or hand‑placed),
+                // nudge its ContentPanel to the left so the whole popup shifts over.
+                RectTransform existingRootRect = existingUI.GetComponent<RectTransform>();
+                if (existingRootRect != null)
+                {
+                    // Ensure the root fills the screen like the runtime‑created version.
+                    existingRootRect.anchorMin = Vector2.zero;
+                    existingRootRect.anchorMax = Vector2.one;
+                    existingRootRect.sizeDelta = Vector2.zero;
+                    existingRootRect.anchoredPosition = Vector2.zero;
+                }
+
+                Transform existingContent = existingUI.transform.Find("ContentPanel");
+                if (existingContent != null)
+                {
+                    RectTransform contentRectExisting = existingContent.GetComponent<RectTransform>();
+                    if (contentRectExisting != null)
+                    {
+                        contentRectExisting.anchorMin = new Vector2(0.5f, 0.5f);
+                        contentRectExisting.anchorMax = new Vector2(0.5f, 0.5f);
+                        contentRectExisting.pivot = new Vector2(0.5f, 0.5f);
+                        // Slight left offset so the popup sits near center; roughly two grid
+                        // units to the right of the previous position.
+                        contentRectExisting.anchoredPosition = new Vector2(-20f, 0f);
+                    }
+                }
+
                 return;
             }
             
@@ -1324,7 +1353,9 @@ namespace CardGame.UI
             contentRect.anchorMax = new Vector2(0.5f, 0.5f);
             contentRect.pivot = new Vector2(0.5f, 0.5f);
             contentRect.sizeDelta = new Vector2(750f, 650f);
-            contentRect.anchoredPosition = Vector2.zero;
+            // Slight left offset so the popup sits near center; roughly two grid
+            // units to the right of the previous position.
+            contentRect.anchoredPosition = new Vector2(-20f, 0f);
             
             // Add background to content panel
             UnityEngine.UI.Image contentBg = contentPanel.AddComponent<UnityEngine.UI.Image>();
@@ -1579,7 +1610,9 @@ namespace CardGame.UI
             barRect.anchorMax = new Vector2(0.5f, 0f);
             barRect.pivot = new Vector2(0.5f, 0f);
             barRect.sizeDelta = new Vector2(boardWidth, 80f);
-            barRect.anchoredPosition = new Vector2(0f, 80f); // slightly closer to bottom to avoid overlap
+            // Offset the influence bar slightly down and just a small amount left of center.
+            // (Previously -120 on X; this nudges it back toward the middle.)
+            barRect.anchoredPosition = new Vector2(-80f, 40f);
             
             // Create Title Label
             GameObject titleLabelObj = new GameObject("TitleLabel");
@@ -1734,40 +1767,37 @@ namespace CardGame.UI
         
         private void SetupBoardBackdrop()
         {
-            GameObject hudCanvasGO = GameObject.Find("HUDOverlayCanvas");
             GameObject dropAreasRoot = GameObject.Find("Drop Areas");
-            if (hudCanvasGO == null)
+            if (dropAreasRoot == null)
             {
-                Debug.LogWarning("HUDSetup: Cannot create battleground backdrop because HUDOverlayCanvas was not found.");
+                Debug.LogWarning("HUDSetup: Cannot create battleground backdrop because 'Drop Areas' was not found.");
                 return;
             }
 
-            // Remove any lingering world-space backdrop
-            if (dropAreasRoot != null)
+            // Remove any lingering legacy world-space backdrops that live directly
+            // under Drop Areas. The new backdrop will live under Play Zone instead.
+            Transform oldWorldBackdrop = dropAreasRoot.transform.Find("BattlegroundBackdrop");
+            if (oldWorldBackdrop != null)
             {
-                Transform oldWorldBackdrop = dropAreasRoot.transform.Find("BattlegroundBackdrop");
-                if (oldWorldBackdrop != null)
+                if (Application.isPlaying)
                 {
-                    if (Application.isPlaying)
-                    {
-                        Destroy(oldWorldBackdrop.gameObject);
-                    }
-                    else
-                    {
-                        DestroyImmediate(oldWorldBackdrop.gameObject);
-                    }
+                    Destroy(oldWorldBackdrop.gameObject);
                 }
-                Transform oldSprite = dropAreasRoot.transform.Find("BattlegroundSprite");
-                if (oldSprite != null)
+                else
                 {
-                    if (Application.isPlaying)
-                    {
-                        Destroy(oldSprite.gameObject);
-                    }
-                    else
-                    {
-                        DestroyImmediate(oldSprite.gameObject);
-                    }
+                    DestroyImmediate(oldWorldBackdrop.gameObject);
+                }
+            }
+            Transform oldSprite = dropAreasRoot.transform.Find("BattlegroundSprite");
+            if (oldSprite != null)
+            {
+                if (Application.isPlaying)
+                {
+                    Destroy(oldSprite.gameObject);
+                }
+                else
+                {
+                    DestroyImmediate(oldSprite.gameObject);
                 }
             }
 
@@ -1778,43 +1808,30 @@ namespace CardGame.UI
                 return;
             }
 
-            Transform existing = hudCanvasGO.transform.Find("BattlegroundBackdrop");
+            // Prefer to parent under Play Zone so the backdrop tracks the board area,
+            // but fall back to Drop Areas if Play Zone is missing.
+            Transform playZone = GameObject.Find("Play Zone")?.transform ?? dropAreasRoot.transform;
+
+            Transform existing = playZone.Find("BattlegroundBackdrop");
             GameObject backdropObj = existing != null ? existing.gameObject : new GameObject("BattlegroundBackdrop");
             if (existing == null)
             {
-                backdropObj.transform.SetParent(hudCanvasGO.transform, false);
-                CanvasRenderer renderer = backdropObj.AddComponent<CanvasRenderer>();
-                UnityEngine.UI.Image img = backdropObj.AddComponent<UnityEngine.UI.Image>();
-                img.raycastTarget = false;
+                backdropObj.transform.SetParent(playZone, false);
             }
-            else if (backdropObj.transform.parent != hudCanvasGO.transform)
+            else if (backdropObj.transform.parent != playZone)
             {
-                backdropObj.transform.SetParent(hudCanvasGO.transform, false);
+                backdropObj.transform.SetParent(playZone, false);
             }
 
-            RectTransform rect = backdropObj.GetComponent<RectTransform>();
-            if (rect == null)
+            // Configure the world-space sprite so it always sits behind the board and cards.
+            SpriteRenderer renderer = backdropObj.GetComponent<SpriteRenderer>();
+            if (renderer == null)
             {
-                rect = backdropObj.AddComponent<RectTransform>();
+                renderer = backdropObj.AddComponent<SpriteRenderer>();
             }
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            rect.SetSiblingIndex(0);
-
-            UnityEngine.UI.Image image = backdropObj.GetComponent<UnityEngine.UI.Image>();
-            if (image == null)
-            {
-                // In case the existing BattlegroundBackdrop lost its Image component in the scene,
-                // recreate it so we never hit a null reference here.
-                image = backdropObj.AddComponent<UnityEngine.UI.Image>();
-            }
-            image.sprite = sprite;
-            image.color = Color.white;
-            image.type = UnityEngine.UI.Image.Type.Simple;
-            image.preserveAspect = false;
-            image.raycastTarget = false;
+            renderer.sprite = sprite;
+            renderer.color = Color.white;
+            renderer.sortingOrder = -200; // behind ProceduralBoardBackdrop (-100) and cards
         }
 
         private Sprite LoadBattlegroundSprite()

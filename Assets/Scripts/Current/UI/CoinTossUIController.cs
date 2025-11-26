@@ -56,7 +56,10 @@ namespace CardGame.UI
 
             if (rootPanel != null)
             {
-                rootPanel.anchoredPosition = new Vector2(0f, -40f);
+                // Preserve any horizontal offset that layout code (HUDSetup) has applied
+                // and only adjust the Y position for the intro slide.
+                var current = rootPanel.anchoredPosition;
+                rootPanel.anchoredPosition = new Vector2(current.x, -40f);
             }
 
 #if DOTWEEN_AVAILABLE
@@ -89,7 +92,9 @@ namespace CardGame.UI
 
             if (rootPanel != null)
             {
-                rootPanel.anchoredPosition = Vector2.zero;
+                // Keep whatever X offset was configured and only animate/settle the Y.
+                var current = rootPanel.anchoredPosition;
+                rootPanel.anchoredPosition = new Vector2(current.x, 0f);
             }
 
             if (coinImage != null && fallbackPulseRoutine == null)

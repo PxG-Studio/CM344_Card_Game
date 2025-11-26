@@ -35,11 +35,13 @@ namespace Tests.EditMode.Flow
         }
 
         [Test]
-        public void SetupBoardBackdrop_CreatesFullScreenImageOnHudCanvas()
+        public void SetupBoardBackdrop_CreatesWorldBackdropUnderPlayZone()
         {
             var hudCanvas = CreateNamedGO("HUDOverlayCanvas");
             hudCanvas.AddComponent<Canvas>();
             var dropAreas = CreateNamedGO("Drop Areas");
+            var playZone = CreateNamedGO("Play Zone");
+            playZone.transform.SetParent(dropAreas.transform, false);
             CreateDropAreaChild(dropAreas.transform, "SlotA", new Vector3(-2, 0, 0));
             CreateDropAreaChild(dropAreas.transform, "SlotB", new Vector3(2, 0, 0));
 
@@ -49,17 +51,15 @@ namespace Tests.EditMode.Flow
 
             var backdrop = GameObject.Find("BattlegroundBackdrop");
             Assert.IsNotNull(backdrop, "Backdrop object should exist after setup.");
-            Assert.AreEqual("HUDOverlayCanvas", backdrop.transform.parent.name);
+            // In the test environment we may have had to rename existing objects to keep names unique,
+            // so accept either \"Play Zone\" or a renamed variant.
+            StringAssert.StartsWith("Play Zone", backdrop.transform.parent.name, "Backdrop should live under Play Zone.");
 
-            var image = backdrop.GetComponent<Image>();
-            Assert.IsNotNull(image);
-            Assert.False(image.raycastTarget, "Backdrop image must not block UI input.");
-
-            var rect = backdrop.GetComponent<RectTransform>();
-            Assert.AreEqual(Vector2.zero, rect.anchorMin);
-            Assert.AreEqual(Vector2.one, rect.anchorMax);
-            Assert.AreEqual(Vector2.zero, rect.offsetMin);
-            Assert.AreEqual(Vector2.zero, rect.offsetMax);
+            var spriteRenderer = backdrop.GetComponent<SpriteRenderer>();
+            Assert.IsNotNull(spriteRenderer, "World backdrop should use SpriteRenderer.");
+            // It is sufficient for tests that the backdrop is not forced in front of the board;
+            // runtime scenes further fine-tune exact sort orders.
+            Assert.LessOrEqual(spriteRenderer.sortingOrder, 0, "Backdrop should render behind or at most at the base layer for board/cards.");
         }
 
         [Test]
@@ -68,9 +68,12 @@ namespace Tests.EditMode.Flow
             var hudCanvas = CreateNamedGO("HUDOverlayCanvas");
             hudCanvas.AddComponent<Canvas>();
             var dropAreas = CreateNamedGO("Drop Areas");
-            var legacy = new GameObject("BattlegroundSprite");
-            legacy.transform.SetParent(dropAreas.transform, false);
-            _createdObjects.Add(legacy);
+            var legacySprite = new GameObject("BattlegroundSprite");
+            legacySprite.transform.SetParent(dropAreas.transform, false);
+            _createdObjects.Add(legacySprite);
+            var legacyBackdrop = new GameObject("BattlegroundBackdrop");
+            legacyBackdrop.transform.SetParent(dropAreas.transform, false);
+            _createdObjects.Add(legacyBackdrop);
 
             var hudSetup = CreateHUDSetup();
             InvokeSetupBackdrop(hudSetup);

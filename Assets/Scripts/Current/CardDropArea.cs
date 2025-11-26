@@ -1674,7 +1674,9 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // CRITICAL COMBAT RULE: Capture ONLY occurs when attacker's stat > defender's stat
         // placedCardStat = the stat of the card being placed (attacker)
         // otherCardStat = the opposing stat of the existing card (defender)
-        // If attacker's stat is NOT greater than defender's stat, NO capture should occur
+        // If attacker's stat is NOT greater than defender's stat, NO capture should occur.
+        // This is a *normal* outcome during adjacency scans (most neighbor pairs will not result
+        // in captures), so we treat it as informational debug output instead of a logic error.
         bool attackerWins = placedCardStat > otherCardStat;
         
         // ABSOLUTE SAFETY CHECK: Double-verify that attacker's stat is strictly greater
@@ -1682,12 +1684,16 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         if (!attackerWins || placedCardStat <= otherCardStat)
         {
             // Defender wins or tie - NO capture should occur.
-            // This branch is logged as a warning so we can diagnose invalid capture attempts
-            // without failing tests. In the message, "Attacker" refers to placedCard (the card
-            // trying to capture) and "Defender" refers to otherCard (the card being attacked).
-            Debug.LogWarning($"[CheckBattleBetweenCardsForRipple] ❌ LOGIC ERROR PREVENTED: Attempted to create flip target when attacker did NOT win. " +
-                $"Attacker ({placedCard.Data.cardName}) stat: {placedCardStat}, Defender ({otherCard.Data.cardName}) stat: {otherCardStat}. " +
-                $"Attacker must have higher stat to capture. Returning null to prevent invalid capture.");
+            // This branch is expected to be hit frequently as we scan all adjacent neighbors.
+            // Only log when debugBattles is enabled, and phrase it as a normal combat outcome
+            // rather than a "logic error" to avoid noisy warnings in normal play/tests.
+            if (debugBattles)
+            {
+                Debug.Log($"[CheckBattleBetweenCardsForRipple] No flip target: attacker did not win. " +
+                          $"Attacker ({placedCard.Data.cardName}) stat: {placedCardStat}, " +
+                          $"Defender ({otherCard.Data.cardName}) stat: {otherCardStat}. " +
+                          $"Capture requires attacker stat > defender stat.");
+            }
             return null;
         }
         
