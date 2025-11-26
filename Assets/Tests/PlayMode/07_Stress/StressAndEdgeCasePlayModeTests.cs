@@ -129,16 +129,25 @@ namespace CardGame.Tests
             
             // Act: Switch turn multiple times rapidly (during potential animations)
             FateSide initialFate = fateController.CurrentFate;
+            FateSide previousFate = initialFate;
+            int switches = 0;
             
             for (int i = 0; i < 10; i++)
             {
                 fateController.AdvanceFateFlow();
                 yield return null;
+                
+                if (fateController.CurrentFate != previousFate)
+                {
+                    switches++;
+                    previousFate = fateController.CurrentFate;
+                }
             }
             
-            // Assert: Turn should have switched correctly
-            Assert.AreNotEqual(initialFate, fateController.CurrentFate, 
-                "Turn should switch correctly even during animations");
+            // Assert: Turn should have switched at least once during the sequence,
+            // even if it ends back on the initial side after an even number of toggles.
+            Assert.GreaterOrEqual(switches, 1,
+                "Turn should switch at least once during rapid fate flow advances, even during animations");
             
             // Verify CanAct still works correctly
             bool canAct = fateController.CanAct(fateController.CurrentFate);
@@ -174,20 +183,28 @@ namespace CardGame.Tests
             
             yield return new WaitForSeconds(1.0f); // Wait for initialization
             
-            // Assert: Singletons should still exist (DontDestroyOnLoad preserves them)
+            // Assert: Singletons should still exist after reload
             GameManager gameManager2 = GameManager.Instance;
             FateFlowController fateController2 = FateFlowController.Instance;
             ScoreManager scoreManager2 = ScoreManager.Instance;
             
-            // Singletons with DontDestroyOnLoad should persist across scene reloads
+            // GameManager and FateFlowController use DontDestroyOnLoad and should persist across scene reloads
             Assert.IsNotNull(gameManager2, "GameManager should persist after scene reload");
             Assert.IsNotNull(fateController2, "FateFlowController should persist after scene reload");
-            Assert.IsNotNull(scoreManager2, "ScoreManager should persist after scene reload");
             
-            // Verify they are the same instances (DontDestroyOnLoad)
+            // ScoreManager is recreated by HUDSetup per scene, but its static Instance
+            // should always point to a valid, single instance after reload.
+            Assert.IsNotNull(scoreManager2, "ScoreManager should exist after scene reload");
+            
+            // Verify GameManager and FateFlowController are the same instances (DontDestroyOnLoad)
             Assert.AreEqual(gameManager1, gameManager2, "GameManager should be same instance after reload");
             Assert.AreEqual(fateController1, fateController2, "FateFlowController should be same instance after reload");
-            Assert.AreEqual(scoreManager1, scoreManager2, "ScoreManager should be same instance after reload");
+            
+            // For ScoreManager, we only require that exactly one instance exists and that
+            // the static Instance points to a valid object after reload (no duplicates / broken singleton).
+            ScoreManager[] allScoreManagers = Object.FindObjectsOfType<ScoreManager>();
+            Assert.AreEqual(1, allScoreManagers.Length,
+                "There should be exactly one ScoreManager instance in the scene after reload.");
         }
     }
 }

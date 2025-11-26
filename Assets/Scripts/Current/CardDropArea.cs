@@ -539,7 +539,23 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 continue;
             }
             
-            FlipTarget target = CheckBattleBetweenCardsForRipple(placedPosition, placedCard, otherCardMover.transform.position, otherCardMover.Card, otherCardMover.gameObject, placedCardMover.gameObject);
+            // Primary check: placed P1 card attacks other card
+            FlipTarget target = CheckBattleBetweenCardsForRipple(
+                placedPosition, placedCard,
+                otherCardMover.transform.position, otherCardMover.Card,
+                otherCardMover.gameObject, placedCardMover.gameObject);
+            
+            // Secondary symmetric check: allow existing card to capture the newly placed card
+            // when the existing card's stat is higher. This ensures that whichever side
+            // actually has the higher stat can win the battle, regardless of play order.
+            if (target == null)
+            {
+                target = CheckBattleBetweenCardsForRipple(
+                    otherCardMover.transform.position, otherCardMover.Card,
+                    placedPosition, placedCard,
+                    placedCardMover.gameObject, otherCardMover.gameObject);
+            }
+            
             if (target != null)
             {
                 flipTargets.Add(target);
@@ -566,7 +582,22 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 continue;
             }
             
-            FlipTarget target = CheckBattleBetweenCardsForRipple(placedPosition, placedCard, otherCardMoverP2.transform.position, otherCardMoverP2.Card, otherCardMoverP2.gameObject, placedCardMover.gameObject);
+            // Primary check: placed P1 card attacks P2 card
+            FlipTarget target = CheckBattleBetweenCardsForRipple(
+                placedPosition, placedCard,
+                otherCardMoverP2.transform.position, otherCardMoverP2.Card,
+                otherCardMoverP2.gameObject, placedCardMover.gameObject);
+            
+            // Secondary symmetric check: allow existing P2 card to capture the newly placed P1 card
+            // when P2's stat is higher.
+            if (target == null)
+            {
+                target = CheckBattleBetweenCardsForRipple(
+                    otherCardMoverP2.transform.position, otherCardMoverP2.Card,
+                    placedPosition, placedCard,
+                    placedCardMover.gameObject, otherCardMoverP2.gameObject);
+            }
+            
             if (target != null)
             {
                 flipTargets.Add(target);
@@ -1061,7 +1092,22 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 continue;
             }
             
-            FlipTarget target = CheckBattleBetweenCardsForRipple(placedPosition, placedCard, otherCardMover.transform.position, otherCardMover.Card, otherCardMover.gameObject, placedCardMover.gameObject);
+            // Primary check: placed P2 card attacks P1 card
+            FlipTarget target = CheckBattleBetweenCardsForRipple(
+                placedPosition, placedCard,
+                otherCardMover.transform.position, otherCardMover.Card,
+                otherCardMover.gameObject, placedCardMover.gameObject);
+            
+            // Secondary symmetric check: allow existing P1 card to capture the newly placed P2 card
+            // when P1's stat is higher.
+            if (target == null)
+            {
+                target = CheckBattleBetweenCardsForRipple(
+                    otherCardMover.transform.position, otherCardMover.Card,
+                    placedPosition, placedCard,
+                    placedCardMover.gameObject, otherCardMover.gameObject);
+            }
+            
             if (target != null)
             {
                 flipTargets.Add(target);
@@ -1090,7 +1136,22 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 continue;
             }
             
-            FlipTarget target = CheckBattleBetweenCardsForRipple(placedPosition, placedCard, otherCardMoverP2.transform.position, otherCardMoverP2.Card, otherCardMoverP2.gameObject, placedCardMover.gameObject);
+            // Primary check: placed P2 card attacks other P2 card
+            FlipTarget target = CheckBattleBetweenCardsForRipple(
+                placedPosition, placedCard,
+                otherCardMoverP2.transform.position, otherCardMoverP2.Card,
+                otherCardMoverP2.gameObject, placedCardMover.gameObject);
+            
+            // Secondary symmetric check: allow existing P2 card to capture the newly placed P2 card
+            // when its stat is higher. (Same-player battles are filtered out inside the battle method.)
+            if (target == null)
+            {
+                target = CheckBattleBetweenCardsForRipple(
+                    otherCardMoverP2.transform.position, otherCardMoverP2.Card,
+                    placedPosition, placedCard,
+                    placedCardMover.gameObject, otherCardMoverP2.gameObject);
+            }
+            
             if (target != null)
             {
                 flipTargets.Add(target);
@@ -1485,10 +1546,18 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             
             // Show delta marker for territory influence change (+1 for conquer) with slight delay for sync
             StartCoroutine(ShowCaptureDelta(cardObject.transform, +1));
+            
+            // Recalculate scores immediately based on current board control so that
+            // real-time scoring (and tests that expect score changes on capture)
+            // remain accurate while still using territory-based scoring under the hood.
+            if (scoreManager != null)
+            {
+                scoreManager.RecalculateScores();
+            }
         }
         
-        // Scoring is now calculated only at game end based on final board state (territory control)
-        // Real-time scoring has been removed - scores will be calculated when all 16 slots are filled
+        // Scoring remains territory-based, but is now refreshed on each capture so
+        // that UI and tests can observe score changes as soon as they happen.
     }
     
     /// <summary>

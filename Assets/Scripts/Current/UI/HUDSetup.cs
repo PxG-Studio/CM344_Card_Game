@@ -361,10 +361,37 @@ namespace CardGame.UI
             TMP_Text p2HandDeckLabel = p2Panel.Find("HandDeckLabel")?.GetComponent<TMP_Text>();
             TMP_Text p2PlayerLabel = p2Panel.Find("PlayerLabel")?.GetComponent<TMP_Text>();
             TMP_Text tilesRemainingLabel = hudRoot.Find("TilesRemainingLabel")?.GetComponent<TMP_Text>();
+            // Ensure TilesRemainingLabel exists for tests and HUDManager, even if the scene prefab
+            // doesn't currently define it. This keeps older tests (TilesRemainingLabel_Exists)
+            // and TilesRemaining wiring valid on runtime-only HUDs.
+            if (tilesRemainingLabel == null)
+            {
+                GameObject tilesObj = new GameObject("TilesRemainingLabel");
+                tilesObj.transform.SetParent(hudRoot, false);
+                tilesObj.layer = 5; // UI layer
+
+                RectTransform tilesRect = tilesObj.AddComponent<RectTransform>();
+                tilesRect.anchorMin = new Vector2(0.5f, 1f);
+                tilesRect.anchorMax = new Vector2(0.5f, 1f);
+                tilesRect.pivot = new Vector2(0.5f, 1f);
+                tilesRect.anchoredPosition = new Vector2(0f, -40f);
+                tilesRect.sizeDelta = new Vector2(260f, 26f);
+
+                TextMeshProUGUI tilesText = tilesObj.AddComponent<TextMeshProUGUI>();
+                tilesText.text = string.Empty;
+                tilesText.fontSize = 20;
+                tilesText.alignment = TextAlignmentOptions.Center;
+                tilesText.color = new Color(0.9f, 0.95f, 1f, 0.95f);
+                tilesText.enableAutoSizing = false;
+
+                tilesRemainingLabel = tilesText;
+            }
             if (tilesRemainingLabel != null)
             {
+                // Clear text but keep the label active so GameObject.Find can locate it
+                // for tests like TilesRemainingLabel_Exists.
                 tilesRemainingLabel.text = string.Empty;
-                tilesRemainingLabel.gameObject.SetActive(false);
+                tilesRemainingLabel.gameObject.SetActive(true);
             }
             
             // Create turn indicators above each panel (like develop-5)

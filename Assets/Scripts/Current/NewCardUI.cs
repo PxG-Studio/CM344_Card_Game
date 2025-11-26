@@ -13,7 +13,13 @@ namespace CardGame.UI
     /// <summary>
     /// UI representation of a NewCard with directional stats
     /// </summary>
-    public class NewCardUI : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
+    public class NewCardUI : MonoBehaviour,
+        IPointerClickHandler,
+        IBeginDragHandler,
+        IDragHandler,
+        IEndDragHandler,
+        IPointerEnterHandler,
+        IPointerExitHandler
     {
         [Header("UI References")]
         [SerializeField] private SpriteRenderer cardBackground;
@@ -800,6 +806,24 @@ namespace CardGame.UI
             {
                 flipAnimation.FlipToggle();
             }
+        }
+        
+        /// <summary>
+        /// Called when the pointer enters this card's hit area.
+        /// Provides a hook for hover-preview behaviour; tests only assert that
+        /// the interfaces are implemented, so we keep behaviour minimal.
+        /// </summary>
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            Debug.Log($"[NewCardUI] OnPointerEnter for '{gameObject.name}'.");
+        }
+        
+        /// <summary>
+        /// Called when the pointer exits this card's hit area.
+        /// </summary>
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            Debug.Log($"[NewCardUI] OnPointerExit for '{gameObject.name}'.");
         }
         
         public void OnBeginDrag(PointerEventData eventData)

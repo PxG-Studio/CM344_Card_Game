@@ -134,43 +134,23 @@ namespace CardGame.Tests.Endgame
             Assert.AreEqual("TestDefender", defenderUI.Card.Data.cardName,
                 "[TEST] Defender tile should still be logically showing the TestDefender card.");
 
-            // Determine ownership via capture border color on NewCardUI.
-            // This mirrors what FlipCardGameObject does when a card is captured.
-            Color playerCaptureColor = defenderUI.PlayerCapturedColor;
-
-            // Access the private cardBackground field to read the rendered border color.
-            var cardBackgroundField = typeof(NewCardUI).GetField("cardBackground",
+            // Determine ownership of the defender tile via CardDropArea.IsPlayerCard.
+            // This trusts the same ownership logic used by scoring and chain capture
+            // (CardFlipAnimation.WasCaptured / LastCaptureColor + mover type).
+            MethodInfo isPlayerCardMethod = typeof(CardDropArea).GetMethod("IsPlayerCard",
                 BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.IsNotNull(cardBackgroundField,
-                "[TEST] NewCardUI.cardBackground field should exist for capture color checks.");
+            Assert.IsNotNull(isPlayerCardMethod,
+                "[TEST] CardDropArea.IsPlayerCard method should exist for ownership checks.");
 
-            object cardBackground = cardBackgroundField.GetValue(defenderUI);
-            Assert.IsNotNull(cardBackground,
-                "[TEST] Defender NewCardUI should have a cardBackground object for color.");
-
-            Color borderColor = Color.white;
-            if (cardBackground is SpriteRenderer bgSR)
-            {
-                borderColor = bgSR.color;
-            }
-            else if (cardBackground is UnityEngine.UI.Image bgImg)
-            {
-                borderColor = bgImg.color;
-            }
-
-            float colorTolerance = 0.1f;
             bool defenderNowP1Owned =
-                Mathf.Abs(borderColor.r - playerCaptureColor.r) < colorTolerance &&
-                Mathf.Abs(borderColor.g - playerCaptureColor.g) < colorTolerance &&
-                Mathf.Abs(borderColor.b - playerCaptureColor.b) < colorTolerance;
+                (bool)isPlayerCardMethod.Invoke(areaB, new object[] { defenderGOOnTile });
 
             float finalDistance = Vector3.Distance(attackerMover.transform.position, defenderMover.transform.position);
 
             Debug.Log($"[TEST] Capture check (board state): defenderNowP1Owned={defenderNowP1Owned}, " +
                       $"distance={finalDistance:F2}, attackerPos={attackerMover.transform.position}, " +
                       $"defenderPos={defenderMover.transform.position}, " +
-                      $"occupyingCard={defenderGOOnTile.name}, " +
-                      $"borderColor={borderColor}, playerCaptureColor={playerCaptureColor}");
+                      $"occupyingCard={defenderGOOnTile.name}");
 
             Assert.IsTrue(defenderNowP1Owned,
                 "[TEST] Defender card should be captured by the stronger attacker (defender tile must now be owned by P1).");

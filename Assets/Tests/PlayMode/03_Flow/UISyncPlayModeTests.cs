@@ -96,8 +96,27 @@ namespace CardGame.Tests
             
             if (scoreUI == null)
             {
-                Assert.Inconclusive("ScoreUI not found - may be created dynamically. Test requires ScoreUI to exist.");
-                yield break;
+                // Fallback: create a minimal ScoreUI instance wired to two TextMeshProUGUI fields
+                // so we can still validate that ScoreUI responds to score changes.
+                var scoreUiGO = new GameObject("TestScoreUI_Fallback");
+                scoreUI = scoreUiGO.AddComponent<ScoreUI>();
+                
+                var p1GO = new GameObject("P1ScoreText_Fallback", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+                var p2GO = new GameObject("P2ScoreText_Fallback", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+                p1GO.transform.SetParent(scoreUiGO.transform, false);
+                p2GO.transform.SetParent(scoreUiGO.transform, false);
+                
+                // Wire the private fields on ScoreUI so its UpdateScoreDisplay() writes into these labels.
+                TextMeshProUGUI p1Label = p1GO.GetComponent<TextMeshProUGUI>();
+                TextMeshProUGUI p2Label = p2GO.GetComponent<TextMeshProUGUI>();
+                
+                var p1Field = typeof(ScoreUI).GetField("player1Score",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var p2Field = typeof(ScoreUI).GetField("player2Score",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                
+                p1Field?.SetValue(scoreUI, p1Label);
+                p2Field?.SetValue(scoreUI, p2Label);
             }
             
             // Get initial score text values
@@ -375,15 +394,20 @@ namespace CardGame.Tests
                 yield break;
             }
             
-            // Act: Show game end with Player 1 winning
-            var showMethod = typeof(GameEndUI).GetMethod("ShowGameEnd");
+            // Act: Show game end with Player 1 winning.
+            // Use the 2-parameter overload to avoid AmbiguousMatchException from multiple ShowGameEnd overloads.
+            var showMethod = typeof(GameEndUI).GetMethod(
+                "ShowGameEnd",
+                new System.Type[] { typeof(bool), typeof(bool) });
             if (showMethod != null)
             {
-                showMethod.Invoke(gameEndUI, new object[] { true, false, 2 }); // playerWon=true, isTie=false, margin=2
+                // playerWon=true, isTie=false
+                showMethod.Invoke(gameEndUI, new object[] { true, false });
                 yield return new WaitForSeconds(0.5f);
                 
                 // Get winner text
-                var winnerTextField = typeof(GameEndUI).GetField("winnerText", 
+                var winnerTextField = typeof(GameEndUI).GetField(
+                    "winnerText", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 
                 if (winnerTextField != null)
@@ -420,11 +444,15 @@ namespace CardGame.Tests
                 yield break;
             }
             
-            // Act: Show game end with Player 2 winning
-            var showMethod = typeof(GameEndUI).GetMethod("ShowGameEnd");
+            // Act: Show game end with Player 2 winning.
+            // Use the 2-parameter overload to avoid AmbiguousMatchException from multiple ShowGameEnd overloads.
+            var showMethod = typeof(GameEndUI).GetMethod(
+                "ShowGameEnd",
+                new System.Type[] { typeof(bool), typeof(bool) });
             if (showMethod != null)
             {
-                showMethod.Invoke(gameEndUI, new object[] { false, false, -2 }); // playerWon=false, isTie=false, margin=-2
+                // playerWon=false, isTie=false
+                showMethod.Invoke(gameEndUI, new object[] { false, false });
                 yield return new WaitForSeconds(0.5f);
                 
                 // Get winner text

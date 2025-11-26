@@ -117,8 +117,55 @@ namespace CardGame.Tests
             CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
             Assert.IsTrue(dropAreas.Length >= 2, "Need at least 2 drop areas");
             
+            // Choose two tiles that are truly adjacent under the same rules as CardDropArea.AreCardsStrictlyAdjacent.
             CardDropArea attackerArea = dropAreas[0];
-            CardDropArea defenderArea = CardTestHelper.GetAdjacentDropArea(attackerArea, "right") ?? dropAreas[1];
+            CardDropArea defenderArea = null;
+            float minDistance = float.MaxValue;
+            Vector3 attackerAreaPos = attackerArea.transform.position;
+            const float strictAdjacencyTolerance = 3.5f;
+
+            // Prefer directional adjacency first
+            string[] directions = { "right", "left", "top", "bottom" };
+            foreach (string direction in directions)
+            {
+                CardDropArea candidate = CardTestHelper.GetAdjacentDropArea(attackerArea, direction);
+                if (candidate != null)
+                {
+                    float dist = Vector3.Distance(attackerAreaPos, candidate.transform.position);
+                    if (dist <= strictAdjacencyTolerance && dist < minDistance)
+                    {
+                        minDistance = dist;
+                        defenderArea = candidate;
+                    }
+                }
+            }
+
+            // Fallback: scan all tiles for the closest within strict adjacency tolerance
+            if (defenderArea == null)
+            {
+                foreach (CardDropArea area in dropAreas)
+                {
+                    if (area == attackerArea) continue;
+                    float dist = Vector3.Distance(attackerAreaPos, area.transform.position);
+                    if (dist <= strictAdjacencyTolerance && dist < minDistance)
+                    {
+                        minDistance = dist;
+                        defenderArea = area;
+                    }
+                }
+            }
+
+            if (defenderArea == null)
+            {
+                Assert.Inconclusive(
+                    "[IntegrationBug_CardPlaced_ButCaptureNotTriggered] No adjacent drop areas within strict adjacency tolerance; cannot assert on capture.");
+            }
+            else
+            {
+                float chosenDistance = Vector3.Distance(attackerAreaPos, defenderArea.transform.position);
+                Debug.Log($"[IntegrationBug_CardPlaced_ButCaptureNotTriggered] Using tiles " +
+                          $"{attackerArea.name} and {defenderArea.name}, distance={chosenDistance:F2}");
+            }
             
             NewCard attackerCard = CardTestHelper.CreateTestCard(3, 6, 3, 3, "Attacker");
             NewCard defenderCard = CardTestHelper.CreateTestCard(3, 2, 3, 3, "Defender");
@@ -136,32 +183,62 @@ namespace CardGame.Tests
             }
             
             FateFlowController fateController = FateFlowController.Instance;
+            
+            // Place defender (P2) first, then attacker (P1) second to mirror game rules:
+            // the card being placed is the "attacker" in the battle check.
+            if (fateController != null)
+            {
+                fateController.SetFate(FateSide.P2);
+            }
+            yield return null;
+
+            CardMoverP2 defenderMover = CardTestHelper.CreateCardMoverP2WithCard(defenderCard, defenderArea.transform.position);
+            bool defenderPlaced = CardTestHelper.PlaceP2CardOnDropArea(defenderMover, defenderArea, true);
+            Assert.IsTrue(defenderPlaced, "Defender should be placed");
+            yield return new WaitForSeconds(0.5f);
+
+            Assert.IsTrue(defenderArea.IsOccupied, "Defender area should be occupied");
+
             if (fateController != null)
             {
                 fateController.SetFate(FateSide.Player);
             }
             yield return null;
-            
-            // Place attacker
+
             CardMoverP1 attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
             bool attackerPlaced = CardTestHelper.PlaceP1CardOnDropArea(attackerMover, attackerArea, true);
             Assert.IsTrue(attackerPlaced, "Attacker should be placed");
-            yield return new WaitForSeconds(0.5f);
-            
-            // Verify attacker is on board
-            Assert.IsTrue(attackerArea.IsOccupied, "Attacker area should be occupied");
-            
-            // Place defender
-            CardMoverP2 defenderMover = CardTestHelper.CreateCardMoverP2WithCard(defenderCard, defenderArea.transform.position);
-            bool defenderPlaced = CardTestHelper.PlaceP2CardOnDropArea(defenderMover, defenderArea, true);
-            Assert.IsTrue(defenderPlaced, "Defender should be placed");
             
             // Wait for capture logic to execute
             yield return CardTestHelper.WaitForCaptureAnimations(5f);
             
+            // ------------------------------------------------------------------
             // INTEGRATION ASSERTION: Capture logic MUST be triggered after card placement
-            bool defenderCaptured = CardTestHelper.IsCardCaptured(defenderMover.gameObject);
-            Assert.IsTrue(defenderCaptured, 
+            // Use board-centric ownership of the defender tile, not just helper capture flags.
+            // ------------------------------------------------------------------
+            Assert.IsTrue(defenderArea.IsOccupied, "Defender area should be occupied after placement.");
+            GameObject defenderGOOnTile = defenderArea.GetOccupyingCard();
+            Assert.IsNotNull(defenderGOOnTile, "Defender tile should have an occupying card after capture sequence.");
+
+            // Use CardDropArea.IsPlayerCard to determine if the defender tile is now owned by P1.
+            var isPlayerCardMethod = typeof(CardDropArea).GetMethod("IsPlayerCard",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            Assert.IsNotNull(isPlayerCardMethod,
+                "[IntegrationBug_CardPlaced_ButCaptureNotTriggered] CardDropArea.IsPlayerCard should exist for ownership checks.");
+
+            bool defenderNowP1Owned =
+                (bool)isPlayerCardMethod.Invoke(defenderArea, new object[] { defenderGOOnTile });
+
+            // Secondary diagnostic signal using helper (capture flags/colors).
+            bool defenderCapturedHelper = CardTestHelper.IsCardCaptured(defenderMover.gameObject);
+            float finalDistance = Vector3.Distance(attackerMover.transform.position, defenderMover.transform.position);
+
+            Debug.Log($"[IntegrationBug_CardPlaced_ButCaptureNotTriggered] board state: " +
+                      $"defenderNowP1Owned={defenderNowP1Owned}, helperCaptured={defenderCapturedHelper}, " +
+                      $"attackerPos={attackerMover.transform.position}, defenderPos={defenderMover.transform.position}, " +
+                      $"distance={finalDistance:F2}");
+
+            Assert.IsTrue(defenderNowP1Owned,
                 "INTEGRATION BUG: Card placement should trigger capture logic when attacker > defender. " +
                 $"Attacker: {attackerCard.CurrentRightStat}, Defender: {defenderCard.CurrentLeftStat}. " +
                 "This indicates card placement did not properly trigger capture system.");
@@ -392,14 +469,49 @@ namespace CardGame.Tests
             // Total could be 3-5 seconds for a single capture
             yield return new WaitForSeconds(5f); // Extended wait to ensure ripple completes and score updates
             
-            // Verify capture occurred
-            bool defenderCaptured = CardTestHelper.IsCardCaptured(defenderMover.gameObject);
+            // ------------------------------------------------------------------
+            // Verify capture occurred (board-centric: who controls defender tile?)
+            // ------------------------------------------------------------------
+            // Prefer the tile where the defender was dropped; if we adjusted positions,
+            // find the occupied tile that now holds the defender mover.
+            CardDropArea defenderTile = closestDropArea;
+            if (defenderTile == null || !defenderTile.IsOccupied || defenderTile.GetOccupyingCard() != defenderMover.gameObject)
+            {
+                foreach (CardDropArea area in dropAreas)
+                {
+                    if (area != null && area.IsOccupied && area.GetOccupyingCard() == defenderMover.gameObject)
+                    {
+                        defenderTile = area;
+                        break;
+                    }
+                }
+            }
+
+            GameObject defenderGOOnTile = defenderTile != null ? defenderTile.GetOccupyingCard() : null;
+            Assert.IsNotNull(defenderGOOnTile,
+                "[IntegrationBug_CaptureOccurs_ButScoreNotUpdated] Defender tile should be occupied after capture sequence.");
+
+            // Use CardDropArea.IsPlayerCard via reflection to determine ownership of the defender tile.
+            var isPlayerCardMethod = typeof(CardDropArea).GetMethod("IsPlayerCard",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            Assert.IsNotNull(isPlayerCardMethod,
+                "[IntegrationBug_CaptureOccurs_ButScoreNotUpdated] CardDropArea.IsPlayerCard method should exist for ownership checks.");
+
+            bool defenderNowP1Owned =
+                (bool)isPlayerCardMethod.Invoke(defenderTile, new object[] { defenderGOOnTile });
+
+            // Secondary signal for diagnostics only (uses capture flags/colors).
+            bool defenderCapturedHelper = CardTestHelper.IsCardCaptured(defenderMover.gameObject);
+            bool defenderCaptured = defenderNowP1Owned;
             
             // Check if cards are actually adjacent - if not, capture won't occur
             float finalDistance = Vector3.Distance(attackerMover.transform.position, defenderMover.transform.position);
             Debug.Log($"[IntegrationBug_CaptureOccurs_ButScoreNotUpdated] Final positions - " +
                 $"Attacker: {attackerMover.transform.position}, Defender: {defenderMover.transform.position}, " +
-                $"Distance: {finalDistance:F2} (strict adjacency requires <= 1.6)");
+                $"Distance: {finalDistance:F2} (strict adjacency requires <= 1.6), " +
+                $"defenderNowP1Owned={defenderNowP1Owned}, helperCaptured={defenderCapturedHelper}, " +
+                $"defenderTile={(defenderTile != null ? defenderTile.name : "null")}, " +
+                $"occupyingCard={defenderGOOnTile.name}");
             
             // CRITICAL DIAGNOSTICS: Check ScoreManager state before asserting
             ScoreManager scoreMgrCheck = ScoreManager.Instance;
