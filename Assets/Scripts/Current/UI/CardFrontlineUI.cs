@@ -18,21 +18,11 @@ namespace CardGame.UI
         [SerializeField] private Image p2Fill;
         [SerializeField] private RectTransform midDivider;
         
-        [Header("Lagging Marker Settings")]
-        [Tooltip("Top gold triangle that lags behind the pivot line and snaps with a spring.")]
+        [Header("Lagging Marker Settings (currently disabled)")]
+        [Tooltip("Top gold triangle that used to lag behind the pivot line (now unused/hidden).")]
         [SerializeField] private RectTransform triangleTop;
-        [Tooltip("Bottom gold triangle that lags behind the pivot line and snaps with a spring.")]
+        [Tooltip("Bottom gold triangle that used to lag behind the pivot line (now unused/hidden).")]
         [SerializeField] private RectTransform triangleBottom;
-        [Tooltip("Vertical offset (in local UI units) to position triangles above/below the bar center.")]
-        [SerializeField] private float triangleVerticalOffset = 30f;
-        [Tooltip("Duration of the pivot (divider) movement when influence shifts.")]
-        [SerializeField] private float pivotMoveDuration = 0.25f;
-        [Tooltip("Delay before triangles start moving after the pivot moves, to create a lagging effect.")]
-        [SerializeField] private float triangleLagDelay = 0.1f;
-        [Tooltip("Duration of the triangle horizontal movement towards the new pivot position.")]
-        [SerializeField] private float triangleMoveDuration = 0.4f;
-        [Tooltip("Duration of the spin animation on the triangles as they catch up.")]
-        [SerializeField] private float triangleSpinDuration = 0.35f;
         
         [Header("Text Settings")]
         [SerializeField] private string titleText = "Battle Front Influence";
@@ -92,30 +82,23 @@ namespace CardGame.UI
             }
             if (midDivider != null)
             {
+                // Keep the divider confined to the bar region (bottom half of this
+                // widget) so it doesn't poke up into the title text.
                 midDivider.anchorMin = new Vector2(0.5f, 0f);
-                midDivider.anchorMax = new Vector2(0.5f, 1f);
+                midDivider.anchorMax = new Vector2(0.5f, 0.5f);
             }
             
             BuildSegments();
-            
-            // Initialize lagging triangles at the current pivot position, if assigned
-            if (midDivider != null && (triangleTop != null || triangleBottom != null))
+
+            // TEMP: hide gold triangle markers entirely so the label area above the bar
+            // remains clean (no arrow under "Battle Front Influence").
+            if (triangleTop != null)
             {
-                lastPivotAnchorX = midDivider.anchorMin.x;
-                float initialPivotX = GetPivotLocalX();
-                
-                if (triangleTop != null)
-                {
-                    Vector2 topPos = triangleTop.anchoredPosition;
-                    triangleTop.anchoredPosition = new Vector2(initialPivotX, Mathf.Abs(topPos.y) > 0.001f ? topPos.y : triangleVerticalOffset);
-                }
-                
-                if (triangleBottom != null)
-                {
-                    Vector2 bottomPos = triangleBottom.anchoredPosition;
-                    float defaultY = -Mathf.Abs(triangleVerticalOffset);
-                    triangleBottom.anchoredPosition = new Vector2(initialPivotX, Mathf.Abs(bottomPos.y) > 0.001f ? bottomPos.y : defaultY);
-                }
+                triangleTop.gameObject.SetActive(false);
+            }
+            if (triangleBottom != null)
+            {
+                triangleBottom.gameObject.SetActive(false);
             }
         }
         
@@ -511,7 +494,7 @@ namespace CardGame.UI
             // We keep the original width by preserving the delta between min and max.
             float width = startMaxX - startMinX;
             midDivider.anchorMin = new Vector2(targetPivotAnchorX, 0f);
-            midDivider.anchorMax = new Vector2(targetPivotAnchorX + width, 1f);
+            midDivider.anchorMax = new Vector2(targetPivotAnchorX + width, 0.5f);
             
             // Compute the actual local X position for the triangles to move toward.
             float targetLocalX = GetPivotLocalX();
@@ -549,7 +532,7 @@ namespace CardGame.UI
                 // Move divider
                 float dividerPos = Mathf.Lerp(startDividerPos, targetDividerPos, t);
                 midDivider.anchorMin = new Vector2(dividerPos, 0f);
-                midDivider.anchorMax = new Vector2(dividerPos, 1f);
+                midDivider.anchorMax = new Vector2(dividerPos, 0.5f);
                 
                 yield return null;
             }
@@ -558,7 +541,7 @@ namespace CardGame.UI
             p1Fill.fillAmount = targetP1Ratio;
             p2Fill.fillAmount = targetP2Ratio;
             midDivider.anchorMin = new Vector2(targetDividerPos, 0f);
-            midDivider.anchorMax = new Vector2(targetDividerPos, 1f);
+            midDivider.anchorMax = new Vector2(targetDividerPos, 0.5f);
             
             // Pulse divider
             StartCoroutine(PulseDivider());

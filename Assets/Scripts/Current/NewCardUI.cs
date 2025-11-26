@@ -45,6 +45,13 @@ namespace CardGame.UI
         [SerializeField] private Image backImage;
         [SerializeField] private Sprite defaultCardBackSprite;
         
+        [Header("Border Sprites")]
+        [SerializeField] private SpriteRenderer borderOverlayRenderer;
+        [SerializeField] private Sprite p1BorderSprite;   // Fire_border for orange (player) cards
+        [SerializeField] private Sprite p2BorderSprite;   // Earth_border for green (opponent) cards
+
+        // Inspect / zoom view has been removed for now to keep interaction simple
+        
         [Header("Flip Settings")]
         [SerializeField] public bool startFaceDown = true;
         [SerializeField] public bool autoFlipOnReveal = true;
@@ -228,6 +235,76 @@ namespace CardGame.UI
             cardShadow.transform.localRotation = Quaternion.identity;
             cardShadow.sortingLayerID = cardBackground.sortingLayerID;
             cardShadow.sortingOrder = cardBackground.sortingOrder - 1;
+        }
+
+        // Inspect / zoom helpers have been removed.
+
+        /// <summary>
+        /// Ensures there is a border overlay SpriteRenderer and assigns the correct
+        /// Fire/Earth frame sprite based on which side the card belongs to.
+        /// </summary>
+        private void EnsureBorderOverlay(bool isPlayerCard)
+        {
+            // If no sprites are configured, do nothing.
+            if (p1BorderSprite == null && p2BorderSprite == null)
+            {
+                return;
+            }
+
+            // Lazily create the overlay as a SpriteRenderer, parented under the
+            // card background so it renders in the same world space but above.
+            if (borderOverlayRenderer == null)
+            {
+                if (cardBackground == null)
+                {
+                    return;
+                }
+
+                GameObject borderObj = new GameObject("BorderOverlay");
+                borderObj.transform.SetParent(cardBackground.transform, false);
+                borderObj.transform.localPosition = Vector3.zero;
+                borderObj.transform.localRotation = Quaternion.identity;
+                borderObj.transform.localScale = Vector3.one;
+
+                borderOverlayRenderer = borderObj.AddComponent<SpriteRenderer>();
+                borderOverlayRenderer.sortingLayerID = cardBackground.sortingLayerID;
+                borderOverlayRenderer.sortingOrder = cardBackground.sortingOrder + 1;
+            }
+
+            Sprite targetSprite = isPlayerCard ? p1BorderSprite : p2BorderSprite;
+            if (targetSprite != null && borderOverlayRenderer != null)
+            {
+                borderOverlayRenderer.sprite = targetSprite;
+                borderOverlayRenderer.color = Color.white;
+                borderOverlayRenderer.enabled = true;
+
+                // Auto-fit the border sprite to the underlying card background so
+                // it doesn't explode to full texture size.
+                if (cardBackground != null && cardBackground.sprite != null)
+                {
+                    Vector2 bgSize = cardBackground.sprite.bounds.size;
+                    Vector2 borderSize = targetSprite.bounds.size;
+                    if (borderSize.x > 0.0001f && borderSize.y > 0.0001f)
+                    {
+                        float scaleX = bgSize.x / borderSize.x;
+                        float scaleY = bgSize.y / borderSize.y;
+                        float uniform = Mathf.Min(scaleX, scaleY);
+                        borderOverlayRenderer.transform.localScale = new Vector3(uniform, uniform, 1f);
+                    }
+                    else
+                    {
+                        borderOverlayRenderer.transform.localScale = Vector3.one;
+                    }
+                }
+                else
+                {
+                    borderOverlayRenderer.transform.localScale = Vector3.one;
+                }
+            }
+            else if (borderOverlayRenderer != null)
+            {
+                borderOverlayRenderer.enabled = false;
+            }
         }
         
         /// <summary>
@@ -504,13 +581,13 @@ namespace CardGame.UI
             // Update visuals
             if (artwork != null && card.Data.artwork != null)
                 artwork.sprite = card.Data.artwork;
-                
+            
+            // Determine if this card belongs to the player or opponent
+            bool isPlayerCard = IsPlayerCard();
+
             // Set card background color based on ownership
             if (cardBackground != null)
             {
-                // Determine if this card belongs to the player or opponent
-                bool isPlayerCard = IsPlayerCard();
-                
                 // Set background color: use card's original color for player cards (orange tint), green for opponent cards
                 // Only apply if card is face up (not captured) - captured cards get their color from CardFlipAnimation
                 if (flipAnimation == null || flipAnimation.isFlipped)
@@ -544,6 +621,9 @@ namespace CardGame.UI
                 
                 SetupCardShadow();
             }
+
+            // Ensure the correct Fire/Earth border frame is applied on top.
+            EnsureBorderOverlay(isPlayerCard);
         }
         
         private void Start()
@@ -687,7 +767,7 @@ namespace CardGame.UI
         
         private void Update()
         {
-            
+            // No per-frame behaviour required currently.
         }
         
         
@@ -747,68 +827,38 @@ namespace CardGame.UI
                 backSprite = runtimeDefaultBackSprite;
             }
             
-            // Assign to SpriteRenderer or Image (whichever exists)
-            if (backSpriteRenderer != null && backSprite != null)
+            // Ensure there is a UI Image under the back container to receive the
+            // back sprite. This keeps the card back fully visible in the UI
+            // regardless of how the front is rendered.
+            if (backContainer != null && backSprite != null)
             {
-                backSpriteRenderer.sprite = backSprite;
-            }
-            else if (backImage != null && backSprite != null)
-            {
-                backImage.sprite = backSprite;
-            }
-            else if (backSprite == null)
-            {
-                // No sprite assigned - ensure we have a default visual
-                // The back container should already have a visual created in AutoSetupContainers
-                // If not, create one now
-                if (backSpriteRenderer == null && backImage == null && backContainer != null)
+                if (backImage == null)
                 {
-                    // Create default visual
-                    GameObject cardBackVisual = new GameObject("CardBackVisual");
-                    cardBackVisual.transform.SetParent(backContainer.transform);
-                    cardBackVisual.transform.localPosition = Vector3.zero;
-                    cardBackVisual.transform.localRotation = Quaternion.identity;
-                    cardBackVisual.transform.localScale = Vector3.one;
-                    
-                    RectTransform rectTransform = GetComponent<RectTransform>();
-                    if (rectTransform != null)
-                    {
-                        // UI card - use Image
-                        backImage = cardBackVisual.AddComponent<UnityEngine.UI.Image>();
-                        if (backImage != null)
-                        {
-                            backImage.color = new Color(0.3f, 0.3f, 0.3f, 1f);
-                            
-                            // Image component needs a sprite to render - create a simple white texture
-                            Texture2D whiteTexture = new Texture2D(1, 1);
-                            whiteTexture.SetPixel(0, 0, Color.white);
-                            whiteTexture.Apply();
-                            backImage.sprite = Sprite.Create(whiteTexture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f));
-                            
-                            RectTransform backRect = cardBackVisual.GetComponent<RectTransform>();
-                            if (backRect != null)
-                            {
-                                backRect.anchorMin = Vector2.zero;
-                                backRect.anchorMax = Vector2.one;
-                                backRect.sizeDelta = Vector2.zero;
-                                backRect.anchoredPosition = Vector2.zero;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // 2D card - use SpriteRenderer
-                        backSpriteRenderer = cardBackVisual.AddComponent<SpriteRenderer>();
-                        if (backSpriteRenderer != null)
-                        {
-                            backSpriteRenderer.color = new Color(0.3f, 0.3f, 0.3f, 1f);
-                        }
-                    }
+                    // Try to reuse an existing Image first.
+                    backImage = backContainer.GetComponentInChildren<Image>(true);
                 }
-                // Silently use default colored back - no warning needed as this is expected behavior
-                // Debug.LogWarning("NewCardUI: No card back sprite assigned (neither in card data nor default). Using default colored back.", this);
+
+                if (backImage == null)
+                {
+                    GameObject cardBackVisual = new GameObject("CardBackImage");
+                    cardBackVisual.transform.SetParent(backContainer.transform, false);
+
+                    RectTransform rect = cardBackVisual.AddComponent<RectTransform>();
+                    rect.anchorMin = Vector2.zero;
+                    rect.anchorMax = Vector2.one;
+                    rect.sizeDelta = Vector2.zero;
+                    rect.anchoredPosition = Vector2.zero;
+
+                    backImage = cardBackVisual.AddComponent<Image>();
+                }
+
+                backImage.sprite = backSprite;
+                backImage.color = Color.white;
+                backImage.enabled = true;
             }
         }
+
+        // ToggleInspect and related overlay methods removed.
         
         private IEnumerator DelayedFlip()
         {
@@ -821,6 +871,7 @@ namespace CardGame.UI
         
         public void OnPointerClick(PointerEventData eventData)
         {
+            // Simple behaviour: clicking a card just flips it (if enabled).
             if (allowClickToFlip && flipAnimation != null && !flipAnimation.isAnimating)
             {
                 flipAnimation.FlipToggle();

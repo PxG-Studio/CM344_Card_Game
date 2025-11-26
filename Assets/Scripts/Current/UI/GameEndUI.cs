@@ -135,18 +135,105 @@ namespace CardGame.UI
                 panelRect.anchorMin = new Vector2(0.15f, 0.1f);
                 panelRect.anchorMax = new Vector2(0.85f, 0.9f);
                 panelRect.pivot = new Vector2(0.5f, 0.5f);
-                // Slight nudge to the left (~half a "grid unit" in your layout).
-                panelRect.anchoredPosition = new Vector2(-40f, 0f);
+                // Slight nudge to the right to visually center the inner dark box.
+                panelRect.anchoredPosition = new Vector2(20f, 0f);
                 
-                // Optional: make sure a VerticalLayout/ContentSizeFitter can't
-                // push children outside the panel by forcing them to stay inside
-                // padding. If a Mask exists on the panel, this will also clip.
+                // Ensure all child content, especially the buttons, is visually
+                // contained within the dark square and neatly laid out.
+                if (winnerText != null)
+                {
+                    RectTransform wRect = winnerText.GetComponent<RectTransform>();
+                    if (wRect != null)
+                    {
+                        wRect.anchorMin = new Vector2(0.1f, 0.78f);
+                        wRect.anchorMax = new Vector2(0.9f, 0.88f);
+                        wRect.pivot = new Vector2(0.5f, 0.5f);
+                        wRect.anchoredPosition = Vector2.zero;
+                    }
+                }
+                
+                if (contextualMessageText != null)
+                {
+                    RectTransform cRect = contextualMessageText.GetComponent<RectTransform>();
+                    if (cRect != null)
+                    {
+                        cRect.anchorMin = new Vector2(0.1f, 0.66f);
+                        cRect.anchorMax = new Vector2(0.9f, 0.76f);
+                        cRect.pivot = new Vector2(0.5f, 0.5f);
+                        cRect.anchoredPosition = Vector2.zero;
+                    }
+                }
+                
+                if (finalScoreText != null)
+                {
+                    RectTransform fRect = finalScoreText.GetComponent<RectTransform>();
+                    if (fRect != null)
+                    {
+                        fRect.anchorMin = new Vector2(0.1f, 0.52f);
+                        fRect.anchorMax = new Vector2(0.9f, 0.64f);
+                        fRect.pivot = new Vector2(0.5f, 0.5f);
+                        fRect.anchoredPosition = Vector2.zero;
+                    }
+                }
+                
+                if (statisticsText != null)
+                {
+                    RectTransform sRect = statisticsText.GetComponent<RectTransform>();
+                    if (sRect != null)
+                    {
+                        sRect.anchorMin = new Vector2(0.1f, 0.34f);
+                        sRect.anchorMax = new Vector2(0.9f, 0.46f);
+                        sRect.pivot = new Vector2(0.5f, 0.5f);
+                        sRect.anchoredPosition = Vector2.zero;
+                    }
+                }
+                
+                if (winLossRecordText != null)
+                {
+                    RectTransform wlRect = winLossRecordText.GetComponent<RectTransform>();
+                    if (wlRect != null)
+                    {
+                        wlRect.anchorMin = new Vector2(0.1f, 0.24f);
+                        wlRect.anchorMax = new Vector2(0.9f, 0.30f);
+                        wlRect.pivot = new Vector2(0.5f, 0.5f);
+                        // Slight nudge left (~1/2 unit square) so the record text
+                        // visually centers under the stats block.
+                        wlRect.anchoredPosition = new Vector2(-20f, 0f);
+                    }
+                }
+                
+                if (restartButton != null)
+                {
+                    RectTransform rRect = restartButton.GetComponent<RectTransform>();
+                    if (rRect != null)
+                    {
+                        rRect.anchorMin = new Vector2(0.15f, 0.18f);
+                        rRect.anchorMax = new Vector2(0.85f, 0.30f);
+                        rRect.pivot = new Vector2(0.5f, 0.5f);
+                        rRect.anchoredPosition = Vector2.zero;
+                    }
+                }
+                
+                if (quitButton != null)
+                {
+                    RectTransform qRect = quitButton.GetComponent<RectTransform>();
+                    if (qRect != null)
+                    {
+                        qRect.anchorMin = new Vector2(0.15f, 0.05f);
+                        qRect.anchorMax = new Vector2(0.85f, 0.17f);
+                        qRect.pivot = new Vector2(0.5f, 0.5f);
+                        qRect.anchoredPosition = Vector2.zero;
+                    }
+                }
+                
+                // Make sure a Mask exists so any stray content is clipped to the
+                // panel's rectangle.
                 Mask panelMask = endGamePanel.GetComponent<Mask>();
                 if (panelMask == null)
                 {
                     panelMask = endGamePanel.AddComponent<Mask>();
-                    panelMask.showMaskGraphic = true;
                 }
+                panelMask.showMaskGraphic = true;
             }
             
             // Get final scores

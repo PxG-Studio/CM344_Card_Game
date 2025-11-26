@@ -345,6 +345,9 @@ MonoBehaviour:
   backSpriteRenderer: {fileID: 0}
   backImage: {fileID: 3748502334135818584}
   defaultCardBackSprite: {fileID: 21300000, guid: 2110c87c8d9c74cf99a29407cce375ef, type: 3}
+  borderOverlayImage: {fileID: 0}
+  p1BorderSprite: {fileID: 21300000, guid: daa928dab47756c408277194572b3fdc, type: 3}
+  p2BorderSprite: {fileID: 21300000, guid: 68b7b68c01defbb4b8453d124d1b6742, type: 3}
   startFaceDown: 1
   autoFlipOnReveal: 1
   revealDelay: 0.2
