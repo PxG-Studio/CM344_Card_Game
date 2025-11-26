@@ -190,7 +190,8 @@ namespace CardGame.UI
             }
             
             int remaining = totalBoardTiles - placedCards;
-            tilesRemainingLabel.text = $"Open Fields: {remaining}";
+            // Display just the remaining count without the 'Open Fields' prefix.
+            tilesRemainingLabel.text = remaining.ToString();
         }
         
         /// <summary>

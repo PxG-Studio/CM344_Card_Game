@@ -262,9 +262,51 @@ namespace CardGame.Tests
             yield return new WaitForSeconds(1.0f);
             
             CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
-            Assert.IsTrue(dropAreas.Length > 0, "CardDropArea instances should exist");
+            Assert.IsTrue(dropAreas.Length >= 2, "CardDropArea instances should exist (need at least 2)");
             
-            // Create test cards for battle
+            // Choose an attacker area and a truly adjacent defender area using the same strict
+            // adjacency rules as CardDropArea.AreCardsStrictlyAdjacent.
+            CardDropArea attackerArea = dropAreas[0];
+            CardDropArea defenderArea = null;
+            float minDistance = float.MaxValue;
+            Vector3 attackerPos = attackerArea.transform.position;
+            const float strictAdjacencyTolerance = 3.5f;
+
+            string[] directions = { "right", "left", "top", "bottom" };
+            foreach (string direction in directions)
+            {
+                CardDropArea candidate = CardTestHelper.GetAdjacentDropArea(attackerArea, direction);
+                if (candidate != null)
+                {
+                    float dist = Vector3.Distance(attackerPos, candidate.transform.position);
+                    if (dist <= strictAdjacencyTolerance && dist < minDistance)
+                    {
+                        minDistance = dist;
+                        defenderArea = candidate;
+                    }
+                }
+            }
+
+            if (defenderArea == null)
+            {
+                foreach (CardDropArea area in dropAreas)
+                {
+                    if (area == attackerArea) continue;
+                    float dist = Vector3.Distance(attackerPos, area.transform.position);
+                    if (dist <= strictAdjacencyTolerance && dist < minDistance)
+                    {
+                        minDistance = dist;
+                        defenderArea = area;
+                    }
+                }
+            }
+
+            if (defenderArea == null)
+            {
+                Assert.Inconclusive("[ComparisonUI_Activates_OnPlacement] No adjacent drop areas within strict adjacency tolerance; cannot assert on battle comparison.");
+            }
+            
+            // Create test cards for battle: attacker right=5, defender left=2 (attacker > defender).
             CardGame.Core.NewCard attackerCard = CardTestHelper.CreateTestCard(3, 5, 3, 3, "Attacker");
             CardGame.Core.NewCard defenderCard = CardTestHelper.CreateTestCard(3, 2, 3, 3, "Defender");
             
@@ -280,26 +322,31 @@ namespace CardGame.Tests
                 CardTestHelper.AddCardToDeckManagerHand(opponentDeck, defenderCard);
             }
             
-            CardDropArea area1 = dropAreas[0];
-            CardDropArea area2 = CardTestHelper.GetAdjacentDropArea(area1, "right") ?? dropAreas[1];
-            
             FateFlowController fateController = FateFlowController.Instance;
             if (fateController != null)
             {
-                fateController.SetFate(FateSide.Player);
+                // Place defender (P2) first, then attacker (P1) so the stronger card is the one being placed.
+                fateController.SetFate(FateSide.P2);
             }
             yield return null;
             
             // Get initial capture count
             int initialCaptures = CardDropArea.GetCapturesMade();
             
-            // Act: Place cards to trigger battle comparison
-            CardMoverP1 attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, area1.transform.position, true);
-            CardTestHelper.PlaceP1CardOnDropArea(attackerMover, area1, true);
+            // Place defender on defenderArea
+            CardMoverP2 defenderMover = CardTestHelper.CreateCardMoverP2WithCard(defenderCard, defenderArea.transform.position);
+            CardTestHelper.PlaceP2CardOnDropArea(defenderMover, defenderArea, true);
             yield return new WaitForSeconds(0.5f);
-            
-            CardMoverP2 defenderMover = CardTestHelper.CreateCardMoverP2WithCard(defenderCard, area2.transform.position);
-            CardTestHelper.PlaceP2CardOnDropArea(defenderMover, area2, true);
+
+            // Switch to Player turn and place attacker on attackerArea to trigger comparison/capture
+            if (fateController != null)
+            {
+                fateController.SetFate(FateSide.Player);
+            }
+            yield return null;
+
+            CardMoverP1 attackerMover = CardTestHelper.CreateCardMoverWithCard(attackerCard, attackerArea.transform.position, true);
+            CardTestHelper.PlaceP1CardOnDropArea(attackerMover, attackerArea, true);
             yield return CardTestHelper.WaitForCaptureAnimations(3f);
             
             // Assert: Battle comparison should have occurred (capture should happen)

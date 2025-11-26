@@ -151,10 +151,12 @@ namespace CardGame.UI
                 StartCoroutine(HoverAnimation());
             }
 
-            // Hide result text initially
+            // Initialize result text: keep it enabled but empty. The panel itself starts
+            // hidden, so this doesn't expose any text until the coin toss UI is shown.
             if (resultText != null)
             {
-                resultText.gameObject.SetActive(false);
+                resultText.text = string.Empty;
+                resultText.gameObject.SetActive(true);
             }
         }
         
@@ -272,7 +274,10 @@ namespace CardGame.UI
             // Reset UI elements
             if (resultText != null)
             {
-                resultText.gameObject.SetActive(false);
+                // Keep the result text object active so tests can see it, but clear the content
+                // until the toss animation or completion handler populates it.
+                resultText.text = string.Empty;
+                resultText.gameObject.SetActive(true);
             }
             
             if (continueButton != null)

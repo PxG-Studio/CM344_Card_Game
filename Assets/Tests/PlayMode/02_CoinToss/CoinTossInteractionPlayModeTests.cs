@@ -11,7 +11,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
 
-namespace Tests.PlayMode.CoinToss
+namespace CardGame.Tests
 {
     public class CoinTossInteractionPlayModeTests
     {

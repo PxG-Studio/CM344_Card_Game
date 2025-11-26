@@ -20,7 +20,7 @@ namespace CardGame.UI
         
         [Header("Text Settings")]
         [SerializeField] private string titleText = "Battle Front Influence";
-        [SerializeField] private string remainingFormat = "Open Fields: {0}";
+        [SerializeField] private string remainingFormat = "{0}";
         
         [Header("Animation Settings")]
         public float barLerpSpeed = 0.25f;

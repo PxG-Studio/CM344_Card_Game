@@ -1619,7 +1619,7 @@ namespace CardGame.UI
             counterRect.anchoredPosition = new Vector2(0f, -28f);
             
             TextMeshProUGUI counterLabelText = counterLabelObj.AddComponent<TextMeshProUGUI>();
-            counterLabelText.text = "Open Fields: 16";
+            counterLabelText.text = "16";
             counterLabelText.fontSize = 24;
             counterLabelText.fontStyle = TMPro.FontStyles.Bold;
             counterLabelText.alignment = TMPro.TextAlignmentOptions.Center;
