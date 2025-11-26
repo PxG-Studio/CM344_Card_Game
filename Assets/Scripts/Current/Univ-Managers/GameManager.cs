@@ -423,6 +423,13 @@ namespace CardGame.Managers
             {
                 ScoreManager.Instance.ResetScores();
             }
+
+            // Reset Battle Front Influence bar UI
+            CardGame.UI.CardFrontlineUI frontlineUI = FindObjectOfType<CardGame.UI.CardFrontlineUI>();
+            if (frontlineUI != null)
+            {
+                frontlineUI.ResetFrontline();
+            }
             
             // Reset GameEndManager
             if (GameEndManager.Instance != null)

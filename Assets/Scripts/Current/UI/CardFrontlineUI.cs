@@ -101,6 +101,40 @@ namespace CardGame.UI
                 triangleBottom.gameObject.SetActive(false);
             }
         }
+
+        /// <summary>
+        /// Resets the frontline UI to its initial empty state (used on rematch).
+        /// </summary>
+        public void ResetFrontline()
+        {
+            hasFrontlineHistory = false;
+            hasAnyControl = false;
+            lastP1Control = 0;
+            lastP2Control = 0;
+            lastRemainingFields = -1;
+
+            // Clear segments to empty colour.
+            if (segments != null)
+            {
+                foreach (var seg in segments)
+                {
+                    if (seg != null)
+                    {
+                        seg.color = emptySegmentColor;
+                    }
+                }
+            }
+
+            // Reset divider to centre.
+            if (midDivider != null)
+            {
+                midDivider.anchorMin = new Vector2(0.5f, 0f);
+                midDivider.anchorMax = new Vector2(0.5f, 0.5f);
+            }
+
+            // Reset remaining fields display back to full board.
+            UpdateFrontline(0, 0, 16);
+        }
         
         /// <summary>
         /// Called when any tile/card is placed or captured.
