@@ -13,7 +13,6 @@ namespace CardGame.UI
     /// Handles scale punch, upward float, and fade-out animation using DOTween.
     /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
-    [RequireComponent(typeof(TextMeshProUGUI))]
     public class DeltaMarkerPopup : MonoBehaviour
     {
         [Header("Components")]
