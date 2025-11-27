@@ -41,7 +41,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     [SerializeField] private Vector3 cardScaleOnBoard = Vector3.one; // Leave at (1,1,1) to auto-match drop area size
     [SerializeField, Range(0.5f, 1.2f)] private float cardScaleFillPercent = 0.9f;
     [SerializeField] private SpriteRenderer tileSpriteRenderer;
-    [SerializeField] private float adjacentCardDistance = 3f; // Distance to consider cards adjacent (increased from 2f)
+    // [SerializeField] private float adjacentCardDistance = 3f; // Distance to consider cards adjacent (increased from 2f) - Currently unused, kept for future use
     [SerializeField] private bool enableCardBattles = true; // Enable stat comparison and card flipping
     [SerializeField] private bool debugBattles = true; // Log battle detection for debugging
     
@@ -63,11 +63,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     /// </summary>
     public GameObject GetOccupyingCard() => occupyingCard;
     
-    // Track cards played this turn (cannot be captured during same turn).
-    // Static so that ALL CardDropArea instances share the same protection set;
-    // otherwise a flip triggered from a neighbouring tile would not see the
-    // freshly played card in its local HashSet.
-    private static HashSet<GameObject> cardsPlayedThisTurn = new HashSet<GameObject>();
+    // Track cards played this turn (cannot be captured during same turn)
+    private HashSet<GameObject> cardsPlayedThisTurn = new HashSet<GameObject>();
     
     // Track cards currently being processed in chain captures (to prevent infinite loops)
     private HashSet<GameObject> cardsInCurrentChain = new HashSet<GameObject>();
@@ -234,10 +231,19 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 Debug.LogWarning("CardDropArea: GameEndManager not found! Game end detection will not work.");
             }
         }
+        
+        if (FateFlowController.Instance != null)
+        {
+            FateFlowController.Instance.OnFateChanged += HandleFateWindowShift;
+        }
     }
     
     private void OnDestroy()
     {
+        if (FateFlowController.Instance != null)
+        {
+            FateFlowController.Instance.OnFateChanged -= HandleFateWindowShift;
+        }
     }
     
     /// <summary>
@@ -296,17 +302,35 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         }
     }
     
+    // [CardFront] Static tracking to prevent duplicate logs when multiple CardDropArea instances exist
+    private static FateSide lastClearedFate = (FateSide)(-1); // Invalid initial value
+    
+    /// <summary>
+    /// Clears the tracking of cards played this turn
+    /// </summary>
+    private void ClearTurnTracking(FateSide currentFate)
+    {
+        cardsPlayedThisTurn.Clear();
+        
+        // [CardFront] Only log once per fate change, not once per CardDropArea instance
+        if (debugBattles && lastClearedFate != currentFate)
+        {
+            lastClearedFate = currentFate;
+            Debug.Log($"[CardDropArea] Turn tracking cleared for {currentFate} - new cards can now be captured");
+        }
+    }
+    
+    private void HandleFateWindowShift(FateSide side)
+    {
+        ClearTurnTracking(side);
+    }
+    
     public void OnCardDrop(CardMoverP1 cardMover)
     {
         if (cardMover == null)
         {
             return;
         }
-
-        // Start of a new placement: clear last turn's protection so previously
-        // played cards can now be captured, but the card we are about to add
-        // this call will remain protected through its own battle/ripple.
-        cardsPlayedThisTurn.Clear();
 
         if (!CanCardAct(cardMover.OwnerSide))
         {
@@ -382,16 +406,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 cardsPlayedThisTurn.Add(cardMover.gameObject);
                 occupyingCard = cardMover.gameObject;
                 
-                // Show alert marker for newly placed card
-                DeltaMarkerSystem.ShowAlert(cardMover.transform, "!");
-                
-                // Draw a card for the placing player after successful placement
-                if (deckManagerP1 != null && deckManagerP1.DrawPileCount > 0)
-                {
-                    deckManagerP1.DrawCard();
-                    Debug.Log($"[CardDropArea] Drew card for P1 after placing {card.Data.cardName}");
-                }
-                
                 CheckBoardOccupancy();
                 
                 // [CardFront] Check if game should end (all cards played - both players have no cards left)
@@ -405,14 +419,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 {
                     CheckCardBattlesP1(cardMover, card);
                 }
-
-                // Update scoring and frontline UI after any successful placement so
-                // Field Control and the influence bar reflect current tiles.
-                if (scoreManager != null)
-                {
-                    scoreManager.RecalculateScores();
-                }
-                UpdateFrontlineUI();
 
                 GameManager.Instance?.NotifyCardPlaced(this, card);
                 FateFlowController.Instance?.AdvanceFateFlow();
@@ -520,23 +526,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 continue;
             }
             
-            // Primary check: placed P1 card attacks other card
-            FlipTarget target = CheckBattleBetweenCardsForRipple(
-                placedPosition, placedCard,
-                otherCardMover.transform.position, otherCardMover.Card,
-                otherCardMover.gameObject, placedCardMover.gameObject);
-            
-            // Secondary symmetric check: allow existing card to capture the newly placed card
-            // when the existing card's stat is higher. This ensures that whichever side
-            // actually has the higher stat can win the battle, regardless of play order.
-            if (target == null)
-            {
-                target = CheckBattleBetweenCardsForRipple(
-                    otherCardMover.transform.position, otherCardMover.Card,
-                    placedPosition, placedCard,
-                    placedCardMover.gameObject, otherCardMover.gameObject);
-            }
-            
+            FlipTarget target = CheckBattleBetweenCardsForRipple(placedPosition, placedCard, otherCardMover.transform.position, otherCardMover.Card, otherCardMover.gameObject, placedCardMover.gameObject);
             if (target != null)
             {
                 flipTargets.Add(target);
@@ -563,22 +553,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 continue;
             }
             
-            // Primary check: placed P1 card attacks P2 card
-            FlipTarget target = CheckBattleBetweenCardsForRipple(
-                placedPosition, placedCard,
-                otherCardMoverP2.transform.position, otherCardMoverP2.Card,
-                otherCardMoverP2.gameObject, placedCardMover.gameObject);
-            
-            // Secondary symmetric check: allow existing P2 card to capture the newly placed P1 card
-            // when P2's stat is higher.
-            if (target == null)
-            {
-                target = CheckBattleBetweenCardsForRipple(
-                    otherCardMoverP2.transform.position, otherCardMoverP2.Card,
-                    placedPosition, placedCard,
-                    placedCardMover.gameObject, otherCardMoverP2.gameObject);
-            }
-            
+            FlipTarget target = CheckBattleBetweenCardsForRipple(placedPosition, placedCard, otherCardMoverP2.transform.position, otherCardMoverP2.Card, otherCardMoverP2.gameObject, placedCardMover.gameObject);
             if (target != null)
             {
                 flipTargets.Add(target);
@@ -654,144 +629,39 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     }
     
     /// <summary>
-    /// Determines if a card GameObject currently belongs to P1 (vs P2).
-    /// - For cards that have been captured (CardFlipAnimation.WasCaptured == true), we trust the
-    ///   capture border color to indicate current ownership.
-    /// - For uncaptured cards, we trust the mover component type (CardMoverP1 vs CardMoverP2)
-    ///   regardless of initial border color, so test-created cards without special skins behave correctly.
+    /// Determines if a card GameObject belongs to P1 (vs P2)
+    /// Checks both component type (CardMover (P1) vs CardMoverP2 (P2)) and border color (for captured cards)
     /// </summary>
     private bool IsPlayerCard(GameObject cardObject)
     {
         if (cardObject == null) return true; // Default to player
-
-        // 1) If this card has already been captured, use capture color to determine current owner.
-        //    This is what ScoreManager and chain capture logic conceptually care about.
-        CardFlipAnimation flipAnim = cardObject.GetComponentInChildren<CardFlipAnimation>();
-        if (flipAnim == null)
+        
+        // First, check border color to determine ownership (for captured cards)
+        // This takes priority because a captured card belongs to whoever captured it
+        NewCardUI cardUI = cardObject.GetComponent<NewCardUI>();
+        if (cardUI == null)
         {
-            flipAnim = cardObject.GetComponent<CardFlipAnimation>();
+            cardUI = cardObject.GetComponentInChildren<NewCardUI>();
         }
-
-        if (flipAnim != null && flipAnim.WasCaptured)
+        if (cardUI == null)
         {
-            NewCardUI capturedCardUI = cardObject.GetComponent<NewCardUI>();
-            if (capturedCardUI == null)
-            {
-                capturedCardUI = cardObject.GetComponentInChildren<NewCardUI>() ??
-                                 cardObject.GetComponentInParent<NewCardUI>();
-            }
-
-            if (capturedCardUI != null)
-            {
-                Color playerColor = GetPlayerCaptureColor();
-                Color p2Color = GetP2CaptureColor();
-                float colorTolerance = 0.1f;
-
-                // First preference: use explicit capture color remembered on CardFlipAnimation.
-                if (flipAnim.LastCaptureColor != Color.clear)
-                {
-                    Color c = flipAnim.LastCaptureColor;
-                    if (debugBattles)
-                    {
-                        Debug.Log(
-                            $"[IsPlayerCardDebug] Captured card '{capturedCardUI.Card?.Data?.cardName ?? cardObject.name}' " +
-                            $"WasCaptured={flipAnim.WasCaptured}, LastCaptureColor=({c.r:F2},{c.g:F2},{c.b:F2}), " +
-                            $"playerColor=({playerColor.r:F2},{playerColor.g:F2},{playerColor.b:F2}), " +
-                            $"p2Color=({p2Color.r:F2},{p2Color.g:F2},{p2Color.b:F2})");
-                    }
-                    if (Mathf.Abs(c.r - playerColor.r) < colorTolerance &&
-                        Mathf.Abs(c.g - playerColor.g) < colorTolerance &&
-                        Mathf.Abs(c.b - playerColor.b) < colorTolerance)
-                    {
-                        return true;
-                    }
-                    if (Mathf.Abs(c.r - p2Color.r) < colorTolerance &&
-                        Mathf.Abs(c.g - p2Color.g) < colorTolerance &&
-                        Mathf.Abs(c.b - p2Color.b) < colorTolerance)
-                    {
-                        return false;
-                    }
-                }
-
-                // Fallback: read the background/border color from NewCardUI if available.
-                var cardBackgroundField = typeof(NewCardUI).GetField("cardBackground",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (cardBackgroundField != null)
-                {
-                    var cardBackground = cardBackgroundField.GetValue(capturedCardUI);
-                    if (cardBackground != null)
-                    {
-                        Color borderColor = Color.white;
-                        SpriteRenderer bgSR = cardBackground as SpriteRenderer;
-                        if (bgSR != null)
-                        {
-                            borderColor = bgSR.color;
-                        }
-                        else
-                        {
-                            UnityEngine.UI.Image bgImg = cardBackground as UnityEngine.UI.Image;
-                            if (bgImg != null)
-                            {
-                                borderColor = bgImg.color;
-                            }
-                        }
-                    // Player's captured card (orange)
-                    if (Mathf.Abs(borderColor.r - playerColor.r) < colorTolerance &&
-                        Mathf.Abs(borderColor.g - playerColor.g) < colorTolerance &&
-                        Mathf.Abs(borderColor.b - playerColor.b) < colorTolerance)
-                    {
-                        return true;
-                    }
-
-                    // P2's captured card (green)
-                    if (Mathf.Abs(borderColor.r - p2Color.r) < colorTolerance &&
-                        Mathf.Abs(borderColor.g - p2Color.g) < colorTolerance &&
-                        Mathf.Abs(borderColor.b - p2Color.b) < colorTolerance)
-                    {
-                        return false;
-                    }
-
-                    if (debugBattles)
-                    {
-                        Debug.Log(
-                            $"[IsPlayerCardDebug] Fallback border color on '{capturedCardUI.Card?.Data?.cardName ?? cardObject.name}' " +
-                            $"borderColor=({borderColor.r:F2},{borderColor.g:F2},{borderColor.b:F2}) " +
-                            $"=> no capture-color match; defaulting to mover-based ownership.");
-                    }
-                    }
-                }
-            }
+            cardUI = cardObject.GetComponentInParent<NewCardUI>();
         }
-
-        // 2) For cards that have NOT been captured yet (or where we couldn't read capture color),
-        //    trust the mover component type as the source of truth. This makes tests that spawn
-        //    bare CardMoverP1/CardMoverP2 objects without special skins behave correctly.
-        CardMoverP1 cardMover = cardObject.GetComponent<CardMoverP1>() ??
-                                 cardObject.GetComponentInChildren<CardMoverP1>() ??
-                                 cardObject.GetComponentInParent<CardMoverP1>();
-        if (cardMover != null) return true;
-
-        CardMoverP2 cardMoverP2 = cardObject.GetComponent<CardMoverP2>() ??
-                                  cardObject.GetComponentInChildren<CardMoverP2>() ??
-                                  cardObject.GetComponentInParent<CardMoverP2>();
-        if (cardMoverP2 != null) return false;
-
-        // 3) Fallback: if we truly have no mover information, fall back to capture colors
-        //    even if the card hasn't been captured, to keep behaviour stable for any
-        //    unusual UI-only representations.
-        NewCardUI fallbackCardUI = cardObject.GetComponent<NewCardUI>() ??
-                                   cardObject.GetComponentInChildren<NewCardUI>() ??
-                                   cardObject.GetComponentInParent<NewCardUI>();
-        if (fallbackCardUI != null)
+        
+        if (cardUI != null)
         {
+            // Check the card's background color to determine ownership
+            // Use reflection to access private cardBackground field
             var cardBackgroundField = typeof(NewCardUI).GetField("cardBackground",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (cardBackgroundField != null)
             {
-                var cardBackground = cardBackgroundField.GetValue(fallbackCardUI);
+                var cardBackground = cardBackgroundField.GetValue(cardUI);
                 if (cardBackground != null)
                 {
                     Color borderColor = Color.white;
+                    
+                    // Get color from SpriteRenderer or Image
                     SpriteRenderer bgSR = cardBackground as SpriteRenderer;
                     if (bgSR != null)
                     {
@@ -805,28 +675,52 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                             borderColor = bgImg.color;
                         }
                     }
-
+                    
+                    // Compare with capture colors to determine ownership
                     Color playerColor = GetPlayerCaptureColor();
                     Color p2Color = GetP2CaptureColor();
+                    
+                    // Check if border color matches player's capture color (orange)
+                    // Use a small tolerance for color comparison
                     float colorTolerance = 0.1f;
-
                     if (Mathf.Abs(borderColor.r - playerColor.r) < colorTolerance &&
                         Mathf.Abs(borderColor.g - playerColor.g) < colorTolerance &&
                         Mathf.Abs(borderColor.b - playerColor.b) < colorTolerance)
                     {
-                        return true;
+                        return true; // Player's captured card (orange)
                     }
-
+                    
+                    // Check if border color matches P2's capture color (green)
                     if (Mathf.Abs(borderColor.r - p2Color.r) < colorTolerance &&
                         Mathf.Abs(borderColor.g - p2Color.g) < colorTolerance &&
                         Mathf.Abs(borderColor.b - p2Color.b) < colorTolerance)
                     {
-                        return false;
+                        return false; // P2's captured card (green)
                     }
                 }
             }
         }
-
+        
+        // Fallback: Check if it has CardMover (P1) or CardMoverP2 (P2)
+        CardMoverP1 cardMover = cardObject.GetComponent<CardMoverP1>();
+        if (cardMover != null) return true;
+        
+        CardMoverP2 cardMoverP2 = cardObject.GetComponent<CardMoverP2>();
+        if (cardMoverP2 != null) return false;
+        
+        // Check children/parents
+        cardMover = cardObject.GetComponentInChildren<CardMoverP1>();
+        if (cardMover != null) return true;
+        
+        cardMoverP2 = cardObject.GetComponentInChildren<CardMoverP2>();
+        if (cardMoverP2 != null) return false;
+        
+        cardMover = cardObject.GetComponentInParent<CardMoverP1>();
+        if (cardMover != null) return true;
+        
+        cardMoverP2 = cardObject.GetComponentInParent<CardMoverP2>();
+        if (cardMoverP2 != null) return false;
+        
         // Default: assume player card
         return true;
     }
@@ -870,11 +764,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
             return;
         }
-
-        // New placement for P2: clear previous protection so older cards can
-        // now be captured. The freshly added card for this call will be added
-        // back into cardsPlayedThisTurn and protected for its own battle.
-        cardsPlayedThisTurn.Clear();
 
         if (!CanCardAct(cardMoverP2.OwnerSide))
         {
@@ -950,16 +839,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 cardsPlayedThisTurn.Add(cardMoverP2.gameObject);
                 occupyingCard = cardMoverP2.gameObject;
                 
-                // Show alert marker for new opponent card
-                DeltaMarkerSystem.ShowAlert(cardMoverP2.transform, "!");
-                
-                // Draw a card for the placing player after successful placement
-                if (deckManagerP2 != null && deckManagerP2.DrawPileCount > 0)
-                {
-                    deckManagerP2.DrawCard();
-                    Debug.Log($"[CardDropArea] Drew card for P2 after placing {card.Data.cardName}");
-                }
-                
                 CheckBoardOccupancy();
                 
                 // [CardFront] Check if game should end (all cards played - both players have no cards left)
@@ -973,14 +852,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 {
                     CheckCardBattlesP2(cardMoverP2, card);
                 }
-
-                // Update scoring and frontline UI after any successful placement so
-                // Field Control and the influence bar reflect current tiles.
-                if (scoreManager != null)
-                {
-                    scoreManager.RecalculateScores();
-                }
-                UpdateFrontlineUI();
 
                 GameManager.Instance?.NotifyCardPlaced(this, card);
                 FateFlowController.Instance?.AdvanceFateFlow();
@@ -1086,22 +957,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 continue;
             }
             
-            // Primary check: placed P2 card attacks P1 card
-            FlipTarget target = CheckBattleBetweenCardsForRipple(
-                placedPosition, placedCard,
-                otherCardMover.transform.position, otherCardMover.Card,
-                otherCardMover.gameObject, placedCardMover.gameObject);
-            
-            // Secondary symmetric check: allow existing P1 card to capture the newly placed P2 card
-            // when P1's stat is higher.
-            if (target == null)
-            {
-                target = CheckBattleBetweenCardsForRipple(
-                    otherCardMover.transform.position, otherCardMover.Card,
-                    placedPosition, placedCard,
-                    placedCardMover.gameObject, otherCardMover.gameObject);
-            }
-            
+            FlipTarget target = CheckBattleBetweenCardsForRipple(placedPosition, placedCard, otherCardMover.transform.position, otherCardMover.Card, otherCardMover.gameObject, placedCardMover.gameObject);
             if (target != null)
             {
                 flipTargets.Add(target);
@@ -1130,22 +986,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 continue;
             }
             
-            // Primary check: placed P2 card attacks other P2 card
-            FlipTarget target = CheckBattleBetweenCardsForRipple(
-                placedPosition, placedCard,
-                otherCardMoverP2.transform.position, otherCardMoverP2.Card,
-                otherCardMoverP2.gameObject, placedCardMover.gameObject);
-            
-            // Secondary symmetric check: allow existing P2 card to capture the newly placed P2 card
-            // when its stat is higher. (Same-player battles are filtered out inside the battle method.)
-            if (target == null)
-            {
-                target = CheckBattleBetweenCardsForRipple(
-                    otherCardMoverP2.transform.position, otherCardMoverP2.Card,
-                    placedPosition, placedCard,
-                    placedCardMover.gameObject, otherCardMoverP2.gameObject);
-            }
-            
+            FlipTarget target = CheckBattleBetweenCardsForRipple(placedPosition, placedCard, otherCardMoverP2.transform.position, otherCardMoverP2.Card, otherCardMoverP2.gameObject, placedCardMover.gameObject);
             if (target != null)
             {
                 flipTargets.Add(target);
@@ -1228,12 +1069,11 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
             distance = Vector3.Distance(posA, posB);
             
-            // CRITICAL: Use a strict tolerance for true adjacency based on actual board spacing.
-            // Use the serialized adjacentCardDistance so designers/tests can tune it, but enforce
-            // a *minimum* of 3.5 so that tiles whose spacing matches the tests' expectations
-            // (3–3.5 units apart) are always considered adjacent even if an older scene prefab
-            // still has a smaller value serialized (e.g. 1.6f).
-            float strictAdjacencyTolerance = Mathf.Max(adjacentCardDistance, 3.5f);
+            // CRITICAL: Use a strict tolerance for true adjacency
+            // Cards on a 4x4 grid are typically ~2.1-2.2 units apart when adjacent (horizontal/vertical)
+            // Diagonal cards would be ~2.98 units apart, so we use 2.5 to allow orthogonal neighbors only
+            // This ensures cards 7.66 units apart are NEVER considered adjacent
+            const float strictAdjacencyTolerance = 2.5f; // Maximum distance for true adjacency (allows ~2.12 unit grid spacing)
             
             // First check: distance must be within strict tolerance
             if (distance > strictAdjacencyTolerance)
@@ -1261,11 +1101,9 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         }
         
         // Must be aligned on one axis (same row OR same column)
-        // AND must be close enough on the other axis (within 1 grid cell).
-        // Use the same 0.5f vertical/horizontal tolerance as CardTestHelper.GetAdjacentDropArea
-        // and the battle methods so that "adjacent" is defined consistently everywhere.
-        bool sameRow = deltaY < 0.5f && deltaX > 0.1f && deltaX <= strictAdjacencyTolerance;
-        bool sameCol = deltaX < 0.5f && deltaY > 0.1f && deltaY <= strictAdjacencyTolerance;
+        // AND must be close enough on the other axis (within 1 grid cell)
+        bool sameRow = deltaY < 0.3f && deltaX > 0.1f && deltaX <= strictAdjacencyTolerance;
+        bool sameCol = deltaX < 0.3f && deltaY > 0.1f && deltaY <= strictAdjacencyTolerance;
         
         bool isAdjacent = sameRow || sameCol;
         
@@ -1397,20 +1235,24 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         
         if (!attackerWins)
         {
-            // Basic Triple Triad rule:
-            // - Only the ATTACKER (placed card) can ever capture the defender.
-            // - If attacker stat <= defender stat, then NOTHING flips. The defender
-            //   never counter‑captures the placed card as part of this comparison.
-            //
-            // That means:
-            // - Defender strictly higher  → no flip (attacker fails, card stays)
-            // - Equal stats               → no flip
-            // - Only attackerWins (>)     → defender flips
+            // Defender wins or tie - NO capture should occur
+            // If defender's stat > attacker's stat, defender wins and attacker should flip (if this is called from attacker's perspective)
+            // If defender's stat == attacker's stat, it's a tie and no one flips
             Debug.Log($"[CheckBattleBetweenCards] ❌ NO CAPTURE: {placedCard.Data.cardName} ({placedCardStat}) <= {otherCard.Data.cardName} ({otherCardStat}). " +
-                $"Defender has equal or higher stat - placed card did NOT win and no one flips. " +
-                $"Rule: Only the attacking card can capture, never the defender.");
+                $"Defender has equal or higher stat - placed card did NOT win. " +
+                $"Rule: Attacker must have higher stat to capture defender.");
             
-            return false; // No flip in basic rules when attacker does not win
+            // Return true if placed card lost (defender's stat > attacker's stat), false if tie
+            if (otherCardStat > placedCardStat)
+            {
+                Debug.Log($"[CheckBattleBetweenCards] Defender wins: {otherCard.Data.cardName} ({otherCardStat}) > {placedCard.Data.cardName} ({placedCardStat}). Placed card should flip.");
+                return true; // Placed card lost, should flip
+            }
+            else
+            {
+                Debug.Log($"[CheckBattleBetweenCards] Tie: Both stats are equal ({placedCardStat} = {otherCardStat}), no capture");
+                return false; // Tie, no flip
+            }
         }
         
         // If placed card wins (attacker stat > defender stat), other card should flip
@@ -1468,40 +1310,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     }
 
     /// <summary>
-    /// Returns true if the given GameObject belongs to a card that was played
-    /// this turn on this drop area. This is tolerant of being passed either the
-    /// CardMover root or any child (e.g. NewCardUI, flip animation container).
-    /// </summary>
-    private bool IsFreshlyPlayedThisTurn(GameObject cardObject)
-    {
-        if (cardObject == null)
-        {
-            return false;
-        }
-        
-        if (cardsPlayedThisTurn.Contains(cardObject))
-        {
-            return true;
-        }
-        
-        // Check parent CardMover components, which are what we register in
-        // cardsPlayedThisTurn when a card is dropped from hand.
-        CardMoverP1 moverP1 = cardObject.GetComponentInParent<CardMoverP1>();
-        if (moverP1 != null && cardsPlayedThisTurn.Contains(moverP1.gameObject))
-        {
-            return true;
-        }
-        
-        CardMoverP2 moverP2 = cardObject.GetComponentInParent<CardMoverP2>();
-        if (moverP2 != null && cardsPlayedThisTurn.Contains(moverP2.gameObject))
-        {
-            return true;
-        }
-        
-        return false;
-    }
-    
-    /// <summary>
     /// Flips a card GameObject with directional flip animation
     /// </summary>
     private void FlipCardGameObject(GameObject cardObject, NewCard card, Color captureColor, CardGame.UI.FlipDirection direction)
@@ -1511,17 +1319,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             Debug.LogWarning("FlipCardGameObject: cardObject is null!");
             return;
         }
-
-        // Safety: Never allow the freshly placed card for the current turn to be
-        // flipped, regardless of battle outcome. This enforces the rule that the
-        // card being dropped cannot itself be captured on that same turn for
-        // either player.
-        if (IsFreshlyPlayedThisTurn(cardObject))
-        {
-            Debug.Log($"[FlipCardGameObject] Skipping flip for {card?.Data?.cardName ?? cardObject.name} because it was just played this turn (or is a child of that card).");
-            return;
-        }
-
+        
         // CRITICAL LOGGING: Always log when FlipCardGameObject is called to track score update path
         Debug.Log($"[FlipCardGameObject] ENTRY for {card?.Data?.cardName ?? "unknown"}. " +
             $"Capture color: ({captureColor.r:F2}, {captureColor.g:F2}, {captureColor.b:F2}, {captureColor.a:F2}). " +
@@ -1577,21 +1375,65 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
             gameCapturesMade++;
             Debug.Log($"[CardDropArea] Captures made count: {gameCapturesMade}");
-            
-            // Show delta marker for territory influence change (+1 for conquer) with slight delay for sync
-            StartCoroutine(ShowCaptureDelta(cardObject.transform, +1));
-            
-            // Recalculate scores immediately based on current board control so that
-            // real-time scoring (and tests that expect score changes on capture)
-            // remain accurate while still using territory-based scoring under the hood.
-            if (scoreManager != null)
-            {
-                scoreManager.RecalculateScores();
-            }
         }
         
-        // Scoring remains territory-based, but is now refreshed on each capture so
-        // that UI and tests can observe score changes as soon as they happen.
+        // Notify ScoreManager of the capture
+        // Only update score for actual captures (not initial placement)
+        // Capture colors are: P1 = orange (1, 0.5, 0, 1), P2 = green (0, 0.8, 0, 1)
+        // White/clear colors indicate no capture (initial placement)
+        Debug.Log($"[CardDropArea] Score update check for {card.Data.cardName}. Capture color: ({captureColor.r:F2}, {captureColor.g:F2}, {captureColor.b:F2}, {captureColor.a:F2}). " +
+            $"Is white: {captureColor == Color.white}, Is clear: {captureColor == Color.clear}, Will update score: {captureColor != Color.white && captureColor != Color.clear}");
+        
+        if (captureColor != Color.white && captureColor != Color.clear)
+        {
+            // Use ScoreManager.Instance directly to ensure we always find it even if cached reference is null
+            ScoreManager scoreMgr = scoreManager ?? ScoreManager.Instance;
+            Debug.Log($"[CardDropArea] ScoreManager lookup for {card.Data.cardName}. Cached scoreManager: {scoreManager != null}, ScoreManager.Instance: {ScoreManager.Instance != null}, Final scoreMgr: {scoreMgr != null}");
+            if (scoreMgr != null)
+            {
+                bool isPlayerCapture = IsPlayerCard(cardObject);
+                // Note: The card is being captured, so the capture color determines who gets the score
+                Color playerColor = GetPlayerCaptureColor();
+                Color p2Color = GetP2CaptureColor();
+                
+                // Check if capture color matches P1 or P2 color (with tolerance for float precision)
+                bool isPlayerScoring = (Mathf.Abs(captureColor.r - playerColor.r) < 0.1f &&
+                                       Mathf.Abs(captureColor.g - playerColor.g) < 0.1f &&
+                                       Mathf.Abs(captureColor.b - playerColor.b) < 0.1f);
+                
+                bool isP2Scoring = (Mathf.Abs(captureColor.r - p2Color.r) < 0.1f &&
+                                         Mathf.Abs(captureColor.g - p2Color.g) < 0.1f &&
+                                         Mathf.Abs(captureColor.b - p2Color.b) < 0.1f);
+                
+                // Only update score if we have a valid capture color match
+                if (isPlayerScoring || isP2Scoring)
+                {
+                    int oldP1Score = scoreMgr.P1Score;
+                    int oldP2Score = scoreMgr.P2Score;
+                    
+                    scoreMgr.AddScore(isPlayerScoring);
+                    
+                    Debug.Log($"[CardDropArea] ✅ Score updated: {(isPlayerScoring ? "P1" : "P2")} captured {card.Data.cardName}. " +
+                        $"Capture color: ({captureColor.r:F2}, {captureColor.g:F2}, {captureColor.b:F2}). " +
+                        $"Scores - Before: P1={oldP1Score}, P2={oldP2Score}. " +
+                        $"After: P1={scoreMgr.P1Score}, P2={scoreMgr.P2Score}");
+                }
+                else
+                {
+                    Debug.LogWarning($"[CardDropArea] Invalid capture color for {card.Data.cardName}: ({captureColor.r:F2}, {captureColor.g:F2}, {captureColor.b:F2}). " +
+                        $"Expected P1: ({playerColor.r:F2}, {playerColor.g:F2}, {playerColor.b:F2}) or P2: ({p2Color.r:F2}, {p2Color.g:F2}, {p2Color.b:F2})");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[CardDropArea] ScoreManager not found! Cannot update score for capture of {card.Data.cardName}. Check if ScoreManager.Instance exists.");
+            }
+        }
+        else
+        {
+            // Not a capture - just initial placement, no score update needed
+            Debug.Log($"[CardDropArea] No score update for {card.Data.cardName} - capture color is white/clear (initial placement, not a capture)");
+        }
     }
     
     /// <summary>
@@ -1708,26 +1550,20 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // CRITICAL COMBAT RULE: Capture ONLY occurs when attacker's stat > defender's stat
         // placedCardStat = the stat of the card being placed (attacker)
         // otherCardStat = the opposing stat of the existing card (defender)
-        // If attacker's stat is NOT greater than defender's stat, NO capture should occur.
-        // This is a *normal* outcome during adjacency scans (most neighbor pairs will not result
-        // in captures), so we treat it as informational debug output instead of a logic error.
+        // If attacker's stat is NOT greater than defender's stat, NO capture should occur
         bool attackerWins = placedCardStat > otherCardStat;
         
         // ABSOLUTE SAFETY CHECK: Double-verify that attacker's stat is strictly greater
         // This prevents any possibility of creating a flip target when attacker didn't win
         if (!attackerWins || placedCardStat <= otherCardStat)
         {
-            // Defender wins or tie - NO capture should occur.
-            // This branch is expected to be hit frequently as we scan all adjacent neighbors.
-            // Only log when debugBattles is enabled, and phrase it as a normal combat outcome
-            // rather than a "logic error" to avoid noisy warnings in normal play/tests.
-            if (debugBattles)
-            {
-                Debug.Log($"[CheckBattleBetweenCardsForRipple] No flip target: attacker did not win. " +
-                          $"Attacker ({placedCard.Data.cardName}) stat: {placedCardStat}, " +
-                          $"Defender ({otherCard.Data.cardName}) stat: {otherCardStat}. " +
-                          $"Capture requires attacker stat > defender stat.");
-            }
+            // Defender wins or tie - NO capture should occur
+            // This is expected behavior during ripple effects where a captured card may not have high enough stats
+            // to capture adjacent cards. Log as error for test compatibility, but this is intentional validation.
+            // Note: In the error message, "Attacker" refers to placedCard (the card trying to capture) and "Defender" refers to otherCard (the card being attacked)
+            Debug.LogError($"[CheckBattleBetweenCardsForRipple] ❌ LOGIC ERROR PREVENTED: Attempted to create flip target when attacker did NOT win. " +
+                $"Attacker ({placedCard.Data.cardName}) stat: {placedCardStat}, Defender ({otherCard.Data.cardName}) stat: {otherCardStat}. " +
+                $"Attacker must have higher stat to capture. Returning null to prevent invalid capture.");
             return null;
         }
         
@@ -1788,21 +1624,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // Sort by distance from source (closest first for ripple effect)
         flipTargets.Sort((a, b) => a.distance.CompareTo(b.distance));
         
-        // Group targets into distance-based waves so orthogonal neighbors flip together
-        const float distanceBandSize = 1f;
-        Dictionary<int, List<FlipTarget>> waveBuckets = new Dictionary<int, List<FlipTarget>>();
-        foreach (FlipTarget target in flipTargets)
-        {
-            int bucket = Mathf.RoundToInt(target.distance / distanceBandSize);
-            if (!waveBuckets.ContainsKey(bucket))
-            {
-                waveBuckets[bucket] = new List<FlipTarget>();
-            }
-            waveBuckets[bucket].Add(target);
-        }
-        List<int> orderedBuckets = new List<int>(waveBuckets.Keys);
-        orderedBuckets.Sort();
-        
         // [CardFront] Track chain length for statistics
         currentChainLength = flipTargets.Count;
         if (currentChainLength > gameLongestChain)
@@ -1825,48 +1646,37 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             gameEndManager.SetChainsInProgress(true);
         }
         
-        // Flip cards wave-by-wave
-        for (int i = 0; i < orderedBuckets.Count; i++)
+        // Flip each card with increasing delay based on distance
+        float lastDistance = 0f;
+        foreach (var target in flipTargets)
         {
-            List<FlipTarget> waveTargets = waveBuckets[orderedBuckets[i]];
+            // Calculate delay based on distance difference from previous card
+            float distanceDelta = target.distance - lastDistance;
+            float delay = distanceDelta * rippleDelayPerUnit;
             
-            if (debugBattles)
+            if (delay > 0f)
             {
-                Debug.Log($"ExecuteRippleFlips: Wave {i + 1} flipping {waveTargets.Count} cards (bucket {orderedBuckets[i]}).");
+                yield return new WaitForSeconds(delay);
             }
             
-            // Trigger flips simultaneously for this wave
-            foreach (var target in waveTargets)
-            {
-                FlipCardGameObject(target.cardObject, target.card, target.captureColor, target.direction);
-            }
+            // Execute the flip
+            FlipCardGameObject(target.cardObject, target.card, target.captureColor, target.direction);
             
-            // Wait for flip animation to complete once per wave
+            // Wait for the flip animation to complete before checking for chain captures
+            // Flip animation takes about 1 second total (0.5s flip to back + 0.5s flip back to front)
+            // Use a safe delay to ensure animation completes
             yield return new WaitForSeconds(1.1f);
             
-            foreach (var target in waveTargets)
-            {
-                CheckChainCapture(target.cardObject, target.card);
-            }
+            // Check if this newly captured card can capture others (chain capture)
+            CheckChainCapture(target.cardObject, target.card);
             
-            // Delay before next wave to create ripple propagation
-            if (i < orderedBuckets.Count - 1)
-            {
-                float waveDelay = Mathf.Max(0.05f, rippleDelayPerUnit * distanceBandSize);
-                yield return new WaitForSeconds(waveDelay);
-            }
+            lastDistance = target.distance;
         }
         
         if (debugBattles)
         {
             Debug.Log($"ExecuteRippleFlips: Ripple effect complete!");
         }
-        
-        // Update CardFrontlineUI after ripple completes
-        UpdateFrontlineUI();
-        
-        // Trigger blurp message based on capture type
-        TriggerBlurpForCaptures(flipTargets);
         
         // Decrement active chain count
         activeChainCount--;
@@ -1905,206 +1715,14 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             Debug.Log($"Board occupancy: {occupiedSpaces}/{totalSpaces} spaces filled");
         }
         
-        // Game ends when all 16 slots are filled (territory-based scoring)
+        // [CardFront] Log board occupancy (for debugging) - game ends when all cards are played, not when board is full
         if (debugBattles && occupiedSpaces >= totalSpaces && totalSpaces > 0)
         {
-            Debug.Log($"[CardDropArea] Board is full! Occupied: {occupiedSpaces}/{totalSpaces}");
-        }
-    }
-    
-    /// <summary>
-    /// Gets the current board occupancy (occupied spaces and total spaces)
-    /// </summary>
-    public static (int occupiedSpaces, int totalSpaces) GetBoardOccupancy()
-    {
-        CardDropArea[] allDropAreas = Object.FindObjectsOfType<CardDropArea>();
-        int totalSpaces = allDropAreas.Length;
-        int occupiedSpaces = 0;
-        
-        foreach (CardDropArea dropArea in allDropAreas)
-        {
-            if (dropArea != null && dropArea.IsOccupied)
-            {
-                occupiedSpaces++;
-            }
+            Debug.Log($"[CardDropArea] Board is full! Occupied: {occupiedSpaces}/{totalSpaces} (Note: Game ends when all cards are played, not when board is full)");
         }
         
-        return (occupiedSpaces, totalSpaces);
-    }
-    
-    /// <summary>
-    /// Gets the current control counts for P1 and P2 based on captured territories.
-    /// </summary>
-    public static (int p1Control, int p2Control) GetBoardControl()
-    {
-        CardDropArea[] allDropAreas = Object.FindObjectsOfType<CardDropArea>();
-        int p1Control = 0;
-        int p2Control = 0;
-        
-        foreach (CardDropArea dropArea in allDropAreas)
-        {
-            if (dropArea == null || !dropArea.IsOccupied) continue;
-            
-            GameObject occupyingCard = dropArea.GetOccupyingCard();
-            if (occupyingCard == null) continue;
-
-            // Determine control based on current ownership (capture color / flip state),
-            // not original owner. This matches ScoreManager and what the player sees.
-            bool isPlayerCard = dropArea.IsPlayerCard(occupyingCard);
-            if (isPlayerCard)
-            {
-                p1Control++;
-            }
-            else
-            {
-                p2Control++;
-            }
-        }
-        
-        return (p1Control, p2Control);
-    }
-    
-    /// <summary>
-    /// Updates the CardFrontlineUI with current board state.
-    /// </summary>
-    private static void UpdateFrontlineUI()
-    {
-        CardFrontlineUI frontlineUI = Object.FindObjectOfType<CardFrontlineUI>();
-        if (frontlineUI == null) return;
-        
-        (int occupiedSpaces, int totalSpaces) = GetBoardOccupancy();
-        (int p1Control, int p2Control) = GetBoardControl();
-        int remainingFields = totalSpaces - occupiedSpaces;
-        
-        frontlineUI.UpdateFrontline(p1Control, p2Control, remainingFields);
-    }
-    
-    /// <summary>
-    /// Triggers blurp messages for captures based on capture type.
-    /// </summary>
-    private void TriggerBlurpForCaptures(List<FlipTarget> flipTargets)
-    {
-        if (flipTargets == null || flipTargets.Count == 0) return;
-        
-        // Determine which player made the capture (check first capture color)
-        bool isPlayer1Capture = IsPlayerCaptureColor(flipTargets[0].captureColor);
-        PlayerPanelUI panelUI = GetPlayerPanelUI(isPlayer1Capture);
-        if (panelUI == null) return;
-        
-        // Check if any captures were opponent cards (overturn)
-        bool hasOverturn = false;
-        foreach (var target in flipTargets)
-        {
-            bool capturedCardWasPlayer = IsPlayerCard(target.cardObject);
-            bool captureIsPlayer = IsPlayerCaptureColor(target.captureColor);
-            if (capturedCardWasPlayer != captureIsPlayer)
-            {
-                hasOverturn = true;
-                break;
-            }
-        }
-        
-        // Determine blurp message
-        string blurpMessage = "";
-        if (flipTargets.Count == 1)
-        {
-            if (hasOverturn)
-            {
-                blurpMessage = "Overturn!!";
-            }
-            else
-            {
-                blurpMessage = "Perfect Capture!!";
-            }
-        }
-        else if (flipTargets.Count == 2)
-        {
-            blurpMessage = "Chain Combo x2!!";
-        }
-        else if (flipTargets.Count >= 3)
-        {
-            blurpMessage = "Chain Combo x3!!";
-        }
-        
-        if (!string.IsNullOrEmpty(blurpMessage))
-        {
-            panelUI.TriggerBlurp(blurpMessage);
-        }
-    }
-    
-    /// <summary>
-    /// Triggers blurp message for chain combo captures.
-    /// </summary>
-    private void TriggerBlurpForChainCombo(List<FlipTarget> flipTargets)
-    {
-        if (flipTargets == null || flipTargets.Count == 0) return;
-        
-        // Determine which player made the capture
-        bool isPlayer1Capture = IsPlayerCaptureColor(flipTargets[0].captureColor);
-        PlayerPanelUI panelUI = GetPlayerPanelUI(isPlayer1Capture);
-        if (panelUI == null) return;
-        
-        string blurpMessage = "";
-        if (flipTargets.Count == 2)
-        {
-            blurpMessage = "Chain Combo x2!!";
-        }
-        else if (flipTargets.Count >= 3)
-        {
-            blurpMessage = "Crazy Combo!!";
-        }
-        
-        if (!string.IsNullOrEmpty(blurpMessage))
-        {
-            panelUI.TriggerBlurp(blurpMessage);
-        }
-    }
-    
-    /// <summary>
-    /// Gets the PlayerPanelUI for the specified player.
-    /// </summary>
-    private PlayerPanelUI GetPlayerPanelUI(bool isPlayer1)
-    {
-        PlayerPanelUI[] allPanels = Object.FindObjectsOfType<PlayerPanelUI>();
-        foreach (PlayerPanelUI panel in allPanels)
-        {
-            Transform parent = panel.transform.parent;
-            if (parent != null)
-            {
-                if (isPlayer1 && parent.name == "P1Panel")
-                {
-                    return panel;
-                }
-                else if (!isPlayer1 && parent.name == "P2Panel")
-                {
-                    return panel;
-                }
-            }
-        }
-        return null;
-    }
-    
-    /// <summary>
-    /// Shows a delta marker after a short delay to align with flip animation.
-    /// </summary>
-    private IEnumerator ShowCaptureDelta(Transform target, int deltaValue)
-    {
-        if (target == null) yield break;
-        
-        yield return new WaitForSeconds(0.15f);
-        DeltaMarkerSystem.ShowDelta(deltaValue, target);
-    }
-    
-    /// <summary>
-    /// Checks if a capture color belongs to Player 1.
-    /// </summary>
-    private bool IsPlayerCaptureColor(Color captureColor)
-    {
-        Color playerColor = GetPlayerCaptureColor();
-        float tolerance = 0.1f;
-        return Mathf.Abs(captureColor.r - playerColor.r) < tolerance &&
-               Mathf.Abs(captureColor.g - playerColor.g) < tolerance &&
-               Mathf.Abs(captureColor.b - playerColor.b) < tolerance;
+        // [CardFront] Game end is now checked after each card is played in OnCardDrop (P1)/OnCardDropP2 (P2)
+        // Game ends when both players have no cards left (all 10 cards played), not when board is full (16/16)
     }
     
     /// <summary>
@@ -2305,12 +1923,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
             Debug.Log($"ExecuteChainCaptureRipple: Chain capture ripple complete!");
         }
-        
-        // Update CardFrontlineUI after chain capture completes
-        UpdateFrontlineUI();
-        
-        // Trigger blurp message for chain combo
-        TriggerBlurpForChainCombo(flipTargets);
     }
     
     /// <summary>

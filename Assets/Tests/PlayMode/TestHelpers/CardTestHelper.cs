@@ -30,14 +30,6 @@ namespace CardGame.Tests
             cardData.cardType = NewCardData.CardType.Flame; // Default type
             
             NewCard card = new NewCard(cardData);
-            
-            // Ensure runtime stats exactly match the requested values, regardless of any
-            // future mutation logic that might exist elsewhere.
-            card.CurrentTopStat = top;
-            card.CurrentRightStat = right;
-            card.CurrentDownStat = down;
-            card.CurrentLeftStat = left;
-            
             return card;
         }
 
@@ -149,155 +141,41 @@ namespace CardGame.Tests
         }
 
         /// <summary>
-        /// Checks if a card has been captured via the capture animation.
-        /// Prefer the runtime capture flag on CardFlipAnimation when available,
-        /// and fall back to border/background capture color as a secondary signal.
+        /// Checks if a card is captured (flipped to back)
         /// </summary>
         public static bool IsCardCaptured(GameObject cardObject)
         {
             if (cardObject == null) return false;
             
-            // Helper local function to inspect a specific GameObject for capture state.
-            bool CheckObjectCaptured(GameObject obj, out NewCard card)
+            CardFlipAnimation flipAnim = cardObject.GetComponentInChildren<CardFlipAnimation>();
+            if (flipAnim == null)
             {
-                card = null;
-                if (obj == null) return false;
-
-                // Prefer explicit capture flag on CardFlipAnimation
-                CardFlipAnimation flipAnim = obj.GetComponentInChildren<CardFlipAnimation>();
-                if (flipAnim == null)
-                {
-                    flipAnim = obj.GetComponent<CardFlipAnimation>();
-                }
-                if (flipAnim != null && flipAnim.WasCaptured)
-                {
-                    // Try to get the card reference from attached NewCardUI/CardMover, if available
-                    NewCardUI ui = obj.GetComponentInChildren<NewCardUI>() ??
-                                   obj.GetComponent<NewCardUI>() ??
-                                   obj.GetComponentInParent<NewCardUI>();
-                    if (ui != null && ui.Card != null)
-                    {
-                        card = ui.Card;
-                    }
-                    return true;
-                }
-
-                // Find NewCardUI on this object or its children/parents
-                NewCardUI cardUI = obj.GetComponent<NewCardUI>() ??
-                                   obj.GetComponentInChildren<NewCardUI>() ??
-                                   obj.GetComponentInParent<NewCardUI>();
-                if (cardUI == null) return false;
-
-                if (cardUI.Card != null)
-                {
-                    card = cardUI.Card;
-                }
-
-                // Use the same signal as ScoreManager: border/background color matching one of the capture colors
-                var cardBackgroundField = typeof(NewCardUI).GetField("cardBackground",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (cardBackgroundField == null) return false;
-
-                var cardBackground = cardBackgroundField.GetValue(cardUI);
-                if (cardBackground == null) return false;
-
-                Color borderColor = Color.white;
-
-                // Handle SpriteRenderer (world card)
-                SpriteRenderer bgSR = cardBackground as SpriteRenderer;
-                if (bgSR != null)
-                {
-                    borderColor = bgSR.color;
-                }
-                else
-                {
-                    // Handle UI Image (if ever used)
-                    UnityEngine.UI.Image bgImg = cardBackground as UnityEngine.UI.Image;
-                    if (bgImg != null)
-                    {
-                        borderColor = bgImg.color;
-                    }
-                }
-
-                // Compare against configured capture colors with small tolerance.
-                Color playerCap = cardUI.PlayerCapturedColor;
-                Color oppCap = cardUI.OpponentCapturedColor;
-
-                bool matchesPlayer = ColorsApproximatelyEqual(borderColor, playerCap);
-                bool matchesOpponent = ColorsApproximatelyEqual(borderColor, oppCap);
-
-                return matchesPlayer || matchesOpponent;
+                // Try to get from parent or self
+                flipAnim = cardObject.GetComponent<CardFlipAnimation>();
             }
-
-            // First, check capture state on the specific GameObject passed in.
-            if (CheckObjectCaptured(cardObject, out NewCard targetCard))
+            if (flipAnim == null) return false;
+            
+            // Check isFlipped property (card is captured when isFlipped = true, meaning back is showing)
+            var isFlippedProperty = typeof(CardFlipAnimation).GetProperty("isFlipped");
+            if (isFlippedProperty != null)
             {
-                return true;
+                return (bool)isFlippedProperty.GetValue(flipAnim);
             }
-
-            // If that object wasn't marked captured but we have a card reference,
-            // search all NewCardUI/CardFlipAnimation instances that reference the same card.
-            if (targetCard != null)
+            
+            // Fallback: check if back container is active
+            var backContainerField = typeof(CardFlipAnimation).GetField("backContainer", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            if (backContainerField != null)
             {
-                NewCardUI[] allCardUIs = Object.FindObjectsOfType<NewCardUI>();
-                foreach (var ui in allCardUIs)
+                GameObject backContainer = backContainerField.GetValue(flipAnim) as GameObject;
+                if (backContainer != null)
                 {
-                    if (ui != null && ui.Card == targetCard)
-                    {
-                        GameObject uiObj = ui.gameObject;
-                        if (CheckObjectCaptured(uiObj, out _))
-                        {
-                            return true;
-                        }
-                    }
+                    return backContainer.activeSelf;
                 }
             }
-
+            
             return false;
-        }
-
-        /// <summary>
-        /// Checks if a specific NewCard instance has been captured anywhere on the board.
-        /// This is more reliable for integration tests where the original mover GameObject
-        /// may not be the same object that ends up being flipped by the capture animation.
-        /// </summary>
-        public static bool IsCardCaptured(NewCard card)
-        {
-            if (card == null) return false;
-
-            // Look for any NewCardUI in the scene that references this logical card.
-            // Runtime systems may wrap the same NewCardData in different NewCard instances,
-            // so we match by BOTH NewCard reference and underlying Data reference/cardName.
-            NewCardUI[] allCardUIs = Object.FindObjectsOfType<NewCardUI>();
-            foreach (var ui in allCardUIs)
-            {
-                if (ui == null || ui.Card == null) continue;
-
-                bool sameRuntimeCard = ReferenceEquals(ui.Card, card);
-                bool sameData = ui.Card.Data == card.Data;
-                bool sameName = ui.Card.Data != null && card.Data != null &&
-                                ui.Card.Data.cardName == card.Data.cardName;
-
-                if (!sameRuntimeCard && !sameData && !sameName) continue;
-
-                GameObject uiObj = ui.gameObject;
-                bool captured = IsCardCaptured(uiObj);
-                Debug.Log($"[IsCardCapturedByCard] Candidate UI '{uiObj.name}' for card '{card.Data?.cardName ?? "null"}' " +
-                          $"(sameRuntime={sameRuntimeCard}, sameData={sameData}, sameName={sameName}) => captured={captured}");
-                if (captured) return true;
-            }
-
-            return false;
-        }
-
-        private static bool ColorsApproximatelyEqual(Color a, Color b, float epsilon = 0.05f)
-        {
-            float dr = a.r - b.r;
-            float dg = a.g - b.g;
-            float db = a.b - b.b;
-            float da = a.a - b.a;
-            float distSq = dr * dr + dg * dg + db * db + da * da;
-            return distSq <= epsilon * epsilon;
         }
 
         /// <summary>

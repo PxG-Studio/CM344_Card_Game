@@ -39,20 +39,6 @@ namespace CardGame.UI
         private Coroutine currentFlipCoroutine;
         
         public bool isFlipped { get; private set; }
-
-        /// <summary>
-        /// True if this card has been captured via the capture animation at least once.
-        /// Used by tests and gameplay logic to distinguish between an originally placed card
-        /// and one that was flipped by a successful battle.
-        /// </summary>
-        public bool WasCaptured { get; private set; }
-
-        /// <summary>
-        /// The last capture color applied to this card via CaptureCard.
-        /// Used by runtime logic/tests as a fallback ownership signal when
-        /// border/background references are not fully wired (e.g. test-only cards).
-        /// </summary>
-        public Color LastCaptureColor { get; private set; } = Color.clear;
         public bool isAnimating => currentFlipCoroutine != null;
         
         // Reference to NewCardUI for captured color
@@ -454,19 +440,7 @@ namespace CardGame.UI
         /// </summary>
         public void CaptureCard(Color captureColor, FlipDirection direction)
         {
-            // Always record logical capture state, even if the visual flip setup is incomplete.
-            // Tests and ownership logic (CardDropArea.IsPlayerCard) rely on these flags.
-            WasCaptured = true;
-            LastCaptureColor = captureColor;
-
-            // If the visual containers aren't set up, at least apply the capture color to the border
-            // so ownership can still be inferred, then bail out of the animation.
-            if (!IsSetupValid())
-            {
-                ApplyCaptureColorToBorder(captureColor);
-                return;
-            }
-
+            if (!IsSetupValid()) return;
             if (isAnimating) return;
             if (currentFlipCoroutine != null)
             {
