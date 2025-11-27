@@ -118,7 +118,10 @@ namespace CardGame.UI
             {
                 canvasGroup.blocksRaycasts = false;
                 canvasGroup.interactable = false;
-                Debug.LogWarning($"[NewCardUI] Awake: Disabled raycasting for prefab asset '{gameObject.name}' (InstanceID: {GetInstanceID()}). Prefab assets should not be in the scene and cannot be dragged. If you see this message, please remove the prefab asset from the scene hierarchy.");
+                
+                // Downgrade from warning to verbose log to avoid noisy console spam in normal play
+                Debug.Log($"[NewCardUI] Awake: Disabled raycasting for prefab asset '{gameObject.name}' (InstanceID: {GetInstanceID()}). " +
+                          "Prefab assets are not intended to be interactive at runtime.");
                 return; // Early return - prefab assets shouldn't be in the scene anyway
             }
             
@@ -646,7 +649,9 @@ namespace CardGame.UI
                 cg.interactable = false;
                 gameObject.SetActive(false); // Disable the entire GameObject
                 
-                Debug.LogWarning($"[NewCardUI] Start: DISABLED prefab asset '{gameObject.name}' (InstanceID: {GetInstanceID()}). Prefab assets should NOT be in the scene hierarchy. They should only be used as references for instantiation. This GameObject has been disabled to prevent it from intercepting drag events.");
+                // Downgrade to info log to avoid noisy warnings for expected safety behaviour
+                Debug.Log($"[NewCardUI] Start: DISABLED prefab asset '{gameObject.name}' (InstanceID: {GetInstanceID()}). " +
+                          "Prefab assets are not intended to be active/interactive at runtime.");
                 return; // Early return - prefab assets shouldn't be processed
             }
             
