@@ -147,3 +147,10 @@ Assets/
 - Ready for extension (new card types, effects, entities)
 - ScriptableObject pattern for data-driven design
 
+
+## Branch develop-3
+
+- Synced card mechanics from develop-1 (capture/chain, deck managers).
+- MCP Unity package removed.
+- WebGL build updated with rematch frontline fix and card back tuning.
+
