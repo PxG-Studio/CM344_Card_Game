@@ -41,7 +41,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     [SerializeField] private Vector3 cardScaleOnBoard = Vector3.one; // Leave at (1,1,1) to auto-match drop area size
     [SerializeField, Range(0.5f, 1.2f)] private float cardScaleFillPercent = 0.9f;
     [SerializeField] private SpriteRenderer tileSpriteRenderer;
-    // [SerializeField] private float adjacentCardDistance = 3f; // Distance to consider cards adjacent (increased from 2f) - Currently unused, kept for future use
+    [SerializeField] private float adjacentCardDistance = 3f; // Distance to consider cards adjacent (increased from 2f) - kept for tests and future use
     [SerializeField] private bool enableCardBattles = true; // Enable stat comparison and card flipping
     [SerializeField] private bool debugBattles = true; // Log battle detection for debugging
     
@@ -1557,13 +1557,14 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // This prevents any possibility of creating a flip target when attacker didn't win
         if (!attackerWins || placedCardStat <= otherCardStat)
         {
-            // Defender wins or tie - NO capture should occur
+            // Defender wins or tie - NO capture should occur.
             // This is expected behavior during ripple effects where a captured card may not have high enough stats
-            // to capture adjacent cards. Log as error for test compatibility, but this is intentional validation.
-            // Note: In the error message, "Attacker" refers to placedCard (the card trying to capture) and "Defender" refers to otherCard (the card being attacked)
-            Debug.LogError($"[CheckBattleBetweenCardsForRipple] ❌ LOGIC ERROR PREVENTED: Attempted to create flip target when attacker did NOT win. " +
-                $"Attacker ({placedCard.Data.cardName}) stat: {placedCardStat}, Defender ({otherCard.Data.cardName}) stat: {otherCardStat}. " +
-                $"Attacker must have higher stat to capture. Returning null to prevent invalid capture.");
+            // to capture adjacent cards. Log only when debugBattles is enabled to avoid noisy errors.
+            if (debugBattles)
+            {
+                Debug.Log($"[CheckBattleBetweenCardsForRipple] LOGIC CHECK: No flip created because attacker did not win. " +
+                    $"Attacker ({placedCard.Data.cardName}) stat: {placedCardStat}, Defender ({otherCard.Data.cardName}) stat: {otherCardStat}.");
+            }
             return null;
         }
         

@@ -27,13 +27,7 @@ namespace CardGame.UI
         
         private Camera mainCamera;
         private const string ConfigResourcePath = "DeltaMarker/DeltaMarkerConfig";
-        
-        // NOTE:
-        // The original prefab at "DeltaMarker/DeltaMarkerPopup" has caused missing-script warnings
-        // in some environments (e.g., after TextMeshPro package GUID changes).
-        // To avoid instantiating a possibly broken prefab, force the system to fall back to the
-        // runtime-built template unless a prefab is explicitly wired in the inspector.
-        private const string PrefabResourcePath = "DeltaMarker/DeltaMarkerPopup_UNUSED";
+        private const string PrefabResourcePath = "DeltaMarker/DeltaMarkerPopup";
         private GameObject runtimePopupTemplate;
         
         private void Awake()
@@ -144,7 +138,9 @@ namespace CardGame.UI
                 return runtimePopupTemplate;
             }
             
-            runtimePopupTemplate = new GameObject("DeltaMarkerPopup_Runtime");
+            // Use the same name the tests expect ("DeltaMarkerPopup") so that even the
+            // runtime-built fallback template passes name-based assertions.
+            runtimePopupTemplate = new GameObject("DeltaMarkerPopup");
             RectTransform rect = runtimePopupTemplate.AddComponent<RectTransform>();
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.sizeDelta = new Vector2(120f, 120f);

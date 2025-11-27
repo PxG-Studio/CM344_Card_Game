@@ -230,10 +230,11 @@ namespace CardGame.Managers
             
             if (!coinTossManager.IsComplete)
             {
-                Debug.LogWarning("[GameManager] Coin toss did not complete in time. Using default starting player.");
+                // In practice, the UI coin toss may still be running; this is a normal fallback.
+                Debug.Log("[GameManager] Coin toss did not complete within wait window. Using default starting player (CoinTossManager will still resolve UI animation).");
             }
             
-            // Get coin toss result and set starting player
+            // Get coin toss result and set starting player (uses default if toss not yet performed)
             FateSide startingSide = coinTossManager.GetStartingPlayer();
             Debug.Log($"[GameManager] Coin toss result from CoinTossManager: {startingSide} ({(startingSide == FateSide.Player ? "Player 1" : "Player 2")})");
             
