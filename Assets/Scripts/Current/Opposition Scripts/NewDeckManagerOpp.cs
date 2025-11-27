@@ -108,7 +108,8 @@ namespace CardGame.Managers
             DiscardCard(card);
             
             Debug.Log($"Played card: {card.Data.cardName}");
-            // Note: Card drawing now happens in CardDropArea after successful placement on board
+            if (DrawPileCount != 0)
+            { DrawCard();}
         }
         
         public void DiscardCard(NewCard card)
