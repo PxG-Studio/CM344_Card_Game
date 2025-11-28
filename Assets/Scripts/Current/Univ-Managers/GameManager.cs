@@ -51,7 +51,20 @@ namespace CardGame.Managers
         {
             if (Instance != null && Instance != this)
             {
+                Debug.LogWarning($"[GameManager] Duplicate GameManager detected on '{gameObject.name}'. Destroying duplicate. Existing instance: '{Instance.gameObject.name}'");
+                // Use DestroyImmediate in editor to avoid play mode exit issues
+                #if UNITY_EDITOR
+                if (!Application.isPlaying)
+                {
+                    DestroyImmediate(gameObject);
+                }
+                else
+                {
+                    Destroy(gameObject);
+                }
+                #else
                 Destroy(gameObject);
+                #endif
                 return;
             }
             
@@ -66,7 +79,6 @@ namespace CardGame.Managers
         
         private void Initialize()
         {
-            Debug.Log("GameManager Initialized");
             ChangeState(GameState.Menu);
         }
         
@@ -75,7 +87,6 @@ namespace CardGame.Managers
             if (currentState == newState)
                 return;
                 
-            Debug.Log($"Game State: {currentState} -> {newState}");
             currentState = newState;
             OnGameStateChanged?.Invoke(newState);
             
@@ -119,7 +130,6 @@ namespace CardGame.Managers
         
         private void PrepareGame()
         {
-            Debug.Log("Preparing game...");
             
             // [CardFront] Reset statistics for new game (if not already reset by ResetGameState)
             if (CardDropArea.GetCardsPlayed() > 0)
@@ -203,7 +213,6 @@ namespace CardGame.Managers
             {
                 // Start the coin toss from GameManager (always active) to ensure coroutine can start
                 StartCoroutine(StartCoinTossFromManager(coinTossUI));
-                Debug.Log("[GameManager] Coin toss animation started via CoinTossUI.");
             }
             else
             {
@@ -231,17 +240,14 @@ namespace CardGame.Managers
             if (!coinTossManager.IsComplete)
             {
                 // In practice, the UI coin toss may still be running; this is a normal fallback.
-                Debug.Log("[GameManager] Coin toss did not complete within wait window. Using default starting player (CoinTossManager will still resolve UI animation).");
             }
             
             // Get coin toss result and set starting player (uses default if toss not yet performed)
             FateSide startingSide = coinTossManager.GetStartingPlayer();
-            Debug.Log($"[GameManager] Coin toss result from CoinTossManager: {startingSide} ({(startingSide == FateSide.Player ? "Player 1" : "Player 2")})");
             
             if (FateFlowController.Instance != null)
             {
                 FateFlowController.Instance.SetFate(startingSide);
-                Debug.Log($"[GameManager] SetFate called with: {startingSide} ({(startingSide == FateSide.Player ? "Player 1" : "Player 2")}). CurrentFate in FateFlowController: {FateFlowController.Instance.CurrentFate} ({(FateFlowController.Instance.CurrentFate == FateSide.Player ? "Player 1" : "Player 2")})");
             }
             else
             {
@@ -287,13 +293,11 @@ namespace CardGame.Managers
             bool activeSelf = coinTossObj.activeSelf;
             bool activeInHierarchy = coinTossObj.activeInHierarchy;
             
-            Debug.Log($"[GameManager] CoinTossUI GameObject state after activation - activeSelf: {activeSelf}, activeInHierarchy: {activeInHierarchy}, enabled: {coinTossUI.enabled}");
             
             // Now start the animation on the active GameObject
             if (activeSelf && coinTossUI.enabled)
             {
                 coinTossUI.StartCoinTossAnimation();
-                Debug.Log("[GameManager] Coin toss animation started successfully.");
             }
             else
             {
@@ -301,7 +305,7 @@ namespace CardGame.Managers
                 if (!activeSelf)
                 {
                     // This is a normal recovery path in some initialization orders; log at info level
-                    Debug.Log("[GameManager] CoinTossUI GameObject is still inactive. Activating again and waiting...");
+                    // Debug.Log("[GameManager] CoinTossUI GameObject is still inactive. Activating again and waiting..."); // Reduced verbosity
                     coinTossObj.SetActive(true);
                     yield return new WaitForEndOfFrame();
                     yield return null;
@@ -309,7 +313,6 @@ namespace CardGame.Managers
                     if (coinTossObj.activeSelf && coinTossUI.enabled)
                     {
                         coinTossUI.StartCoinTossAnimation();
-                        Debug.Log("[GameManager] Coin toss animation started after second activation.");
                     }
                     else
                     {
@@ -351,36 +354,30 @@ namespace CardGame.Managers
         
         private void StartPlayerTurn()
         {
-            Debug.Log("Player Turn Started");
             OnTurnStarted?.Invoke();
         }
         
         public void EndPlayerTurn()
         {
-            Debug.Log("Player Turn Ended");
             OnTurnEnded?.Invoke();
             ChangeState(GameState.EnemyTurn);
         }
         
     private void StartEnemyTurn()
     {
-        Debug.Log("Enemy Turn Started");
     }
     
     public void EndEnemyTurn()
         {
-            Debug.Log("Enemy Turn Ended");
             ChangeState(GameState.PlayerTurn);
         }
         
         private void HandleVictory()
         {
-            Debug.Log("Victory!");
         }
         
         private void HandleDefeat()
         {
-            Debug.Log("Defeat!");
         }
         
         public void CheckWinCondition()
@@ -398,8 +395,6 @@ namespace CardGame.Managers
         /// </summary>
         public void ResetGameState()
         {
-            Debug.Log("[GameManager] Resetting game state for rematch...");
-            
             // Hide game end UI first (before resetting other systems)
             CardGame.UI.GameEndUI gameEndUI = FindObjectOfType<CardGame.UI.GameEndUI>();
             if (gameEndUI != null)
@@ -479,8 +474,6 @@ namespace CardGame.Managers
             // [CardFront] Trigger initial card draw after a short delay to ensure everything is reset
             // The PrepareGame() method will handle initial setup, but we also need to draw cards
             StartCoroutine(TriggerInitialCardDrawAfterReset());
-            
-            Debug.Log("[GameManager] Game state reset complete. Ready for rematch.");
         }
         
         /// <summary>
@@ -504,8 +497,6 @@ namespace CardGame.Managers
             {
                 oppTester.DrawInitialCards();
             }
-            
-            Debug.Log("[GameManager] Initial cards drawn for rematch");
         }
 
         /// <summary>
@@ -532,7 +523,6 @@ namespace CardGame.Managers
             }
             else
             {
-                Debug.Log("[GameManager] Deck systems detected (P1/P2). Initialization and opening draws are handled by testers.");
             }
         }
         
@@ -613,8 +603,6 @@ namespace CardGame.Managers
                     dropArea.ResetForNewGame();
                 }
             }
-            
-            Debug.Log($"[GameManager] Cleared board - removed {removedCount} card(s) from board and reset {allDropAreas.Length} CardDropArea instance(s)");
         }
         
         /// <summary>
@@ -634,8 +622,6 @@ namespace CardGame.Managers
             {
                 opponentHand.ClearHand();
             }
-            
-            Debug.Log("[GameManager] Cleared hands");
         }
         
         /// <summary>
@@ -654,8 +640,6 @@ namespace CardGame.Managers
                     resetCount++;
                 }
             }
-            
-            Debug.Log($"[GameManager] Reset {resetCount} CardDropArea instance(s) for new game");
         }
     }
     

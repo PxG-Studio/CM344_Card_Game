@@ -47,14 +47,12 @@ namespace CardGame.Managers
             // Shuffle the deck
             ShuffleDeck();
             
-            Debug.Log($"NewDeck initialized: {drawPile.Count} cards in draw pile");
         }
         
         public void ShuffleDeck()
         {
             drawPile.Shuffle();
             OnDeckShuffled?.Invoke();
-            Debug.Log("NewDeck shuffled");
         }
         
         public void DrawCard()
@@ -81,8 +79,6 @@ namespace CardGame.Managers
             NewCard card = drawPile.DrawCard();
             hand.AddCard(card);
             OnCardDrawn?.Invoke(card);
-            
-            Debug.Log($"Drew card: {card.Data.cardName}");
         }
         
         public void DrawCards(int count)
@@ -107,7 +103,6 @@ namespace CardGame.Managers
             // Move to discard pile
             DiscardCard(card);
             
-            Debug.Log($"Played card: {card.Data.cardName}");
             if (DrawPileCount != 0)
             { DrawCard();}
         }
@@ -134,8 +129,6 @@ namespace CardGame.Managers
         
         private void ReshuffleDiscardPile()
         {
-            Debug.Log("Reshuffling discard pile into draw pile");
-            
             foreach (NewCard card in discardPile.Cards)
             {
                 card.ResetToBaseStats();

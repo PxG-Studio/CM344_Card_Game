@@ -33,12 +33,23 @@ namespace CardGame.Managers
             if (Instance != null && Instance != this)
             {
                 Debug.LogWarning($"[ScoreManager] Duplicate ScoreManager detected on '{gameObject.name}'. Destroying duplicate. Existing instance: '{Instance.gameObject.name}'");
+                // Use DestroyImmediate in editor to avoid play mode exit issues
+                #if UNITY_EDITOR
+                if (!Application.isPlaying)
+                {
+                    DestroyImmediate(gameObject);
+                }
+                else
+                {
+                    Destroy(gameObject);
+                }
+                #else
                 Destroy(gameObject);
+                #endif
                 return;
             }
             
             Instance = this;
-            Debug.Log($"[ScoreManager] ✓ ScoreManager instance initialized on '{gameObject.name}' (InstanceID: {GetInstanceID()})");
         }
         
         private void OnDestroy()
@@ -46,7 +57,6 @@ namespace CardGame.Managers
             if (Instance == this)
             {
                 Instance = null;
-                Debug.Log("[ScoreManager] Instance cleared on destroy");
             }
         }
         
@@ -60,13 +70,11 @@ namespace CardGame.Managers
             {
                 p1Score++;
                 OnScoreChanged?.Invoke(true, p1Score);
-                Debug.Log($"Player score: {p1Score}");
             }
             else
             {
                 p2Score++;
                 OnScoreChanged?.Invoke(false, p2Score);
-                Debug.Log($"P2 score: {p2Score}");
             }
             
             // Invoke combined score update event
@@ -93,7 +101,6 @@ namespace CardGame.Managers
             OnScoreChanged?.Invoke(true, p1Score);
             OnScoreChanged?.Invoke(false, p2Score);
             OnScoreUpdated?.Invoke(p1Score, p2Score);
-            Debug.Log("Scores reset");
         }
         
         /// <summary>
@@ -123,8 +130,6 @@ namespace CardGame.Managers
                 OnScoreUpdated?.Invoke(p1Score, p2Score);
                 return;
             }
-            
-            Debug.Log($"[ScoreManager] Found {allDropAreas.Length} CardDropArea instances. Calculating scores based on spaces controlled...");
             
             // Count spaces controlled by each player
             foreach (CardDropArea dropArea in allDropAreas)
@@ -176,8 +181,6 @@ namespace CardGame.Managers
             OnScoreChanged?.Invoke(true, p1Score);
             OnScoreChanged?.Invoke(false, p2Score);
             OnScoreUpdated?.Invoke(p1Score, p2Score);
-            
-            Debug.Log($"[ScoreManager] Recalculated scores based on {totalSpaces} spaces: P1 controls {p1Score}/{totalSpaces}, P2 controls {p2Score}/{totalSpaces}, Empty: {emptySpaces}/{totalSpaces}");
         }
         
         /// <summary>

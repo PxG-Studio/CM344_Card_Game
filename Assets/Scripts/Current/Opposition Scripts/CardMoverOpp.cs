@@ -12,7 +12,7 @@ public class CardMoverP2 : MonoBehaviour
     private bool isPlayed = false; // Track if card has been played/dropped on board
     private bool isDragging;
     private bool hasMovedDuringDrag;
-    [SerializeField] private float dragThreshold = 0.1f;
+    [SerializeField] private float dragThreshold = 0.3f; // Increased from 0.1f for better click sensitivity (prevents accidental drags)
     private Vector3 pointerStartPosition;
     
     [Header("Card Reference")]
@@ -124,7 +124,6 @@ public class CardMoverP2 : MonoBehaviour
                     newCollider.size = size;
                 }
                 
-                Debug.Log($"[CardMoverP2] Added BoxCollider2D to '{gameObject.name}' (no collider found). Size: {newCollider.size}");
             }
         }
         
@@ -200,7 +199,6 @@ public class CardMoverP2 : MonoBehaviour
                         cleanName.Equals(handCard.Data.cardName, System.StringComparison.OrdinalIgnoreCase))
                     {
                         card = handCard;
-                        Debug.Log($"CardMover: Found card {handCard.Data.cardName} by name matching");
                         return;
                     }
                 }
@@ -208,10 +206,9 @@ public class CardMoverP2 : MonoBehaviour
             
             // If no match found and there's only one card in hand, use it as fallback
             // This helps when card names don't match exactly
-            if (card == null && deckManager.Hand.Count == 1)
+                    if (card == null && deckManager.Hand.Count == 1)
             {
                 card = deckManager.Hand[0];
-                Debug.Log($"CardMover: Using only card in hand: {card.Data.cardName}");
                 return;
             }
         }
@@ -230,8 +227,11 @@ public class CardMoverP2 : MonoBehaviour
     
     private void OnMouseDown()
     {
-        // [CardFront] Diagnostic logging (matching Player 1's CardMover)
-        Debug.Log($"[CardMoverP2] OnMouseDown CALLED for '{gameObject.name}'. isPlayed: {isPlayed}, CanInteract: {CanInteract}, collider: {(col != null ? col.name : "null")}");
+        // Don't allow dragging during coin toss (including selection phase)
+        if (CoinTossManager.Instance != null && CoinTossManager.Instance.IsInProgress)
+        {
+            return; // Silently ignore - coin toss is in progress
+        }
         
         // Don't allow dragging if card has been played or it's not the opponent's turn
         if (isPlayed)
@@ -242,7 +242,7 @@ public class CardMoverP2 : MonoBehaviour
         
         if (!CanInteract)
         {
-            Debug.LogWarning($"[CardMoverP2] Cannot drag '{gameObject.name}' - not opponent's turn. CurrentFate: {(FateFlowController.Instance != null ? FateFlowController.Instance.CurrentFate.ToString() : "null")}");
+            // Debug.LogWarning($"[CardMoverP2] Cannot drag '{gameObject.name}' - not opponent's turn. CurrentFate: {(FateFlowController.Instance != null ? FateFlowController.Instance.CurrentFate.ToString() : "null")}"); // Reduced verbosity
             return;
         }
         
@@ -254,7 +254,6 @@ public class CardMoverP2 : MonoBehaviour
             return;
         }
         
-        Debug.Log($"[CardMoverP2] Starting drag for '{gameObject.name}'");
         isDragging = true;
         hasMovedDuringDrag = false;
         startDragPosition = transform.position;
@@ -396,7 +395,6 @@ public class CardMoverP2 : MonoBehaviour
     {
         if (!bypassTurnCheck && !CanInteract)
         {
-            Debug.Log($"[CardMoverP2] AttemptDrop failed - cannot interact (bypassTurnCheck: {bypassTurnCheck}, CanInteract: {CanInteract})");
             return false;
         }
 
@@ -429,8 +427,6 @@ public class CardMoverP2 : MonoBehaviour
         
         if (hitCollider != null)
         {
-            Debug.Log($"[CardMoverP2] AttemptDrop: Found collider '{hitCollider.name}' at position {transform.position}");
-            
             // Try to get ICardDropArea component
             ICardDropArea cardDropArea = hitCollider.GetComponent<ICardDropArea>();
             if (cardDropArea == null)
@@ -441,7 +437,6 @@ public class CardMoverP2 : MonoBehaviour
             
             if (cardDropArea != null)
             {
-                Debug.Log($"[CardMoverP2] AttemptDrop: Successfully found ICardDropArea on '{hitCollider.name}'. Calling OnCardDropP2...");
                 cardDropArea.OnCardDropP2(this);
                 hasMovedDuringDrag = false;
                 isDragging = false;
@@ -450,12 +445,8 @@ public class CardMoverP2 : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"[CardMoverP2] AttemptDrop: Collider '{hitCollider.name}' found but no ICardDropArea component!");
+                // Debug.LogWarning($"[CardMoverP2] AttemptDrop: Collider '{hitCollider.name}' found but no ICardDropArea component!"); // Reduced verbosity
             }
-        }
-        else
-        {
-            Debug.Log($"[CardMoverP2] AttemptDrop: No collider found at position {transform.position} (radius: {checkRadius})");
         }
 
         return false;

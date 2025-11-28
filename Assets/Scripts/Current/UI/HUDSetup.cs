@@ -34,7 +34,6 @@ namespace CardGame.UI
             
             if (hasBeenSetup && setupFrame == currentFrame)
             {
-                Debug.Log("HUDSetup: Already setup this frame. Skipping duplicate setup.");
                 return;
             }
             
@@ -79,7 +78,6 @@ namespace CardGame.UI
             if (hudManager == null)
             {
                 hudManager = hudCanvas.AddComponent<HUDManager>();
-                Debug.Log("HUDSetup: Added HUDManager component to HUDOverlayCanvas");
             }
             
             // Ensure supporting managers & board visuals exist
@@ -105,7 +103,6 @@ namespace CardGame.UI
             // Setup Card Frontline UI
             SetupCardFrontlineUI(hudCanvas.transform);
             
-            Debug.Log("HUDSetup: HUD successfully configured!");
             
             // After successful HUD setup, automatically start the game
             if (GameManager.Instance != null)
@@ -125,7 +122,6 @@ namespace CardGame.UI
             
             if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.Menu)
             {
-                Debug.Log("[HUDSetup] Automatically starting game after HUD initialization.");
                 GameManager.Instance.StartGame();
             }
         }
@@ -138,18 +134,26 @@ namespace CardGame.UI
             // Check for GameManager (singleton, persists across scenes)
             if (GameManager.Instance == null)
             {
-                GameObject managerObj = new GameObject("GameManager");
-                managerObj.AddComponent<GameManager>();
-                Debug.Log("HUDSetup: Created GameManager");
+                // Also check if one exists but Instance isn't set yet (Awake might not have run)
+                GameManager existingGM = FindObjectOfType<GameManager>();
+                if (existingGM == null)
+                {
+                    GameObject managerObj = new GameObject("GameManager");
+                    managerObj.AddComponent<GameManager>();
+                }
             }
             
             // Check for ScoreManager
-            ScoreManager scoreManager = FindObjectOfType<ScoreManager>();
+            ScoreManager scoreManager = ScoreManager.Instance;
             if (scoreManager == null)
             {
-                GameObject managerObj = new GameObject("ScoreManager");
-                managerObj.AddComponent<ScoreManager>();
-                Debug.Log("HUDSetup: Created ScoreManager");
+                // Also check if one exists but Instance isn't set yet (Awake might not have run)
+                scoreManager = FindObjectOfType<ScoreManager>();
+                if (scoreManager == null)
+                {
+                    GameObject managerObj = new GameObject("ScoreManager");
+                    managerObj.AddComponent<ScoreManager>();
+                }
             }
             
             // Check for GameEndManager
@@ -158,7 +162,6 @@ namespace CardGame.UI
             {
                 GameObject managerObj = new GameObject("GameEndManager");
                 managerObj.AddComponent<GameEndManager>();
-                Debug.Log("HUDSetup: Created GameEndManager");
             }
             
             // Check for GameStatsTracker
@@ -167,7 +170,6 @@ namespace CardGame.UI
             {
                 GameObject statsObj = new GameObject("GameStatsTracker");
                 statsObj.AddComponent<GameStatsTracker>();
-                Debug.Log("HUDSetup: Created GameStatsTracker");
             }
         }
         
@@ -179,7 +181,6 @@ namespace CardGame.UI
             DeltaMarkerEmitter existingEmitter = FindObjectOfType<DeltaMarkerEmitter>();
             if (existingEmitter != null)
             {
-                Debug.Log($"HUDSetup: DeltaMarkerEmitter already exists on '{existingEmitter.gameObject.name}'");
                 existingEmitter.EnsureReady();
                 return;
             }
@@ -188,7 +189,6 @@ namespace CardGame.UI
             GameObject emitterObj = new GameObject("DeltaMarkerEmitter");
             DeltaMarkerEmitter emitter = emitterObj.AddComponent<DeltaMarkerEmitter>();
             emitter.EnsureReady();
-            Debug.Log("HUDSetup: Created DeltaMarkerEmitter and auto-configured default settings.");
         }
         
         /// <summary>
@@ -202,18 +202,29 @@ namespace CardGame.UI
                 if (eventSystemObj == null)
                 {
                     eventSystemObj = new GameObject("EventSystem");
-                    eventSystemObj.AddComponent<EventSystem>();
-                    eventSystemObj.AddComponent<StandaloneInputModule>();
-                    Debug.Log("HUDSetup: Created EventSystem for UI interactions");
+                    EventSystem eventSystem = eventSystemObj.AddComponent<EventSystem>();
+                    StandaloneInputModule inputModule = eventSystemObj.AddComponent<StandaloneInputModule>();
+                    // Configure pixel drag threshold for better click sensitivity (prevents accidental drags)
+                    eventSystem.pixelDragThreshold = 10; // Increased from default 5 to make clicks more reliable
                 }
-                else if (eventSystemObj.GetComponent<EventSystem>() == null)
+                else                 if (eventSystemObj.GetComponent<EventSystem>() == null)
                 {
-                    eventSystemObj.AddComponent<EventSystem>();
+                    EventSystem eventSystem = eventSystemObj.AddComponent<EventSystem>();
                     if (eventSystemObj.GetComponent<StandaloneInputModule>() == null)
                     {
                         eventSystemObj.AddComponent<StandaloneInputModule>();
                     }
-                    Debug.Log("HUDSetup: Added EventSystem components to existing GameObject");
+                    // Configure pixel drag threshold for better click sensitivity
+                    eventSystem.pixelDragThreshold = 10; // Increased from default 5
+                }
+                else
+                {
+                    // Configure existing EventSystem's pixel drag threshold
+                    EventSystem eventSystem = eventSystemObj.GetComponent<EventSystem>();
+                    if (eventSystem != null)
+                    {
+                        eventSystem.pixelDragThreshold = 10; // Increased from default 5
+                    }
                 }
             }
         }
@@ -259,7 +270,6 @@ namespace CardGame.UI
             {
                 GameObject fateObj = new GameObject("FateFlowController");
                 fateObj.AddComponent<FateFlowController>();
-                Debug.Log("HUDSetup: Created FateFlowController");
             }
         }
         
@@ -270,7 +280,6 @@ namespace CardGame.UI
             {
                 GameObject coinTossObj = new GameObject("CoinTossManager");
                 coinTossObj.AddComponent<CoinTossManager>();
-                Debug.Log("HUDSetup: Created CoinTossManager");
             }
         }
         
@@ -287,7 +296,6 @@ namespace CardGame.UI
                 canvas = canvasObject.AddComponent<Canvas>();
                 canvas.renderMode = RenderMode.ScreenSpaceOverlay;
                 canvas.sortingOrder = 100; // Render on top
-                Debug.Log("HUDSetup: Added Canvas component");
             }
             
             // Add CanvasScaler if missing
@@ -298,7 +306,6 @@ namespace CardGame.UI
                 scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 scaler.referenceResolution = new Vector2(1920, 1080);
                 scaler.matchWidthOrHeight = 0.5f;
-                Debug.Log("HUDSetup: Added CanvasScaler component");
             }
             
             // Add GraphicRaycaster if missing
@@ -306,7 +313,6 @@ namespace CardGame.UI
             if (raycaster == null)
             {
                 raycaster = canvasObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
-                Debug.Log("HUDSetup: Added GraphicRaycaster component");
             }
             
             // Ensure it has a RectTransform (should be automatic when Canvas is added)
@@ -330,27 +336,23 @@ namespace CardGame.UI
             Transform p1Panel = hudRoot.Find("P1Panel");
             if (p1Panel != null && !p1Panel.gameObject.activeSelf)
             {
-                Debug.Log("HUDSetup: Destroying inactive P1Panel");
                 GameObject.DestroyImmediate(p1Panel.gameObject);
                 p1Panel = null;
             }
             if (p1Panel == null)
             {
                 p1Panel = CreatePlayerPanel(hudRoot, "P1Panel", true);
-                Debug.Log("HUDSetup: Created P1Panel");
             }
             
             Transform p2Panel = hudRoot.Find("P2Panel");
             if (p2Panel != null)
             {
-                Debug.Log("HUDSetup: Destroying existing P2Panel to recreate with new position");
                 GameObject.DestroyImmediate(p2Panel.gameObject);
                 p2Panel = null;
             }
             if (p2Panel == null)
             {
                 p2Panel = CreatePlayerPanel(hudRoot, "P2Panel", false);
-                Debug.Log("HUDSetup: Created P2Panel");
             }
             
             // Find text labels
@@ -436,17 +438,6 @@ namespace CardGame.UI
                 SetPrivateField(p2PanelUI, panelUIType, "fieldControlLabel", p2ScoreLabel);
                 SetPrivateField(p2PanelUI, panelUIType, "blurpLabel", p2BlurpLabel);
             }
-            
-            Debug.Log($"HUDSetup: Wired up references - " +
-                     $"P1Score: {p1ScoreLabel != null}, " +
-                     $"P1HandDeck: {p1HandDeckLabel != null}, " +
-                     $"P1Turn: {p1TurnIndicator != null}, " +
-                     $"P2Score: {p2ScoreLabel != null}, " +
-                     $"P2HandDeck: {p2HandDeckLabel != null}, " +
-                     $"P2Turn: {p2TurnIndicator != null}, " +
-                     $"TilesRemaining: {tilesRemainingLabel != null}, " +
-                     $"DeckMgr1: {player1DeckManager != null}, " +
-                     $"DeckMgr2: {player2DeckManager != null}");
         }
         
         /// <summary>
@@ -458,8 +449,11 @@ namespace CardGame.UI
             panel.transform.SetParent(parent, false);
             panel.layer = 5; // UI layer
             
-            // Add RectTransform and position - moved towards middle/center
-            RectTransform rectTransform = panel.AddComponent<RectTransform>();
+        // Add RectTransform and position - moved towards middle/center
+        RectTransform rectTransform = panel.AddComponent<RectTransform>();
+        // Move panels in square-unit increments for fine alignment
+        float halfSquareUnit = 50f; // 1/2 square unit in pixels
+            
             if (isPlayer1)
             {
                 // Left of center
@@ -467,7 +461,8 @@ namespace CardGame.UI
                 rectTransform.anchorMax = new Vector2(0.5f, 1);
                 rectTransform.pivot = new Vector2(1, 1); // Right pivot so it grows left from center
                 // Shifted slightly further left so it clears the board more comfortably
-                rectTransform.anchoredPosition = new Vector2(-160, -80);
+                // Moved 1/2 square unit to the right
+                rectTransform.anchoredPosition = new Vector2(-160 + halfSquareUnit, -80);
             }
             else
             {
@@ -475,7 +470,10 @@ namespace CardGame.UI
                 rectTransform.anchorMin = new Vector2(0.5f, 1);
                 rectTransform.anchorMax = new Vector2(0.5f, 1);
                 rectTransform.pivot = new Vector2(0, 1); // Left pivot so it grows right from center
-                rectTransform.anchoredPosition = new Vector2(120, -80); // 120px right of center
+                // Start from original offset (120) and shift by requested increments
+                // Nudged slightly left to visually match board width with P1 panel
+                float p2Offset = 110f; // shifted slightly right (~5% of panel width) for even alignment
+                rectTransform.anchoredPosition = new Vector2(p2Offset, -80);
             }
             rectTransform.sizeDelta = new Vector2(200, 105);
             
@@ -588,7 +586,6 @@ namespace CardGame.UI
             indicatorScript.SetActive(false); // Start inactive
             
             string position = isPlayer1 ? "above Player 1 panel" : "above Player 2 panel";
-            Debug.Log($"HUDSetup: Created UI triangle indicator '{name}_UI' {position}");
             return indicatorScript;
         }
         
@@ -635,7 +632,6 @@ namespace CardGame.UI
             // Set panel references
             movingIndicator.SetPanels(p1Panel.GetComponent<RectTransform>(), p2Panel.GetComponent<RectTransform>());
             
-            Debug.Log("HUDSetup: Created moving turn indicator with figure-eight pattern");
             return movingIndicator;
         }
         
@@ -648,7 +644,6 @@ namespace CardGame.UI
             CustomCursor existingCursor = FindObjectOfType<CustomCursor>();
             if (existingCursor != null)
             {
-                Debug.Log("HUDSetup: CustomCursor already exists in scene");
                 return;
             }
             
@@ -665,7 +660,6 @@ namespace CardGame.UI
                     if (cursorGameObject.name == "Deck Slot")
                     {
                         cursorGameObject.name = "CustomCursor";
-                        Debug.Log("HUDSetup: Renamed 'Deck Slot' to 'CustomCursor'");
                     }
                     break;
                 }
@@ -706,8 +700,6 @@ namespace CardGame.UI
                 }
                 Destroy(cursorGameObject);
             }
-            
-            Debug.Log("HUDSetup: CursorManager ready with spinning triangle cursor");
         }
         
         /// <summary>
@@ -786,10 +778,7 @@ namespace CardGame.UI
                 SetLayerRecursive(obj, ignoreLayer);
             }
             
-            if (!string.IsNullOrEmpty(reason))
-            {
-                Debug.Log($"HUDSetup: Disabled all input components on '{obj.name}' ({reason})");
-            }
+            // Input components disabled
         }
 
         /// <summary>
@@ -892,7 +881,6 @@ namespace CardGame.UI
             GameEndUI existingUI = hudRoot.GetComponentInChildren<GameEndUI>(true);
             if (existingUI != null)
             {
-                Debug.Log("HUDSetup: GameEndUI already exists. Checking for missing UI elements...");
                 // [CardFront] Use helper method to ensure all required elements exist
                 EnsureGameEndUIElements(existingUI);
                 return;
@@ -1099,7 +1087,6 @@ namespace CardGame.UI
             SetPrivateField(victoryCutIn, cutInType, "accentPulseImage", pulseImage);
             SetPrivateField(victoryCutIn, cutInType, "audioSource", cutInAudioSource);
             
-            Debug.Log("HUDSetup: Created GameEndUI panel");
         }
         
         /// <summary>
@@ -1186,8 +1173,6 @@ namespace CardGame.UI
                     }
                 }
             }
-            
-            Debug.Log("HUDSetup: Verified/updated existing GameEndUI with all required elements");
         }
         
         /// <summary>
@@ -1227,7 +1212,6 @@ namespace CardGame.UI
             // Wire up to GameEndUI
             SetPrivateField(gameEndUI, gameEndUIType, fieldName, textComponent);
             
-            Debug.Log($"HUDSetup: Created missing UI element '{elementName}' for GameEndUI");
             return textComponent;
         }
         
@@ -1289,7 +1273,6 @@ namespace CardGame.UI
             CoinTossUI existingUI = hudRoot.GetComponentInChildren<CoinTossUI>(true);
             if (existingUI != null)
             {
-                Debug.Log($"HUDSetup: CoinTossUI already exists on '{existingUI.gameObject.name}'. Updating layout and skipping creation.");
 
                 // If the panel already exists in the scene (prefab or hand‑placed),
                 // nudge its ContentPanel to the left so the whole popup shifts over.
@@ -1321,7 +1304,6 @@ namespace CardGame.UI
                 return;
             }
             
-            Debug.Log($"HUDSetup: Creating CoinTossPanel under '{hudRoot.name}' (active: {hudRoot.gameObject.activeSelf}, inHierarchy: {hudRoot.gameObject.activeInHierarchy})");
             
             // Create coin toss panel
             GameObject coinTossPanel = new GameObject("CoinTossPanel");
@@ -1331,7 +1313,6 @@ namespace CardGame.UI
             
             // Mark as DontDestroyOnLoad to ensure it persists (if parent does)
             // Note: This only works if parent is in DontDestroyOnLoad, but we'll ensure it exists
-            Debug.Log($"HUDSetup: Created CoinTossPanel GameObject '{coinTossPanel.name}' (InstanceID: {coinTossPanel.GetInstanceID()}) under '{hudRoot.name}'");
             
             RectTransform panelRect = coinTossPanel.AddComponent<RectTransform>();
             panelRect.anchorMin = Vector2.zero;
@@ -1528,7 +1509,6 @@ namespace CardGame.UI
             else
             {
             coinTossPanel.transform.SetAsLastSibling(); // ensure overlay renders above other HUD elements
-            Debug.Log($"HUDSetup: ✓ CoinTossUI panel created successfully on '{coinTossPanel.name}' (InstanceID: {coinTossUI.GetInstanceID()}, Parent: '{coinTossPanel.transform.parent?.name}', Active: {coinTossPanel.activeSelf})");
             }
         }
         
@@ -1550,7 +1530,6 @@ namespace CardGame.UI
             if (headsSprite != null)
             {
                 SetPrivateField(coinTossUI, coinTossUIType, "headsSprite", headsSprite);
-                Debug.Log("[HUDSetup] ✓ Auto-assigned custom coin heads sprite.");
             }
             else
             {
@@ -1560,7 +1539,6 @@ namespace CardGame.UI
             if (tailsSprite != null)
             {
                 SetPrivateField(coinTossUI, coinTossUIType, "tailsSprite", tailsSprite);
-                Debug.Log("[HUDSetup] ✓ Auto-assigned custom coin tails sprite.");
             }
             else
             {
@@ -1580,7 +1558,6 @@ namespace CardGame.UI
             CardFrontlineUI existing = FindObjectOfType<CardFrontlineUI>();
             if (existing != null)
             {
-                Debug.Log("HUDSetup: CardFrontlineUI already exists");
                 return;
             }
             
@@ -1762,7 +1739,6 @@ namespace CardGame.UI
             SetPrivateField(frontlineUI, uiType, "triangleTop", triangleTopRect);
             SetPrivateField(frontlineUI, uiType, "triangleBottom", triangleBottomRect);
             
-            Debug.Log("HUDSetup: Created CardFrontlineUI bar");
             
             BringCoinTossPanelToFront(hudRoot);
         }
@@ -1855,7 +1831,6 @@ namespace CardGame.UI
             if (coinPanel != null)
             {
                 coinPanel.SetAsLastSibling();
-                Debug.Log("HUDSetup: CoinTossPanel moved to front of HUD overlay");
             }
         }
     }

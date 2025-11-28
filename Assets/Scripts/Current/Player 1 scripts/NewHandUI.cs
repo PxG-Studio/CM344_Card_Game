@@ -76,7 +76,6 @@ namespace CardGame.UI
                 NewCard handCard = deckManager.Hand[index];
                 if (handCard != null)
                 {
-                    Debug.Log($"GetCardForUI: Found card by index matching: {handCard.Data?.cardName}");
                     return handCard;
                 }
             }
@@ -122,21 +121,18 @@ namespace CardGame.UI
             if (cardPrefab != null && staticCardPrefab == null)
             {
                 staticCardPrefab = cardPrefab;
-                Debug.Log("[NewHandUI] Cached cardPrefab reference in static variable");
             }
             
             // [CardFront] Restore prefab reference from static cache if lost
             if (cardPrefab == null && staticCardPrefab != null)
             {
                 cardPrefab = staticCardPrefab;
-                Debug.Log("[NewHandUI] Restored cardPrefab reference from static cache (reference was lost during rematch)");
             }
             
             // Ensure cardContainer is assigned
             if (cardContainer == null)
             {
                 cardContainer = transform;
-                Debug.Log("[NewHandUI] Auto-assigned cardContainer to self transform");
             }
         }
         
@@ -191,7 +187,6 @@ namespace CardGame.UI
                 if (staticCardPrefab != null)
                 {
                     cardPrefab = staticCardPrefab;
-                    Debug.Log("[NewHandUI] Restored cardPrefab from static cache during AddCardToHand");
                 }
                 else
                 {
@@ -242,8 +237,6 @@ namespace CardGame.UI
             // Show delta marker when card is drawn (+1 for gaining a card)
             // Delay slightly to allow card to be positioned first
             StartCoroutine(ShowDrawDeltaMarker(cardUI.transform));
-            
-            Debug.Log($"NewHandUI.AddCardToHand: Successfully added card '{card.Data.cardName}' to hand. Total cards: {cardUIList.Count}");
         }
         
         private System.Collections.IEnumerator ShowDrawDeltaMarker(Transform cardTransform)
@@ -279,7 +272,6 @@ namespace CardGame.UI
                 foreach (var effect in card.Data.effects)
                 {
                     // Handle different effect types
-                    Debug.Log($"Applying effect: {effect.effectType} with value {effect.effectValue}");
                     // Add your effect handling logic here
                 }
             }
@@ -304,7 +296,6 @@ namespace CardGame.UI
                 else
                 {
                     // It's a board card (CardMover), just remove from UI list but keep the GameObject
-                    Debug.Log($"Card {card.Data.cardName} played on board - keeping GameObject");
                 }
                 
                 ArrangeCards();

@@ -112,7 +112,6 @@ namespace CardGame.Testing
             }
             
             deckManager.InitializeDeck();
-            Debug.Log("Deck initialized!");
         }
         
         public void DrawInitialCards()
@@ -124,7 +123,7 @@ namespace CardGame.Testing
             }
             
             deckManager.DrawCards(cardsToDraw);
-            Debug.Log($"Drew {cardsToDraw} cards!");
+            // Debug.Log($"Drew {cardsToDraw} cards!"); // Reduced verbosity
         }
         
         public void DrawOneCard()

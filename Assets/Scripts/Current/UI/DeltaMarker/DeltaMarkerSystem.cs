@@ -122,7 +122,7 @@ namespace CardGame.UI
             if (cachedEmitter != null)
             {
                 cachedEmitter.EnsureReady();
-                Debug.Log($"[DeltaMarkerSystem] Using DeltaMarkerEmitter '{cachedEmitter.gameObject.name}'");
+                // Debug.Log($"[DeltaMarkerSystem] Using DeltaMarkerEmitter '{cachedEmitter.gameObject.name}'"); // Reduced verbosity
             }
             
             return cachedEmitter;

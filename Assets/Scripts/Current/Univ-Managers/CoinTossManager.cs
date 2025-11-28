@@ -47,6 +47,34 @@ namespace CardGame.Managers
         /// Gets whether the coin toss has been completed.
         /// </summary>
         public bool IsComplete => isCoinTossComplete;
+        
+        /// <summary>
+        /// Checks if coin toss is currently in progress (not complete or UI is active).
+        /// This includes the selection phase (picking heads/tails) and the animation phase.
+        /// </summary>
+        public bool IsInProgress
+        {
+            get
+            {
+                // Coin toss is in progress if it's not complete
+                if (!isCoinTossComplete)
+                {
+                    return true;
+                }
+                
+                // Also check if CoinTossUI is active (as a safety check)
+                // This covers cases where the UI might still be visible even after completion
+                CardGame.UI.CoinTossUI coinTossUI = UnityEngine.Object.FindObjectOfType<CardGame.UI.CoinTossUI>();
+                if (coinTossUI != null && coinTossUI.gameObject.activeInHierarchy)
+                {
+                    // If UI is active but coin toss is complete, it's not in progress
+                    // But if UI is active and coin toss is not complete, it is in progress
+                    return !isCoinTossComplete;
+                }
+                
+                return false;
+            }
+        }
 
         private void Awake()
         {
@@ -81,9 +109,6 @@ namespace CardGame.Managers
 
             playerSelection = selectHeads;
             selectedByPlayer = selectingPlayer;
-            string selectionString = selectHeads ? "Heads" : "Tails";
-            string playerString = selectingPlayer == FateSide.Player ? "Player 1" : "Player 2";
-            Debug.Log($"[CoinTossManager] {playerString} selected: {selectionString}");
         }
 
         /// <summary>
@@ -132,18 +157,8 @@ namespace CardGame.Managers
             coinTossResult = startingPlayer;
             isCoinTossComplete = true;
 
-            string flipResultString = flipResultIsHeads ? "Heads" : "Tails";
-            string selectionString = playerSelectedHeads ? "Heads" : "Tails";
-            string playerString = selectedByPlayer.Value == FateSide.Player ? "Player 1" : "Player 2";
-            string startingPlayerString = startingPlayer == FateSide.Player ? "Player 1" : "Player 2";
-            
-            Debug.Log($"[CoinTossManager] Coin flip result: {flipResultString}. {playerString} selected {selectionString}. " +
-                $"Result matches selection: {flipResultIsHeads == playerSelectedHeads}. {startingPlayerString} goes first.");
-            Debug.Log($"[CoinTossManager] coinTossResult set to: {coinTossResult.Value} ({(coinTossResult.Value == FateSide.Player ? "Player 1" : "Player 2")})");
-
             // Fire event for UI and other systems
             OnCoinTossComplete?.Invoke(coinTossResult.Value);
-            Debug.Log($"[CoinTossManager] OnCoinTossComplete event fired with: {coinTossResult.Value} ({(coinTossResult.Value == FateSide.Player ? "Player 1" : "Player 2")})");
 
             return coinTossResult.Value;
         }
@@ -185,7 +200,6 @@ namespace CardGame.Managers
             isCoinTossComplete = false;
             playerSelection = null;
             selectedByPlayer = null;
-            Debug.Log("[CoinTossManager] Coin toss reset for new game");
         }
 
         /// <summary>
@@ -196,12 +210,10 @@ namespace CardGame.Managers
         {
             if (coinTossResult.HasValue)
             {
-                Debug.Log($"[CoinTossManager] GetStartingPlayer() returning: {coinTossResult.Value} ({(coinTossResult.Value == FateSide.Player ? "Player 1" : "Player 2")})");
                 return coinTossResult.Value;
             }
 
-            // Default to Player 1 if not yet tossed
-            Debug.LogWarning("[CoinTossManager] Coin toss not yet performed. Defaulting to Player 1.");
+            // Default to Player 1 if not yet tossed (normal fallback when coin toss UI is still animating)
             return FateSide.Player;
         }
 
@@ -213,7 +225,6 @@ namespace CardGame.Managers
         {
             coinTossResult = startingSide;
             isCoinTossComplete = true;
-            Debug.Log($"[CoinTossManager] Forced coin toss result: {startingSide}");
             OnCoinTossComplete?.Invoke(startingSide);
         }
     }

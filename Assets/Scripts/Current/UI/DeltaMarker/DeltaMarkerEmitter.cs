@@ -103,7 +103,6 @@ namespace CardGame.UI
                 config = Resources.Load<DeltaMarkerConfig>(ConfigResourcePath);
                 if (config != null)
                 {
-                    Debug.Log("[DeltaMarkerEmitter] Loaded DeltaMarkerConfig from Resources.");
                 }
                 else
                 {
@@ -119,7 +118,6 @@ namespace CardGame.UI
                 if (loadedPrefab != null)
                 {
                     deltaMarkerPrefab = loadedPrefab;
-                    Debug.Log("[DeltaMarkerEmitter] Loaded DeltaMarkerPopup prefab from Resources.");
                 }
                 else
                 {

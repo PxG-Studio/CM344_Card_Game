@@ -97,6 +97,11 @@ namespace CardGame.UI
         
         private void Awake()
         {
+            // Auto-load CardBack_Default sprite if not already set
+            if (defaultCardBackSprite == null)
+            {
+                LoadDefaultCardBackSprite();
+            }
             rectTransform = GetComponent<RectTransform>();
             canvas = GetComponentInParent<Canvas>();
             
@@ -385,7 +390,15 @@ namespace CardGame.UI
                 backContainer.transform.SetParent(transform);
                 backContainer.transform.localPosition = Vector3.zero;
                 backContainer.transform.localRotation = Quaternion.identity;
-                backContainer.transform.localScale = Vector3.one;
+                // Match frontContainer's scale if it exists, otherwise use Vector3.one
+                if (frontContainer != null)
+                {
+                    backContainer.transform.localScale = frontContainer.transform.localScale;
+                }
+                else
+                {
+                    backContainer.transform.localScale = Vector3.one;
+                }
                 
                 // Create card back visual
                 GameObject cardBackVisual = null;
@@ -456,7 +469,9 @@ namespace CardGame.UI
                         if (backSpriteRenderer != null)
                         {
                             // Set a default color - will be overridden by captured color when flipped
+                            // Ensure full opacity
                             backSpriteRenderer.color = new Color(0.3f, 0.3f, 0.3f, 1f); // Dark gray placeholder
+                            backSpriteRenderer.enabled = true;
                         }
                     }
                 }
@@ -796,8 +811,60 @@ namespace CardGame.UI
             // Note: During flip animation, container CanvasGroups control alpha, not root
         }
         
+        /// <summary>
+        /// Loads the default card back sprite from Resources or Assets folder
+        /// </summary>
+        private void LoadDefaultCardBackSprite()
+        {
+            // Try loading from Resources first (runtime builds)
+            defaultCardBackSprite = Resources.Load<Sprite>("CardBack_Default");
+            
+            // If not found, try Resources/Sprite path
+            if (defaultCardBackSprite == null)
+            {
+                defaultCardBackSprite = Resources.Load<Sprite>("Sprite/CardBack_Default");
+            }
+            
+            // If still not found in Resources, try loading directly from asset path (editor only)
+            if (defaultCardBackSprite == null)
+            {
+                #if UNITY_EDITOR
+                defaultCardBackSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprite/CardBack_Default.png");
+                
+                // If found via AssetDatabase, log a suggestion to move it to Resources for builds
+                // Debug.Log($"[NewCardUI] Loaded CardBack_Default from Assets folder. Sprite is {(defaultCardBackSprite != null ? "loaded" : "null")}. For runtime builds, consider moving it to Resources folder."); // Reduced verbosity
+                #endif
+            }
+            
+            // Final fallback: try to find any sprite with "CardBack" in the name
+            if (defaultCardBackSprite == null)
+            {
+                #if UNITY_EDITOR
+                string[] guids = UnityEditor.AssetDatabase.FindAssets("CardBack_Default t:Sprite");
+                if (guids.Length > 0)
+                {
+                    string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]);
+                    defaultCardBackSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                }
+                #endif
+            }
+            
+            // Debug log if sprite was found
+            if (defaultCardBackSprite == null)
+            {
+                Debug.LogWarning("[NewCardUI] Could not load CardBack_Default sprite. Card backs may not display correctly.");
+            }
+            // Debug.Log($"[NewCardUI] Successfully loaded CardBack_Default sprite: {defaultCardBackSprite.name}, size: {defaultCardBackSprite.bounds.size}"); // Reduced verbosity
+        }
+        
         private void AssignCardBackSprite()
         {
+            // Ensure default card back sprite is loaded if not set
+            if (defaultCardBackSprite == null)
+            {
+                LoadDefaultCardBackSprite();
+            }
+            
             // Try to get sprite from card data, fallback to default
             Sprite backSprite = null;
             if (card != null && card.Data != null && card.Data.cardBackSprite != null)
@@ -843,27 +910,77 @@ namespace CardGame.UI
 
                     backSpriteRenderer = cardBackVisual.AddComponent<SpriteRenderer>();
 
-                    // Match the background's sorting so the back sits in the same
-                    // render layer as the front of the card.
+                    // Match the background's sorting exactly so the back sits in the same
+                    // render layer as the front of the card. Use the SAME sorting order as background
+                    // to prevent the back from appearing on top of the front during flip animation.
                     if (cardBackground != null)
                     {
-                        backSpriteRenderer.sortingLayerID = cardBackground.sortingLayerID;
-                        backSpriteRenderer.sortingOrder = cardBackground.sortingOrder;
+                        SpriteRenderer bgSR = cardBackground as SpriteRenderer;
+                        if (bgSR != null)
+                        {
+                            backSpriteRenderer.sortingLayerID = bgSR.sortingLayerID;
+                            // Use the SAME sorting order as background, not higher
+                            // This prevents the back from rendering on top of the front
+                            backSpriteRenderer.sortingOrder = bgSR.sortingOrder;
+                        }
+                        else
+                        {
+                            // If cardBackground is an Image, use default sorting
+                            backSpriteRenderer.sortingOrder = 0;
+                        }
+                    }
+                    else
+                    {
+                        // Default sorting if no background found
+                        backSpriteRenderer.sortingOrder = 0;
                     }
                 }
 
+                // Assign sprite first
                 backSpriteRenderer.sprite = backSprite;
-                backSpriteRenderer.color = Color.white;
+                
+                // Ensure full opacity - explicitly set alpha to 1
+                Color spriteColor = new Color(1f, 1f, 1f, 1f);
+                backSpriteRenderer.color = spriteColor;
+                
+                // Ensure the sprite renderer is enabled and visible
+                backSpriteRenderer.enabled = true;
+                backSpriteRenderer.gameObject.SetActive(true);
+                
+                // Ensure back container is active so the sprite can be seen
+                if (backContainer != null)
+                {
+                    backContainer.SetActive(true);
+                }
 
-                // Fit the back sprite to the card background so it isn't huge.
+                // Fit the back sprite to the card background so it matches exactly.
+                // Account for both sprite bounds AND transform scale hierarchy to ensure proper sizing.
                 if (cardBackground != null && cardBackground.sprite != null)
                 {
-                    Vector2 bgSize = cardBackground.sprite.bounds.size;
+                    // Get the cardBackground's actual visual size
+                    // Need to account for all scales in the hierarchy (frontContainer + cardBackground)
+                    Vector3 bgScale = cardBackground.transform.localScale;
+                    Vector3 frontContainerScale = Vector3.one;
+                    
+                    // If cardBackground is inside frontContainer, account for frontContainer's scale too
+                    if (frontContainer != null && cardBackground.transform.IsChildOf(frontContainer.transform))
+                    {
+                        frontContainerScale = frontContainer.transform.localScale;
+                    }
+                    
+                    Vector2 bgSpriteSize = cardBackground.sprite.bounds.size;
+                    // Multiply by all scales in hierarchy
+                    Vector2 bgActualSize = new Vector2(
+                        bgSpriteSize.x * bgScale.x * frontContainerScale.x,
+                        bgSpriteSize.y * bgScale.y * frontContainerScale.y
+                    );
+                    
                     Vector2 backSize = backSprite.bounds.size;
                     if (backSize.x > 0.0001f && backSize.y > 0.0001f)
                     {
-                        float scaleX = bgSize.x / backSize.x;
-                        float scaleY = bgSize.y / backSize.y;
+                        // Calculate scale to match the cardBackground's actual visual size
+                        float scaleX = bgActualSize.x / backSize.x;
+                        float scaleY = bgActualSize.y / backSize.y;
                         float uniform = Mathf.Min(scaleX, scaleY);
                         backSpriteRenderer.transform.localScale = new Vector3(uniform, uniform, 1f);
                     }
@@ -919,6 +1036,12 @@ namespace CardGame.UI
         
         public void OnBeginDrag(PointerEventData eventData)
         {
+            // Don't allow dragging during coin toss (including selection phase)
+            if (CardGame.Managers.CoinTossManager.Instance != null && CardGame.Managers.CoinTossManager.Instance.IsInProgress)
+            {
+                return; // Silently ignore - coin toss is in progress
+            }
+            
             // Prevent dragging prefab assets (not instantiated in scene)
             // [CardFront] CRITICAL: Cards are renamed from "NewCardPrefab(Clone)" to card names in Initialize()
             // So we can't check for "(Clone)" in the name. Instead, check if it's an actual prefab asset.
@@ -990,7 +1113,7 @@ namespace CardGame.UI
                if (cardMoverP2 != null)
                {
                    // CardMoverP2 handles opponent card dragging via OnMouseDown - don't interfere
-                   Debug.Log($"[NewCardUI] Opponent card '{gameObject.name}' drag handled by CardMoverP2 - skipping NewCardUI drag handling to prevent conflicts.");
+                   // Debug.Log($"[NewCardUI] Opponent card '{gameObject.name}' drag handled by CardMoverP2 - skipping NewCardUI drag handling to prevent conflicts."); // Reduced verbosity
                    return;
                }
                

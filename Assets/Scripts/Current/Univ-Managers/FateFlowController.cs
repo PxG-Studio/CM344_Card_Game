@@ -46,12 +46,10 @@ namespace CardGame.Managers
             {
                 // Coin toss already performed, use its result
                 FateSide coinTossResult = CoinTossManager.Instance.GetStartingPlayer();
-                Debug.Log($"[FateFlowController] Start() - Coin toss already complete. Setting CurrentFate from {CurrentFate} ({(CurrentFate == FateSide.Player ? "Player 1" : "Player 2")}) to {coinTossResult} ({(coinTossResult == FateSide.Player ? "Player 1" : "Player 2")})");
                 CurrentFate = coinTossResult;
             }
             else
             {
-                Debug.Log($"[FateFlowController] Start() - Coin toss not yet complete. CurrentFate remains at default: {CurrentFate} ({(CurrentFate == FateSide.Player ? "Player 1" : "Player 2")})");
             }
             
             OnFateChanged?.Invoke(CurrentFate);
@@ -63,13 +61,10 @@ namespace CardGame.Managers
         {
             if (CurrentFate == side)
             {
-                Debug.Log($"[FateFlowController] SetFate called with {side} ({(side == FateSide.Player ? "Player 1" : "Player 2")}), but CurrentFate is already {CurrentFate}. No change needed.");
                 return;
             }
 
-            FateSide previousFate = CurrentFate;
             CurrentFate = side;
-            Debug.Log($"[FateFlowController] SetFate: Changed from {previousFate} ({(previousFate == FateSide.Player ? "Player 1" : "Player 2")}) to {CurrentFate} ({(CurrentFate == FateSide.Player ? "Player 1" : "Player 2")})");
             OnFateChanged?.Invoke(CurrentFate);
         }
 

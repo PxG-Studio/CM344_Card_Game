@@ -93,7 +93,6 @@ namespace CardGame.UI
                     cg.interactable = true;
                     cg.blocksRaycasts = true;
                 }
-                Debug.Log($"[CoinTossUI] Heads button setup complete: interactable={headsButton.interactable}, enabled={headsButton.enabled}");
             }
             else
             {
@@ -123,7 +122,6 @@ namespace CardGame.UI
                         cg.interactable = true;
                         cg.blocksRaycasts = true;
                     }
-                    Debug.Log("[CoinTossUI] Fallback wired Heads button by name.");
                 }
                 else
                 {
@@ -145,7 +143,6 @@ namespace CardGame.UI
                     cg.interactable = true;
                     cg.blocksRaycasts = true;
                 }
-                Debug.Log($"[CoinTossUI] Tails button setup complete: interactable={tailsButton.interactable}, enabled={tailsButton.enabled}");
             }
             else
             {
@@ -174,7 +171,6 @@ namespace CardGame.UI
                         cg.interactable = true;
                         cg.blocksRaycasts = true;
                     }
-                    Debug.Log("[CoinTossUI] Fallback wired Tails button by name.");
                 }
                 else
                 {
@@ -277,7 +273,6 @@ namespace CardGame.UI
                 trigger.triggers.Add(pointerExit);
             }
             
-            Debug.Log($"[CoinTossUI] Added hover effect to '{label.text}' label. Default: {originalColor}, Hover: {hoverColor}");
         }
         
         private IEnumerator HoverAnimation()
@@ -314,7 +309,6 @@ namespace CardGame.UI
             {
                 if (Input.GetMouseButtonDown(0))
                 {
-                    Debug.Log("[CoinTossUI] Fallback selection via panel click - choosing HEADS.");
                     OnSelectionMade(true);
                 }
             }
@@ -325,7 +319,6 @@ namespace CardGame.UI
         /// </summary>
         public void StartCoinToss()
         {
-            Debug.Log("[CoinTossUI] StartCoinToss() called.");
             
             // Activate this GameObject (the component is on coinTossPanel, so this is the panel itself)
             // Ensure parent hierarchy is active first
@@ -340,7 +333,6 @@ namespace CardGame.UI
             // Activate this GameObject (the panel with CoinTossUI component)
             gameObject.SetActive(true);
             hasBeenActivated = true; // Mark as intentionally activated to prevent Awake from deactivating it
-            Debug.Log($"[CoinTossUI] Activated gameObject '{gameObject.name}' (activeSelf: {gameObject.activeSelf}, activeInHierarchy: {gameObject.activeInHierarchy})");
             
             // Update coinTossPanel reference to match gameObject (they should be the same)
             if (coinTossPanel != gameObject)
@@ -394,7 +386,6 @@ namespace CardGame.UI
             
             // Note: Can't start coroutine here because GameObject might not be active yet
             // GameManager will call StartCoinTossAnimation() after GameObject is confirmed active
-            Debug.Log("[CoinTossUI] Panel activated. Waiting for GameManager to start animation after GameObject is confirmed active.");
             
             // Debug: Verify button states
             VerifyButtonStates();
@@ -405,74 +396,24 @@ namespace CardGame.UI
         /// </summary>
         private void VerifyButtonStates()
         {
-            Debug.Log("[CoinTossUI] Verifying button states...");
             
             // Check if EventSystem exists (required for button clicks)
             EventSystem eventSystem = EventSystem.current;
             if (eventSystem == null)
             {
-                Debug.LogError("[CoinTossUI] EventSystem is missing! Buttons will not work. Creating EventSystem...");
                 GameObject eventSystemObj = new GameObject("EventSystem");
                 eventSystemObj.AddComponent<EventSystem>();
                 eventSystemObj.AddComponent<StandaloneInputModule>();
-            }
-            else
-            {
-                Debug.Log($"[CoinTossUI] EventSystem found: {eventSystem.name}, enabled={eventSystem.enabled}");
             }
             
             if (headsButton == null)
             {
                 Debug.LogError("[CoinTossUI] headsButton is NULL! Button must be assigned in Inspector.");
             }
-            else
-            {
-                Debug.Log($"[CoinTossUI] headsButton: activeSelf={headsButton.gameObject.activeSelf}, " +
-                    $"activeInHierarchy={headsButton.gameObject.activeInHierarchy}, " +
-                    $"interactable={headsButton.interactable}, " +
-                    $"enabled={headsButton.enabled}, " +
-                    $"listeners={headsButton.onClick.GetPersistentEventCount()}");
-                
-                // Check for blocking CanvasGroup
-                CanvasGroup cg = headsButton.GetComponent<CanvasGroup>();
-                if (cg != null)
-                {
-                    Debug.Log($"[CoinTossUI] headsButton CanvasGroup: interactable={cg.interactable}, blocksRaycasts={cg.blocksRaycasts}, alpha={cg.alpha}");
-                }
-                
-                // Check parent CanvasGroups
-                CanvasGroup parentCg = headsButton.GetComponentInParent<CanvasGroup>();
-                if (parentCg != null && parentCg != cg)
-                {
-                    Debug.Log($"[CoinTossUI] headsButton parent CanvasGroup: interactable={parentCg.interactable}, blocksRaycasts={parentCg.blocksRaycasts}, alpha={parentCg.alpha}");
-                }
-            }
             
             if (tailsButton == null)
             {
                 Debug.LogError("[CoinTossUI] tailsButton is NULL! Button must be assigned in Inspector.");
-            }
-            else
-            {
-                Debug.Log($"[CoinTossUI] tailsButton: activeSelf={tailsButton.gameObject.activeSelf}, " +
-                    $"activeInHierarchy={tailsButton.gameObject.activeInHierarchy}, " +
-                    $"interactable={tailsButton.interactable}, " +
-                    $"enabled={tailsButton.enabled}, " +
-                    $"listeners={tailsButton.onClick.GetPersistentEventCount()}");
-                
-                // Check for blocking CanvasGroup
-                CanvasGroup cg = tailsButton.GetComponent<CanvasGroup>();
-                if (cg != null)
-                {
-                    Debug.Log($"[CoinTossUI] tailsButton CanvasGroup: interactable={cg.interactable}, blocksRaycasts={cg.blocksRaycasts}, alpha={cg.alpha}");
-                }
-                
-                // Check parent CanvasGroups
-                CanvasGroup parentCg = tailsButton.GetComponentInParent<CanvasGroup>();
-                if (parentCg != null && parentCg != cg)
-                {
-                    Debug.Log($"[CoinTossUI] tailsButton parent CanvasGroup: interactable={parentCg.interactable}, blocksRaycasts={parentCg.blocksRaycasts}, alpha={parentCg.alpha}");
-                }
             }
         }
         
@@ -483,11 +424,8 @@ namespace CardGame.UI
         /// <param name="selectHeads">True if heads selected, false if tails</param>
         public void OnSelectionMade(bool selectHeads)
         {
-            Debug.Log($"[CoinTossUI] OnSelectionMade called: selectHeads={selectHeads}, waitingForSelection={waitingForSelection}, coinTossManager={(coinTossManager != null ? "exists" : "null")}");
-            
             if (!waitingForSelection || coinTossManager == null)
             {
-                Debug.LogWarning($"[CoinTossUI] OnSelectionMade ignored: waitingForSelection={waitingForSelection}, coinTossManager={(coinTossManager != null ? "exists" : "null")}");
                 return;
             }
 
@@ -547,15 +485,12 @@ namespace CardGame.UI
             bool activeSelf = gameObject.activeSelf;
             bool activeInHierarchy = gameObject.activeInHierarchy;
             
-            Debug.Log($"[CoinTossUI] StartCoinTossAnimation() called - activeSelf: {activeSelf}, activeInHierarchy: {activeInHierarchy}, enabled: {enabled}");
-            
             if (!activeSelf)
             {
                 Debug.LogWarning($"[CoinTossUI] GameObject is not active (activeSelf: false). Activating now...");
                 gameObject.SetActive(true);
                 activeSelf = gameObject.activeSelf;
                 activeInHierarchy = gameObject.activeInHierarchy;
-                Debug.Log($"[CoinTossUI] After activation - activeSelf: {activeSelf}, activeInHierarchy: {activeInHierarchy}");
             }
             
             // If still not active, we can't start the coroutine
@@ -586,18 +521,15 @@ namespace CardGame.UI
                 // Force enable buttons to ensure they're clickable
                 ForceEnableButtons();
                 
-                Debug.Log("[CoinTossUI] Waiting for player to select heads or tails...");
                 return;
             }
             
             // Start coin toss animation
             if (coinTossManager != null && !coinTossManager.IsComplete)
             {
-                Debug.Log("[CoinTossUI] Starting coin toss animation...");
                 try
                 {
                     StartCoroutine(PerformCoinTossAnimation());
-                    Debug.Log("[CoinTossUI] Coin toss animation coroutine started successfully.");
                 }
                 catch (System.Exception e)
                 {
@@ -607,7 +539,6 @@ namespace CardGame.UI
             else if (coinTossManager != null && coinTossManager.IsComplete)
             {
                 // Coin toss already performed, show result immediately
-                Debug.Log("[CoinTossUI] Coin toss already performed. Showing result immediately.");
                 HandleCoinTossComplete(coinTossManager.GetStartingPlayer());
             }
             else
@@ -649,9 +580,7 @@ namespace CardGame.UI
             if (coinTossManager != null && !coinTossManager.IsComplete)
             {
                 // Perform coin toss now (triggers result based on selection)
-                Debug.Log("[CoinTossUI] Calling PerformCoinToss() to determine starting player...");
                 coinTossManager.PerformCoinToss();
-                Debug.Log($"[CoinTossUI] PerformCoinToss() completed. Starting player: {coinTossManager.GetStartingPlayer()} ({(coinTossManager.GetStartingPlayer() == FateSide.Player ? "Player 1" : "Player 2")})");
             }
             
             // NOTE: We get the result here but DON'T display it until after animation completes
@@ -746,7 +675,6 @@ namespace CardGame.UI
                 string resultString = $"{flipResultString}!\n{startingPlayerString} Goes First";
                 resultText.text = resultString;
                 resultText.gameObject.SetActive(true);
-                Debug.Log($"[CoinTossUI] Result text displayed after animation: {resultString}");
             }
 
             hasShownResult = true;
@@ -769,7 +697,6 @@ namespace CardGame.UI
             // The animation coroutine will handle showing the result after it completes
             if (isAnimating)
             {
-                Debug.Log("[CoinTossUI] Animation is running - HandleCoinTossComplete will not show result text. Animation will show it when complete.");
                 return;
             }
             
@@ -796,7 +723,6 @@ namespace CardGame.UI
                 string resultString = $"{flipResultString}!\n{startingPlayerString} Goes First";
                 resultText.text = resultString;
                 resultText.gameObject.SetActive(true);
-                Debug.Log($"[CoinTossUI] Result text displayed (fallback): {resultString}");
             }
 
             hasShownResult = true;
@@ -818,12 +744,6 @@ namespace CardGame.UI
             {
                 coinTossPanel.SetActive(false);
             }
-
-            // Notify that coin toss UI is done (GameManager will proceed)
-            Debug.Log("[CoinTossUI] Coin toss UI dismissed. Proceeding with game.");
-            
-            // Notify GameManager that coin toss UI is complete (if needed)
-            // GameManager is already waiting for coin toss completion, so this is mainly for UI cleanup
         }
 
         /// <summary>
@@ -900,8 +820,6 @@ namespace CardGame.UI
             
             // Reset rotation to default (no rotation)
             coinImage.transform.rotation = Quaternion.identity;
-            
-            Debug.Log($"[CoinTossUI] Initialized coin to show random side: {(showHeads ? "HEADS" : "TAILS")}");
         }
 
         /// <summary>
@@ -920,8 +838,6 @@ namespace CardGame.UI
         /// </summary>
         public void ForceEnableButtons()
         {
-            Debug.Log("[CoinTossUI] ForceEnableButtons() called");
-            
             if (headsButton != null)
             {
                 headsButton.interactable = true;
@@ -939,8 +855,6 @@ namespace CardGame.UI
                     cg.interactable = true;
                     cg.blocksRaycasts = true;
                 }
-                
-                Debug.Log($"[CoinTossUI] Heads button forced enabled: interactable={headsButton.interactable}, enabled={headsButton.enabled}, active={headsButton.gameObject.activeInHierarchy}");
             }
             else if (headsLabel != null)
             {
@@ -954,7 +868,6 @@ namespace CardGame.UI
                 var entry = new UnityEngine.EventSystems.EventTrigger.Entry();
                 entry.eventID = UnityEngine.EventSystems.EventTriggerType.PointerClick;
                 entry.callback.AddListener((data) => { 
-                    Debug.Log("[CoinTossUI] Heads label clicked via EventTrigger!");
                     OnSelectionMade(true); 
                 });
                 trigger.triggers.Add(entry);
@@ -978,8 +891,6 @@ namespace CardGame.UI
                     cg.interactable = true;
                     cg.blocksRaycasts = true;
                 }
-                
-                Debug.Log($"[CoinTossUI] Heads label made clickable via EventTrigger. raycastTarget={headsLabel.raycastTarget}, active={headsLabel.gameObject.activeInHierarchy}");
             }
             
             if (tailsButton != null)
@@ -999,8 +910,6 @@ namespace CardGame.UI
                     cg.interactable = true;
                     cg.blocksRaycasts = true;
                 }
-                
-                Debug.Log($"[CoinTossUI] Tails button forced enabled: interactable={tailsButton.interactable}, enabled={tailsButton.enabled}, active={tailsButton.gameObject.activeInHierarchy}");
             }
             else if (tailsLabel != null)
             {
@@ -1014,7 +923,6 @@ namespace CardGame.UI
                 var entry = new UnityEngine.EventSystems.EventTrigger.Entry();
                 entry.eventID = UnityEngine.EventSystems.EventTriggerType.PointerClick;
                 entry.callback.AddListener((data) => { 
-                    Debug.Log("[CoinTossUI] Tails label clicked via EventTrigger!");
                     OnSelectionMade(false); 
                 });
                 trigger.triggers.Add(entry);
@@ -1038,14 +946,11 @@ namespace CardGame.UI
                     cg.interactable = true;
                     cg.blocksRaycasts = true;
                 }
-                
-                Debug.Log($"[CoinTossUI] Tails label made clickable via EventTrigger. raycastTarget={tailsLabel.raycastTarget}, active={tailsLabel.gameObject.activeInHierarchy}");
             }
             
             // Verify EventSystem exists
             if (EventSystem.current == null)
             {
-                Debug.LogError("[CoinTossUI] EventSystem is missing! Creating one...");
                 GameObject eventSystemObj = new GameObject("EventSystem");
                 eventSystemObj.AddComponent<EventSystem>();
                 eventSystemObj.AddComponent<StandaloneInputModule>();

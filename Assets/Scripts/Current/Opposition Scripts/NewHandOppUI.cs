@@ -122,21 +122,18 @@ namespace CardGame.UI
             if (cardPrefab != null && staticCardPrefab == null)
             {
                 staticCardPrefab = cardPrefab;
-                Debug.Log("[NewHandP2UI] Cached cardPrefab reference in static variable");
             }
             
             // [CardFront] Restore prefab reference from static cache if lost
             if (cardPrefab == null && staticCardPrefab != null)
             {
                 cardPrefab = staticCardPrefab;
-                Debug.Log("[NewHandP2UI] Restored cardPrefab reference from static cache (reference was lost during rematch)");
             }
             
             // Ensure cardContainer is assigned
             if (cardContainer == null)
             {
                 cardContainer = transform;
-                Debug.Log("[NewHandP2UI] Auto-assigned cardContainer to self transform");
             }
         }
         
@@ -191,7 +188,6 @@ namespace CardGame.UI
                 if (staticCardPrefab != null)
                 {
                     cardPrefab = staticCardPrefab;
-                    Debug.Log("[NewHandP2UI] Restored cardPrefab from static cache during AddCardToHand");
                 }
                 else
                 {
@@ -242,8 +238,6 @@ namespace CardGame.UI
             // Show delta marker when card is drawn (+1 for gaining a card)
             // Delay slightly to allow card to be positioned first
             StartCoroutine(ShowDrawDeltaMarker(cardUI.transform));
-            
-            Debug.Log($"NewHandP2UI.AddCardToHand: Successfully added card '{card.Data.cardName}' to hand. Total cards: {cardUIList.Count}");
         }
         
         private System.Collections.IEnumerator ShowDrawDeltaMarker(Transform cardTransform)
@@ -304,7 +298,6 @@ namespace CardGame.UI
                 else
                 {
                     // It's a board card (CardMover), just remove from UI list but keep the GameObject
-                    Debug.Log($"Card {card.Data.cardName} played on board - keeping GameObject");
                 }
                 
                 ArrangeCards();

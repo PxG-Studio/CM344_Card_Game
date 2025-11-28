@@ -343,7 +343,7 @@ MonoBehaviour:
   flipAnimation: {fileID: 4139798117971288157}
   frontContainer: {fileID: 8331869115627169107}
   backContainer: {fileID: 3395844615914960357}
-  backSpriteRenderer: {fileID: 0}
+  backSpriteRenderer: {fileID: 7683573183301580417}
   backImage: {fileID: 0}
   defaultCardBackSprite: {fileID: 21300000, guid: 2110c87c8d9c74cf99a29407cce375ef, type: 3}
   borderOverlayRenderer: {fileID: 0}
@@ -565,6 +565,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2409949646945513060}
+  - component: {fileID: 2003175904505023697}
   m_Layer: 0
   m_Name: BackContainer
   m_TagString: Untagged
@@ -588,6 +589,18 @@ Transform:
   - {fileID: 1299687922137438124}
   m_Father: {fileID: 561517693688321303}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!225 &2003175904505023697
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3395844615914960357}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &3776160439198244926
 GameObject:
   m_ObjectHideFlags: 0
@@ -1461,6 +1474,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3311289234735762792}
+  - component: {fileID: 1852872487252217102}
   m_Layer: 0
   m_Name: FrontContainer
   m_TagString: Untagged
@@ -1483,3 +1497,15 @@ Transform:
   m_Children: []
   m_Father: {fileID: 561517693688321303}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!225 &1852872487252217102
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8331869115627169107}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0

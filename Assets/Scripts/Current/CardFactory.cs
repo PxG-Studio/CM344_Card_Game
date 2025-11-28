@@ -51,9 +51,7 @@ namespace CardGame.Factories
             {
                 cardUI.gameObject.SetActive(true);
                 // Only log in Editor mode to reduce runtime warning spam
-                #if UNITY_EDITOR
-                Debug.Log($"[CardFactory] Activated cloned card '{cardUI.gameObject.name}' (was instantiated inactive). This is normal if prefab was in scene hierarchy.");
-                #endif
+                // Debug.Log($"[CardFactory] Activated cloned card '{cardUI.gameObject.name}' (was instantiated inactive). This is normal if prefab was in scene hierarchy."); // Reduced verbosity
             }
             
             // [CardFront] CRITICAL: Ensure cloned card CanvasGroup is INTERACTIVE
@@ -84,7 +82,7 @@ namespace CardGame.Factories
                 return null;
             }
             
-            Debug.Log($"CardFactory: Created and initialized card UI '{card.Data.cardName}' (InstanceID: {card.InstanceID})");
+            // Debug.Log($"CardFactory: Created and initialized card UI '{card.Data.cardName}' (InstanceID: {card.InstanceID})"); // Reduced verbosity
             
             return cardUI;
         }
