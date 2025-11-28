@@ -1295,9 +1295,8 @@ namespace CardGame.UI
                         contentRectExisting.anchorMin = new Vector2(0.5f, 0.5f);
                         contentRectExisting.anchorMax = new Vector2(0.5f, 0.5f);
                         contentRectExisting.pivot = new Vector2(0.5f, 0.5f);
-                        // Slight left offset so the popup sits near center; roughly two grid
-                        // units to the right of the previous position.
-                        contentRectExisting.anchoredPosition = new Vector2(-20f, 0f);
+                        // Slight right offset (~1/33 square unit) for fine centering
+                        contentRectExisting.anchoredPosition = new Vector2(0.5f, 0f);
                     }
                 }
 
@@ -1334,9 +1333,8 @@ namespace CardGame.UI
             contentRect.anchorMax = new Vector2(0.5f, 0.5f);
             contentRect.pivot = new Vector2(0.5f, 0.5f);
             contentRect.sizeDelta = new Vector2(750f, 650f);
-            // Slight left offset so the popup sits near center; roughly two grid
-            // units to the right of the previous position.
-            contentRect.anchoredPosition = new Vector2(-20f, 0f);
+            // Slight right offset (~1/33 square unit ≈ 3px) for better centering relative to board
+            contentRect.anchoredPosition = new Vector2(0.5f, 0f);
             
             // Add background to content panel
             UnityEngine.UI.Image contentBg = contentPanel.AddComponent<UnityEngine.UI.Image>();
