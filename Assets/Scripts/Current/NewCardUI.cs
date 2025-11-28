@@ -67,9 +67,9 @@ namespace CardGame.UI
         
         [Header("Shadow Settings")]
         [SerializeField] private bool enableCardShadow = true;
-        [SerializeField] private Vector2 shadowOffset = new Vector2(0.08f, -0.08f);
-        [SerializeField] private float shadowScaleMultiplier = 1.05f;
-        [SerializeField] private Color shadowColor = new Color(0f, 0f, 0f, 0.35f);
+        [SerializeField] private Vector2 shadowOffset = new Vector2(0.12f, -0.12f);
+        [SerializeField] private float shadowScaleMultiplier = 1.15f;
+        [SerializeField] private Color shadowColor = new Color(0f, 0f, 0f, 0.525f);
         [SerializeField] private SpriteRenderer cardShadow;
         
         public Color PlayerCapturedColor => playerCapturedColor;
@@ -226,7 +226,7 @@ namespace CardGame.UI
             {
                 return;
             }
-            
+
             if (cardShadow == null)
             {
                 GameObject shadowObj = new GameObject("CardShadow");

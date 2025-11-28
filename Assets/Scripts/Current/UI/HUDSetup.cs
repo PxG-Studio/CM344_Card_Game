@@ -449,31 +449,29 @@ namespace CardGame.UI
             panel.transform.SetParent(parent, false);
             panel.layer = 5; // UI layer
             
-        // Add RectTransform and position - moved towards middle/center
+            // Add RectTransform and position - now anchored near bottom of screen
         RectTransform rectTransform = panel.AddComponent<RectTransform>();
         // Move panels in square-unit increments for fine alignment
         float halfSquareUnit = 50f; // 1/2 square unit in pixels
             
             if (isPlayer1)
             {
-                // Left of center
-                rectTransform.anchorMin = new Vector2(0.5f, 1);
-                rectTransform.anchorMax = new Vector2(0.5f, 1);
-                rectTransform.pivot = new Vector2(1, 1); // Right pivot so it grows left from center
-                // Shifted slightly further left so it clears the board more comfortably
-                // Moved 1/2 square unit to the right
-                rectTransform.anchoredPosition = new Vector2(-160 + halfSquareUnit, -80);
+                // Left of center, anchored to bottom
+                rectTransform.anchorMin = new Vector2(0.5f, 0f);
+                rectTransform.anchorMax = new Vector2(0.5f, 0f);
+                rectTransform.pivot = new Vector2(1f, 0f); // Right pivot so it grows left from center
+                // Positioned near board bottom with slight right shift
+                rectTransform.anchoredPosition = new Vector2(-160 + halfSquareUnit, 40f);
             }
             else
             {
-                // Right of center
-                rectTransform.anchorMin = new Vector2(0.5f, 1);
-                rectTransform.anchorMax = new Vector2(0.5f, 1);
-                rectTransform.pivot = new Vector2(0, 1); // Left pivot so it grows right from center
-                // Start from original offset (120) and shift by requested increments
-                // Nudged slightly left to visually match board width with P1 panel
-                float p2Offset = 110f; // shifted slightly right (~5% of panel width) for even alignment
-                rectTransform.anchoredPosition = new Vector2(p2Offset, -80);
+                // Right of center, anchored to bottom
+                rectTransform.anchorMin = new Vector2(0.5f, 0f);
+                rectTransform.anchorMax = new Vector2(0.5f, 0f);
+                rectTransform.pivot = new Vector2(0f, 0f); // Left pivot so it grows right from center
+                // Symmetric position on bottom right
+                float p2Offset = 110f;
+                rectTransform.anchoredPosition = new Vector2(p2Offset, 40f);
             }
             rectTransform.sizeDelta = new Vector2(200, 105);
             
@@ -1581,13 +1579,13 @@ namespace CardGame.UI
             frontlineBar.layer = 5; // UI layer
             
             RectTransform barRect = frontlineBar.AddComponent<RectTransform>();
-            barRect.anchorMin = new Vector2(0.5f, 0f);
-            barRect.anchorMax = new Vector2(0.5f, 0f);
-            barRect.pivot = new Vector2(0.5f, 0f);
+            barRect.anchorMin = new Vector2(0.5f, 1f);
+            barRect.anchorMax = new Vector2(0.5f, 1f);
+            barRect.pivot = new Vector2(0.5f, 1f);
             barRect.sizeDelta = new Vector2(boardWidth, 80f);
-            // Move the influence bar slightly down and half a grid unit to the left
-            // from the centered position so it aligns with the board framing.
-            barRect.anchoredPosition = new Vector2(-20f, 40f);
+            // Center the bar horizontally so its edges align with the 4x4 board
+            // and adjust vertical offset (lower by ~15%)
+            barRect.anchoredPosition = new Vector2(0f, -90f);
             
             // Create Title Label
             GameObject titleLabelObj = new GameObject("TitleLabel");
@@ -1799,15 +1797,61 @@ namespace CardGame.UI
                 backdropObj.transform.SetParent(playZone, false);
             }
 
-            // Configure the world-space sprite so it always sits behind the board and cards.
+            // Configure the background sprite so it always sits behind the board and cards.
             SpriteRenderer renderer = backdropObj.GetComponent<SpriteRenderer>();
             if (renderer == null)
             {
                 renderer = backdropObj.AddComponent<SpriteRenderer>();
             }
-            renderer.sprite = sprite;
             renderer.color = Color.white;
             renderer.sortingOrder = -200; // behind ProceduralBoardBackdrop (-100) and cards
+
+            // Scale/position background so the full sprite fits the camera view.
+            Camera cam = Camera.main;
+            if (cam != null)
+            {
+                float worldHeight = cam.orthographicSize * 2f;
+                float worldWidth = worldHeight * cam.aspect;
+
+                renderer.sprite = sprite;
+
+                float spriteWidth = sprite.bounds.size.x;
+                float spriteHeight = sprite.bounds.size.y;
+                if (spriteWidth > 0.01f && spriteHeight > 0.01f)
+                {
+                    float scaleX = worldWidth / spriteWidth;
+                    float scaleY = worldHeight / spriteHeight;
+
+                    // Use the larger scale so the entire camera view is filled without gaps
+                    float uniformScale = Mathf.Max(scaleX, scaleY);
+
+                    Vector3 parentScale = playZone.lossyScale;
+                    float adjustedScale = uniformScale;
+                    if (parentScale.x != 0f && parentScale.y != 0f)
+                    {
+                        adjustedScale = uniformScale / Mathf.Max(parentScale.x, parentScale.y);
+                    }
+
+                    // Add a small margin to ensure no blue bars show on the edges
+                    adjustedScale *= 1.05f;
+
+                    backdropObj.transform.localScale = new Vector3(adjustedScale, adjustedScale, 1f);
+                }
+                else
+                {
+                    backdropObj.transform.localScale = Vector3.one;
+                }
+
+                Vector3 cameraWorldPos = cam.transform.position;
+                Vector3 localPos = playZone.InverseTransformPoint(new Vector3(cameraWorldPos.x, cameraWorldPos.y, playZone.position.z));
+                backdropObj.transform.localPosition = new Vector3(localPos.x, localPos.y, 0f);
+            }
+            else
+            {
+                renderer.sprite = sprite;
+                backdropObj.transform.localScale = Vector3.one;
+                backdropObj.transform.localPosition = Vector3.zero;
+            }
         }
 
         private Sprite LoadBattlegroundSprite()
@@ -1821,6 +1865,8 @@ namespace CardGame.UI
 #endif
             return Resources.Load<Sprite>("Backgrounds/Battle_Grounds");
         }
+
+        // (Removed CreateScaledBackgroundSprite helper – not needed when scaling uniformly)
 
         private void BringCoinTossPanelToFront(Transform hudRoot)
         {
