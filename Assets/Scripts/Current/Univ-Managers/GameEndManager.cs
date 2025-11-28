@@ -53,14 +53,6 @@ namespace CardGame.Managers
                 {
                     Debug.LogWarning("[GameEndManager] GameEndUI not found in Start(). Will search again when game ends. HUDSetup should create it dynamically.");
                 }
-                else
-                {
-                    Debug.Log("[GameEndManager] GameEndUI found and cached in Start().");
-                }
-            }
-            else
-            {
-                Debug.Log("[GameEndManager] GameEndUI already assigned.");
             }
         }
         
@@ -95,7 +87,6 @@ namespace CardGame.Managers
                 {
                     playerHandCount = playerDeckManager.Hand.Count;
                 }
-                Debug.Log($"[GameEndManager] Player hand check - IsHandEmpty: {playerHandEmpty}, Hand.Count: {playerHandCount}, DeckManager: {(playerDeckManager != null ? "Found" : "NULL")}");
             }
             else
             {
@@ -110,7 +101,6 @@ namespace CardGame.Managers
                 {
                     opponentHandCount = opponentDeckManager.Hand.Count;
                 }
-                Debug.Log($"[GameEndManager] Opponent hand check - IsHandEmpty: {opponentHandEmpty}, Hand.Count: {opponentHandCount}, DeckManager: {(opponentDeckManager != null ? "Found" : "NULL")}");
             }
             else
             {
@@ -120,36 +110,12 @@ namespace CardGame.Managers
             // Game ends when both hands are empty AND all 10 cards are on the board
             bool allCardsPlayed = (totalCardsPlayed >= 10) && playerHandEmpty && opponentHandEmpty;
             
-            Debug.Log($"[GameEndManager] ===== GAME END CHECK =====");
-            Debug.Log($"[GameEndManager] Cards played: {totalCardsPlayed}/10");
-            Debug.Log($"[GameEndManager] Player hand empty: {playerHandEmpty} (hand.Count: {playerHandCount})");
-            Debug.Log($"[GameEndManager] Opponent hand empty: {opponentHandEmpty} (hand.Count: {opponentHandCount})");
-            Debug.Log($"[GameEndManager] All cards played condition: {allCardsPlayed}");
-            Debug.Log($"[GameEndManager] ==========================");
-            
             if (allCardsPlayed)
             {
-                Debug.Log("[GameEndManager] ✓✓✓ ALL CARDS HAVE BEEN PLAYED! ✓✓✓");
-                Debug.Log("[GameEndManager] Both players have no cards left and all 10 cards are on the board. Ending game...");
-                Debug.Log($"[GameEndManager] Current gameEndUI reference: {(gameEndUI != null ? "Found" : "Null - will search when showing UI")}");
                 isGameEnding = true;
                 
                 // Start coroutine to wait for chains to complete, then end game
                 StartCoroutine(WaitForChainsAndEndGame());
-            }
-            else
-            {
-                // Detailed logging for debugging
-                if (totalCardsPlayed < 10)
-                {
-                    Debug.Log($"[GameEndManager] ❌ Game continues - Waiting for all cards to be played. Cards played: {totalCardsPlayed}/10 (need 10)");
-                }
-                else if (!playerHandEmpty || !opponentHandEmpty)
-                {
-                    Debug.Log($"[GameEndManager] ❌ Game continues - Waiting for hands to empty.");
-                    Debug.Log($"[GameEndManager]   - Player hand empty: {playerHandEmpty} (hand.Count: {playerHandCount})");
-                    Debug.Log($"[GameEndManager]   - Opponent hand empty: {opponentHandEmpty} (hand.Count: {opponentHandCount})");
-                }
             }
         }
         
