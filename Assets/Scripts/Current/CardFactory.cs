@@ -165,7 +165,7 @@ namespace CardGame.Factories
                 cardUI.Initialize(card);
             }
             
-            Debug.Log($"CardFactory: Created board card '{card.Data.cardName}' at position {position}");
+            Debug.Log($"[STATS] Board card '{card.Data.cardName}' created at {position}");
             
             return boardCard;
         }

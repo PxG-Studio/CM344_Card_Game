@@ -44,6 +44,11 @@ namespace CardGame.UI
         // Reference to NewCardUI for captured color
         private NewCardUI cardUI;
         
+        // Track capture state and color
+        private Color lastCaptureColor = Color.clear;
+        public bool WasCaptured => lastCaptureColor != Color.clear;
+        public Color LastCaptureColor => lastCaptureColor;
+        
         /// <summary>
         /// Set container references (called from NewCardUI if not set in Inspector)
         /// </summary>
@@ -188,6 +193,7 @@ namespace CardGame.UI
         {
             if (cardUI == null) return;
             
+            
             // Get all text fields using reflection
             string[] textFieldNames = {
                 "cardNameText",
@@ -211,7 +217,16 @@ namespace CardGame.UI
                         TMPro.TextMeshProUGUI tmpText = textComponent as TMPro.TextMeshProUGUI;
                         if (tmpText != null)
                         {
-                            tmpText.enabled = !hide;
+                            // Only hide stat text if we're actually hiding (showing back)
+                            // When showing front, stat text should always be visible
+                            if (fieldName.Contains("Stat") && !hide)
+                            {
+                                tmpText.enabled = true; // Force stat text to be visible
+                            }
+                            else
+                            {
+                                tmpText.enabled = !hide;
+                            }
                         }
                     }
                 }
@@ -225,7 +240,15 @@ namespace CardGame.UI
                 {
                     if (text != null)
                     {
-                        text.enabled = !hide;
+                        // If showing front and this is a stat text, keep it visible
+                        if (!hide && (text.name.Contains("Stat") || text.name.Contains("Top") || text.name.Contains("Right") || text.name.Contains("Down") || text.name.Contains("Left")))
+                        {
+                            text.enabled = true; // Force stat text to be visible
+                        }
+                        else
+                        {
+                            text.enabled = !hide;
+                        }
                     }
                 }
             }
@@ -236,7 +259,15 @@ namespace CardGame.UI
             {
                 if (text != null && !text.transform.IsChildOf(backContainer != null ? backContainer.transform : null))
                 {
-                    text.enabled = !hide;
+                    // If showing front and this is a stat text, keep it visible
+                    if (!hide && (text.name.Contains("Stat") || text.name.Contains("Top") || text.name.Contains("Right") || text.name.Contains("Down") || text.name.Contains("Left")))
+                    {
+                        text.enabled = true; // Force stat text to be visible
+                    }
+                    else
+                    {
+                        text.enabled = !hide;
+                    }
                 }
             }
         }
@@ -719,6 +750,8 @@ namespace CardGame.UI
             {
                 StopCoroutine(currentFlipCoroutine);
             }
+            // Store capture color
+            lastCaptureColor = captureColor;
             currentFlipCoroutine = StartCoroutine(CaptureCardCoroutine(captureColor, direction));
         }
 
@@ -844,7 +877,7 @@ namespace CardGame.UI
             if (backContainer != null) backContainer.SetActive(false);
             // Show card background and border when showing front
             ShowCardFrontElements();
-
+            
             isFlipped = true; // Card is face up (front showing)
             currentFlipCoroutine = null;
         }
