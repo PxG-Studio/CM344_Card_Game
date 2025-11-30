@@ -218,6 +218,22 @@ namespace CardGame.Tests
                     defenderMover.transform.position = defenderPos;
                     yield return new WaitForEndOfFrame();
                     
+                    // CRITICAL: Clear cardsPlayedThisTurn before manually triggering battle check
+                    // This allows the defender to be flipped even though it was just placed
+                    // (In normal gameplay, cardsPlayedThisTurn is cleared at the start of each turn)
+                    var cardsPlayedThisTurnField = typeof(CardDropArea).GetField("cardsPlayedThisTurn",
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+                    if (cardsPlayedThisTurnField != null)
+                    {
+                        var cardsPlayedThisTurn = cardsPlayedThisTurnField.GetValue(null) as System.Collections.Generic.HashSet<UnityEngine.GameObject>;
+                        if (cardsPlayedThisTurn != null)
+                        {
+                            Debug.Log($"[CompleteFlow_CoinToss_To_CardPlacement_To_Capture_To_ScoreUpdate] " +
+                                $"Clearing cardsPlayedThisTurn before manual battle check (had {cardsPlayedThisTurn.Count} cards)");
+                            cardsPlayedThisTurn.Clear();
+                        }
+                    }
+                    
                     // Manually trigger battle checks after position adjustment
                     System.Reflection.MethodInfo checkBattlesMethod = typeof(CardDropArea).GetMethod(
                         "CheckCardBattlesP1", 
@@ -231,6 +247,8 @@ namespace CardGame.Tests
                         Debug.Log($"[CompleteFlow_CoinToss_To_CardPlacement_To_Capture_To_ScoreUpdate] " +
                             $"Manually triggering CheckCardBattles after position adjustment...");
                         checkBattlesMethod.Invoke(area1, new object[] { attackerMover, attackerCard });
+                        yield return new WaitForEndOfFrame(); // Wait for battle check to process
+                        yield return new WaitForSeconds(0.2f); // Wait for coroutine to start
                     }
                     
                     if (checkBattlesOppMethod != null && area2 != null)
@@ -238,13 +256,15 @@ namespace CardGame.Tests
                         Debug.Log($"[CompleteFlow_CoinToss_To_CardPlacement_To_Capture_To_ScoreUpdate] " +
                             $"Manually triggering CheckCardBattlesP2 after position adjustment...");
                         
-                        // Expect that invalid capture attempts may be logged (as warnings) when the safeguard
-                        // in CheckBattleBetweenCardsForRipple detects an attacker that did not actually win.
-                        // This ensures the diagnostic path is exercised without failing the test run.
-                        LogAssert.Expect(LogType.Warning, 
-                            new System.Text.RegularExpressions.Regex(".*LOGIC ERROR PREVENTED.*|.*Attempted to create flip target when attacker did NOT win.*"));
+                        // Note: In a valid capture scenario (attacker wins), no warning should be logged.
+                        // The safeguard in CheckBattleBetweenCardsForRipple silently prevents invalid captures
+                        // by returning null when the attacker doesn't win, without logging a warning.
+                        // If we wanted to test the warning path, we would need to set up an invalid scenario
+                        // (e.g., attacker stat <= defender stat), but this test verifies a valid capture flow.
                         
                         checkBattlesOppMethod.Invoke(area2, new object[] { defenderMover, defenderCard });
+                        yield return new WaitForEndOfFrame(); // Wait for battle check to process
+                        yield return new WaitForSeconds(0.2f); // Wait for coroutine to start
                     }
                     
                     yield return new WaitForEndOfFrame();

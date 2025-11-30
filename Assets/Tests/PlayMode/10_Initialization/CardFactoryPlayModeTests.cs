@@ -74,26 +74,31 @@ namespace CardGame.Tests
                 prefab = Object.FindObjectOfType<NewCardUI>();
             }
             
-            if (prefab != null)
+            // If prefab still not found, create a minimal one programmatically for testing
+            if (prefab == null)
             {
-                // Create parent transform
-                GameObject parentObj = new GameObject("TestParent");
-                Transform parent = parentObj.transform;
-                
-                // Create card using factory
-                NewCardUI cardUI = CardFactory.CreateCardUI(card, prefab, parent);
-                
-                Assert.IsNotNull(cardUI, "CardFactory should create card UI");
-                Assert.IsNotNull(cardUI.Card, "Created card UI should have card data");
-                Assert.AreEqual(card, cardUI.Card, "Created card UI should have correct card");
-                Assert.IsTrue(cardUI.gameObject.activeSelf, "Created card should be active");
-                
-                // Cleanup
-                Object.Destroy(parentObj);
+                GameObject prefabObj = new GameObject("TestCardPrefab");
+                prefab = prefabObj.AddComponent<NewCardUI>();
+                prefabObj.SetActive(false); // Prefabs should be inactive
             }
-            else
+            
+            // Create parent transform
+            GameObject parentObj = new GameObject("TestParent");
+            Transform parent = parentObj.transform;
+            
+            // Create card using factory
+            NewCardUI cardUI = CardFactory.CreateCardUI(card, prefab, parent);
+            
+            Assert.IsNotNull(cardUI, "CardFactory should create card UI");
+            Assert.IsNotNull(cardUI.Card, "Created card UI should have card data");
+            Assert.AreEqual(card, cardUI.Card, "Created card UI should have correct card");
+            Assert.IsTrue(cardUI.gameObject.activeSelf, "Created card should be active");
+            
+            // Cleanup
+            Object.Destroy(parentObj);
+            if (prefab != null && prefab.gameObject.name == "TestCardPrefab")
             {
-                Assert.Inconclusive("Card prefab not found - cannot test CardFactory");
+                Object.Destroy(prefab.gameObject);
             }
             yield return null;
         }
@@ -108,17 +113,26 @@ namespace CardGame.Tests
                 prefab = Object.FindObjectOfType<NewCardUI>();
             }
             
-            if (prefab != null)
+            // If prefab still not found, create a minimal one programmatically for testing
+            if (prefab == null)
             {
-                GameObject parentObj = new GameObject("TestParent");
-                Transform parent = parentObj.transform;
-                
-                // Try to create with null card
-                NewCardUI cardUI = CardFactory.CreateCardUI(null, prefab, parent);
-                
-                Assert.IsNull(cardUI, "CardFactory should return null for null card");
-                
-                Object.Destroy(parentObj);
+                GameObject prefabObj = new GameObject("TestCardPrefab");
+                prefab = prefabObj.AddComponent<NewCardUI>();
+                prefabObj.SetActive(false);
+            }
+            
+            GameObject parentObj = new GameObject("TestParent");
+            Transform parent = parentObj.transform;
+            
+            // Try to create with null card
+            NewCardUI cardUI = CardFactory.CreateCardUI(null, prefab, parent);
+            
+            Assert.IsNull(cardUI, "CardFactory should return null for null card");
+            
+            Object.Destroy(parentObj);
+            if (prefab != null && prefab.gameObject.name == "TestCardPrefab")
+            {
+                Object.Destroy(prefab.gameObject);
             }
             yield return null;
         }
@@ -157,30 +171,39 @@ namespace CardGame.Tests
                 prefab = Object.FindObjectOfType<NewCardUI>();
             }
             
-            if (prefab != null)
+            // If prefab still not found, create a minimal one programmatically for testing
+            if (prefab == null)
             {
-                GameObject parentObj = new GameObject("TestParent");
-                Transform parent = parentObj.transform;
+                GameObject prefabObj = new GameObject("TestCardPrefab");
+                prefab = prefabObj.AddComponent<NewCardUI>();
+                prefabObj.SetActive(false);
+            }
+            
+            GameObject parentObj = new GameObject("TestParent");
+            Transform parent = parentObj.transform;
+            
+            NewCardUI cardUI = CardFactory.CreateCardUI(card, prefab, parent);
+            
+            if (cardUI != null)
+            {
+                Assert.IsTrue(cardUI.gameObject.activeSelf,
+                    "CardFactory should create active cards");
                 
-                NewCardUI cardUI = CardFactory.CreateCardUI(card, prefab, parent);
-                
-                if (cardUI != null)
+                // Verify CanvasGroup is interactive
+                CanvasGroup cg = cardUI.GetComponent<CanvasGroup>();
+                if (cg != null)
                 {
-                    Assert.IsTrue(cardUI.gameObject.activeSelf,
-                        "CardFactory should create active cards");
-                    
-                    // Verify CanvasGroup is interactive
-                    CanvasGroup cg = cardUI.GetComponent<CanvasGroup>();
-                    if (cg != null)
-                    {
-                        Assert.IsTrue(cg.interactable,
-                            "CardFactory should make cards interactive");
-                        Assert.IsTrue(cg.blocksRaycasts,
-                            "CardFactory should make cards block raycasts");
-                    }
+                    Assert.IsTrue(cg.interactable,
+                        "CardFactory should make cards interactive");
+                    Assert.IsTrue(cg.blocksRaycasts,
+                        "CardFactory should make cards block raycasts");
                 }
-                
-                Object.Destroy(parentObj);
+            }
+            
+            Object.Destroy(parentObj);
+            if (prefab != null && prefab.gameObject.name == "TestCardPrefab")
+            {
+                Object.Destroy(prefab.gameObject);
             }
             yield return null;
         }
@@ -205,30 +228,41 @@ namespace CardGame.Tests
                 }
             }
             
-            if (boardPrefab != null)
+            // If prefab still not found, create a minimal one programmatically for testing
+            if (boardPrefab == null)
             {
-                Vector3 testPosition = new Vector3(0, 0, 0);
-                GameObject boardCard = CardFactory.CreateBoardCard(card, boardPrefab, testPosition);
-                
-                Assert.IsNotNull(boardCard, "CardFactory should create board card");
-                Assert.IsTrue(boardCard.activeSelf, "Board card should be active");
-                Assert.AreEqual(card.Data.cardName, boardCard.name,
-                    "Board card should have correct name");
-                
-                // Verify card data is set
-                CardMoverP1 mover = boardCard.GetComponent<CardMoverP1>();
-                CardMoverP2 moverP2 = boardCard.GetComponent<CardMoverP2>();
-                
-                if (mover != null)
-                {
-                    Assert.IsNotNull(mover.Card, "Board card CardMoverP1 should have card data");
-                }
-                else if (moverP2 != null)
-                {
-                    Assert.IsNotNull(moverP2.Card, "Board card CardMoverP2 should have card data");
-                }
-                
-                Object.Destroy(boardCard);
+                GameObject prefabObj = new GameObject("TestBoardCardPrefab");
+                prefabObj.AddComponent<NewCardUI>();
+                prefabObj.AddComponent<CardMoverP1>();
+                prefabObj.SetActive(false);
+                boardPrefab = prefabObj;
+            }
+            
+            Vector3 testPosition = new Vector3(0, 0, 0);
+            GameObject boardCard = CardFactory.CreateBoardCard(card, boardPrefab, testPosition);
+            
+            Assert.IsNotNull(boardCard, "CardFactory should create board card");
+            Assert.IsTrue(boardCard.activeSelf, "Board card should be active");
+            Assert.AreEqual(card.Data.cardName, boardCard.name,
+                "Board card should have correct name");
+            
+            // Verify card data is set
+            CardMoverP1 mover = boardCard.GetComponent<CardMoverP1>();
+            CardMoverP2 moverP2 = boardCard.GetComponent<CardMoverP2>();
+            
+            if (mover != null)
+            {
+                Assert.IsNotNull(mover.Card, "Board card CardMoverP1 should have card data");
+            }
+            else if (moverP2 != null)
+            {
+                Assert.IsNotNull(moverP2.Card, "Board card CardMoverP2 should have card data");
+            }
+            
+            Object.Destroy(boardCard);
+            if (boardPrefab != null && boardPrefab.name == "TestBoardCardPrefab")
+            {
+                Object.Destroy(boardPrefab);
             }
             yield return null;
         }

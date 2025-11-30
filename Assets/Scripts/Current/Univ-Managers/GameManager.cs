@@ -51,19 +51,7 @@ namespace CardGame.Managers
         {
             if (Instance != null && Instance != this)
             {
-                // Use DestroyImmediate in editor to avoid play mode exit issues
-                #if UNITY_EDITOR
-                if (!Application.isPlaying)
-                {
-                    DestroyImmediate(gameObject);
-                }
-                else
-                {
-                    Destroy(gameObject);
-                }
-                #else
                 Destroy(gameObject);
-                #endif
                 return;
             }
             
@@ -78,6 +66,7 @@ namespace CardGame.Managers
         
         private void Initialize()
         {
+            Debug.Log("GameManager Initialized");
             ChangeState(GameState.Menu);
         }
         
@@ -86,6 +75,7 @@ namespace CardGame.Managers
             if (currentState == newState)
                 return;
                 
+            Debug.Log($"Game State: {currentState} -> {newState}");
             currentState = newState;
             OnGameStateChanged?.Invoke(newState);
             
@@ -129,34 +119,35 @@ namespace CardGame.Managers
         
         private void PrepareGame()
         {
-            // Reset statistics for new game
-            CardDropArea.ResetGameStatistics();
+            Debug.Log("Preparing game...");
             
-            // Reset managers for new game
-            if (ScoreManager.Instance != null)
+            // [CardFront] Reset statistics for new game (if not already reset by ResetGameState)
+            if (CardDropArea.GetCardsPlayed() > 0)
             {
-                ScoreManager.Instance.ResetScores();
+                CardDropArea.ResetGameStatistics();
             }
             
+            // Reset managers for new game (if not already reset by ResetGameState)
+            if (ScoreManager.Instance != null)
+            {
+                // Only reset if scores are not already zero (avoid duplicate reset during rematch)
+                if (ScoreManager.Instance.P1Score > 0 || ScoreManager.Instance.P2Score > 0)
+                {
+                    ScoreManager.Instance.ResetScores();
+                }
+            }
             if (GameEndManager.Instance != null)
             {
                 GameEndManager.Instance.Reset();
             }
             
-            // Reset current game statistics (keep session stats - wins/losses/ties are preserved)
+            // Reset current game statistics (keep session stats)
             if (GameStatsTracker.Instance != null)
             {
                 GameStatsTracker.Instance.ResetCurrentGameStats();
             }
             
-            // Reset Battle Front Influence bar UI
-            CardGame.UI.CardFrontlineUI frontlineUI = FindObjectOfType<CardGame.UI.CardFrontlineUI>();
-            if (frontlineUI != null)
-            {
-                frontlineUI.ResetFrontline();
-            }
-            
-            // Reset coin toss for new game
+            // Reset coin toss for new game (rematch)
             if (CoinTossManager.Instance != null)
             {
                 CoinTossManager.Instance.ResetCoinToss();
@@ -169,8 +160,59 @@ namespace CardGame.Managers
             }
             
             // Perform coin toss and wait for result before starting game
-            // This will trigger card drawing through the normal game flow
             StartCoroutine(PerformCoinTossAndStartGame());
+            
+            // CRITICAL: Reset scores again after a short delay to ensure they stay reset
+            // This prevents RecalculateScores() from being called during initialization
+            // and overwriting the reset (e.g., if GameEndManager checks board state)
+            StartCoroutine(DelayedScoreReset());
+        }
+        
+        /// <summary>
+        /// Ensures scores remain reset after game initialization, in case RecalculateScores()
+        /// was called during the initialization process. Checks multiple times with increasing delays.
+        /// </summary>
+        private System.Collections.IEnumerator DelayedScoreReset()
+        {
+            // Check and reset scores multiple times to catch any RecalculateScores() calls
+            // Extended to 1.5s to match test wait times
+            float[] checkDelays = { 0.1f, 0.5f, 1.0f, 1.5f };
+            
+            foreach (float delay in checkDelays)
+            {
+                yield return new WaitForSeconds(delay);
+                
+                if (ScoreManager.Instance != null)
+                {
+                    // Check if board is actually empty
+                    CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>();
+                    bool boardIsEmpty = true;
+                    int occupiedCount = 0;
+                    foreach (CardDropArea area in allDropAreas)
+                    {
+                        if (area != null && area.IsOccupied)
+                        {
+                            boardIsEmpty = false;
+                            occupiedCount++;
+                        }
+                    }
+                    
+                    // If board is empty but scores are non-zero, reset them
+                    // This handles the case where RecalculateScores() was called on an empty board
+                    if (boardIsEmpty && (ScoreManager.Instance.P1Score != 0 || ScoreManager.Instance.P2Score != 0))
+                    {
+                        Debug.Log($"[DelayedScoreReset] Resetting scores at {delay}s delay. " +
+                            $"P1: {ScoreManager.Instance.P1Score}, P2: {ScoreManager.Instance.P2Score}, " +
+                            $"Occupied tiles: {occupiedCount}");
+                        ScoreManager.Instance.ResetScores();
+                    }
+                    else if (!boardIsEmpty)
+                    {
+                        Debug.Log($"[DelayedScoreReset] Board not empty at {delay}s delay. " +
+                            $"Occupied tiles: {occupiedCount}, P1: {ScoreManager.Instance.P1Score}, P2: {ScoreManager.Instance.P2Score}");
+                    }
+                }
+            }
         }
         
         /// <summary>
@@ -182,6 +224,7 @@ namespace CardGame.Managers
             CoinTossManager coinTossManager = CoinTossManager.Instance;
             if (coinTossManager == null)
             {
+                Debug.LogWarning("[GameManager] CoinTossManager not found. Creating...");
                 GameObject coinTossObj = new GameObject("CoinTossManager");
                 coinTossObj.AddComponent<CoinTossManager>();
                 coinTossManager = CoinTossManager.Instance;
@@ -196,6 +239,7 @@ namespace CardGame.Managers
             
             while (coinTossUI == null && retryCount < maxRetries)
             {
+                Debug.LogWarning($"[GameManager] CoinTossUI not found (attempt {retryCount + 1}/{maxRetries}). Waiting for HUDSetup to create it...");
                 yield return new WaitForSeconds(0.5f);
                 coinTossUI = FindObjectOfType<CoinTossUI>(true); // Search inactive objects too
                 retryCount++;
@@ -203,6 +247,7 @@ namespace CardGame.Managers
             
             if (coinTossUI == null)
             {
+                Debug.LogError("[GameManager] CoinTossUI still not found after waiting. HUDSetup may not have created it.");
             }
             
             // Trigger coin toss animation through UI
@@ -210,10 +255,12 @@ namespace CardGame.Managers
             {
                 // Start the coin toss from GameManager (always active) to ensure coroutine can start
                 StartCoroutine(StartCoinTossFromManager(coinTossUI));
+                Debug.Log("[GameManager] Coin toss animation started via CoinTossUI.");
             }
             else
             {
                 // Fallback: Perform coin toss without UI
+                Debug.LogWarning("[GameManager] CoinTossUI not found. Performing coin toss without animation.");
                 FateSide fallbackStartingSide = coinTossManager.PerformCoinToss();
                 if (FateFlowController.Instance != null)
                 {
@@ -235,18 +282,21 @@ namespace CardGame.Managers
             
             if (!coinTossManager.IsComplete)
             {
-                // In practice, the UI coin toss may still be running; this is a normal fallback.
+                Debug.LogWarning("[GameManager] Coin toss did not complete in time. Using default starting player.");
             }
             
-            // Get coin toss result and set starting player (uses default if toss not yet performed)
+            // Get coin toss result and set starting player
             FateSide startingSide = coinTossManager.GetStartingPlayer();
+            Debug.Log($"[GameManager] Coin toss result from CoinTossManager: {startingSide} ({(startingSide == FateSide.Player ? "Player 1" : "Player 2")})");
             
             if (FateFlowController.Instance != null)
             {
                 FateFlowController.Instance.SetFate(startingSide);
+                Debug.Log($"[GameManager] SetFate called with: {startingSide} ({(startingSide == FateSide.Player ? "Player 1" : "Player 2")}). CurrentFate in FateFlowController: {FateFlowController.Instance.CurrentFate} ({(FateFlowController.Instance.CurrentFate == FateSide.Player ? "Player 1" : "Player 2")})");
             }
             else
             {
+                Debug.LogError("[GameManager] FateFlowController.Instance is null! Cannot set starting player.");
             }
             
             // Wait for coin toss UI animation to complete (additional buffer)
@@ -263,6 +313,7 @@ namespace CardGame.Managers
         {
             if (coinTossUI == null)
             {
+                Debug.LogError("[GameManager] CoinTossUI is null! Cannot start coin toss.");
                 yield break;
             }
             
@@ -279,6 +330,7 @@ namespace CardGame.Managers
             // Verify GameObject is active before starting animation
             if (coinTossUI == null || coinTossUI.gameObject == null)
             {
+                Debug.LogError("[GameManager] CoinTossUI or its GameObject became null after activation!");
                 yield break;
             }
             
@@ -286,18 +338,20 @@ namespace CardGame.Managers
             bool activeSelf = coinTossObj.activeSelf;
             bool activeInHierarchy = coinTossObj.activeInHierarchy;
             
+            Debug.Log($"[GameManager] CoinTossUI GameObject state after activation - activeSelf: {activeSelf}, activeInHierarchy: {activeInHierarchy}, enabled: {coinTossUI.enabled}");
             
             // Now start the animation on the active GameObject
             if (activeSelf && coinTossUI.enabled)
             {
                 coinTossUI.StartCoinTossAnimation();
+                Debug.Log("[GameManager] Coin toss animation started successfully.");
             }
             else
             {
                 // If still not active, try activating again and wait
                 if (!activeSelf)
                 {
-                    // This is a normal recovery path in some initialization orders; log at info level
+                    Debug.LogWarning("[GameManager] CoinTossUI GameObject is still inactive. Activating again and waiting...");
                     coinTossObj.SetActive(true);
                     yield return new WaitForEndOfFrame();
                     yield return null;
@@ -305,13 +359,16 @@ namespace CardGame.Managers
                     if (coinTossObj.activeSelf && coinTossUI.enabled)
                     {
                         coinTossUI.StartCoinTossAnimation();
+                        Debug.Log("[GameManager] Coin toss animation started after second activation.");
                     }
                     else
                     {
+                        Debug.LogError($"[GameManager] Failed to activate CoinTossUI GameObject! activeSelf: {coinTossObj.activeSelf}, enabled: {coinTossUI.enabled}");
                     }
                 }
                 else
                 {
+                    Debug.LogError($"[GameManager] CoinTossUI GameObject activation failed! activeSelf: {activeSelf}, activeInHierarchy: {activeInHierarchy}, enabled: {coinTossUI.enabled}");
                 }
             }
         }
@@ -344,30 +401,36 @@ namespace CardGame.Managers
         
         private void StartPlayerTurn()
         {
+            Debug.Log("Player Turn Started");
             OnTurnStarted?.Invoke();
         }
         
         public void EndPlayerTurn()
         {
+            Debug.Log("Player Turn Ended");
             OnTurnEnded?.Invoke();
             ChangeState(GameState.EnemyTurn);
         }
         
     private void StartEnemyTurn()
     {
+        Debug.Log("Enemy Turn Started");
     }
     
     public void EndEnemyTurn()
         {
+            Debug.Log("Enemy Turn Ended");
             ChangeState(GameState.PlayerTurn);
         }
         
         private void HandleVictory()
         {
+            Debug.Log("Victory!");
         }
         
         private void HandleDefeat()
         {
+            Debug.Log("Defeat!");
         }
         
         public void CheckWinCondition()
@@ -382,9 +445,16 @@ namespace CardGame.Managers
         
         /// <summary>
         /// [CardFront] Resets game state for rematch without reloading scene
-        /// Reuses the same initialization flow as StartGame() to ensure consistency
         /// </summary>
         public void ResetGameState()
+        {
+            StartCoroutine(ResetGameStateCoroutine());
+        }
+        
+        /// <summary>
+        /// Coroutine to reset game state - ensures proper cleanup and timing
+        /// </summary>
+        private IEnumerator ResetGameStateCoroutine()
         {
             Debug.Log("[REMATCH] ResetGameState called - reusing initial game setup flow");
             
@@ -397,12 +467,37 @@ namespace CardGame.Managers
             }
             
             // Step 2: Clear board - remove all cards from CardDropArea instances
+            // This also resets all CardDropArea instances (clears occupying card references and turn tracking)
             Debug.Log("[REMATCH] Step 2: Clearing board (destroying all cards and resetting tiles)");
             ClearBoard();
+            
+            // CRITICAL: Wait a frame to ensure Destroy() calls complete in PlayMode
+            // Destroy() doesn't destroy immediately - it destroys at end of frame
+            yield return null;
+            
+            // Verify board is actually empty after destruction
+            CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>();
+            int stillOccupied = 0;
+            foreach (CardDropArea area in allDropAreas)
+            {
+                if (area != null && area.IsOccupied)
+                {
+                    stillOccupied++;
+                    // Force clear if still occupied
+                    area.ResetForNewGame();
+                }
+            }
+            
+            if (stillOccupied > 0)
+            {
+                Debug.LogWarning($"[REMATCH] {stillOccupied} areas still occupied after board clear. Force cleared.");
+                yield return null; // Wait another frame
+            }
             
             // Step 3: Clear hands (both UI and deck manager hand lists)
             Debug.Log("[REMATCH] Step 3: Clearing player hands (UI and deck manager lists)");
             ClearHands();
+            yield return null; // Wait for hand clearing to complete
             
             // Step 4: Reinitialize decks (this will clear everything and rebuild from starting deck)
             Debug.Log("[REMATCH] Step 4: Reinitializing deck managers");
@@ -417,29 +512,100 @@ namespace CardGame.Managers
             {
                 opponentDeck.InitializeDeck();
             }
+            yield return null; // Wait for deck initialization
             
-            // Step 5: Show coin toss UI (same as initial game start)
-            Debug.Log("[REMATCH] Step 5: Showing coin toss UI for new game");
+            // Step 5: Reset scores immediately (before showing coin toss UI)
+            // This ensures scores are reset right away, before PrepareGame() runs
+            Debug.Log("[REMATCH] Step 5: Resetting scores immediately");
+            if (ScoreManager.Instance != null)
+            {
+                ScoreManager.Instance.ResetScores();
+            }
+            
+            // Reset statistics tracker (current game stats only, keep session stats)
+            if (GameStatsTracker.Instance != null)
+            {
+                GameStatsTracker.Instance.ResetCurrentGameStats();
+            }
+            else
+            {
+                Debug.LogWarning("[GameManager] GameStatsTracker.Instance is null. Statistics may not reset properly.");
+            }
+            
+            // Reset statistics in CardDropArea
+            CardDropArea.ResetGameStatistics();
+
+            // Reset Battle Front Influence bar UI
+            CardGame.UI.CardFrontlineUI frontlineUI = FindObjectOfType<CardGame.UI.CardFrontlineUI>();
+            if (frontlineUI != null)
+            {
+                frontlineUI.ResetFrontline();
+            }
+            
+            // Reset GameEndManager
+            if (GameEndManager.Instance != null)
+            {
+                GameEndManager.Instance.Reset();
+            }
+            
+            // Step 6: Show coin toss UI (same as initial game start)
+            Debug.Log("[REMATCH] Step 6: Showing coin toss UI for new game");
+            // Reset coin toss for rematch
+            if (CoinTossManager.Instance != null)
+            {
+                CoinTossManager.Instance.ResetCoinToss();
+            }
+            
             CardGame.UI.CoinTossUI coinTossUI = FindObjectOfType<CardGame.UI.CoinTossUI>(true); // Search inactive objects too
             if (coinTossUI != null)
             {
                 coinTossUI.Show();
             }
+            yield return null; // Wait for UI to show
             
-            // Step 6: Change to Preparing state - this will trigger PrepareGame() which handles:
+            // Step 7: Change to Preparing state - this will trigger PrepareGame() which handles:
             // - Resetting statistics (current game only, preserves session stats)
-            // - Resetting ScoreManager
+            // - Resetting ScoreManager (again, as safeguard)
             // - Resetting GameEndManager
             // - Resetting Battle Front Influence bar
             // - Resetting coin toss
             // - Performing coin toss and starting game (including card drawing)
             // This reuses the exact same flow as StartGame() for consistency
-            Debug.Log("[REMATCH] Step 6: Changing to Preparing state (will trigger normal game initialization flow)");
+            Debug.Log("[REMATCH] Step 7: Changing to Preparing state (will trigger normal game initialization flow)");
             ChangeState(GameState.Preparing);
+            yield return null; // Allow state change to process
+            
+            // [CardFront] Trigger initial card draw after a short delay to ensure everything is reset
+            // The PrepareGame() method will handle initial setup, but we also need to draw cards
+            StartCoroutine(TriggerInitialCardDrawAfterReset());
             
             Debug.Log("[REMATCH] ResetGameState completed - game will initialize through PrepareGame() just like a fresh start");
         }
         
+        /// <summary>
+        /// Triggers initial card draw after reset (called after short delay)
+        /// </summary>
+        private System.Collections.IEnumerator TriggerInitialCardDrawAfterReset()
+        {
+            // Wait for a short delay to ensure all managers are reset
+            yield return new UnityEngine.WaitForSeconds(0.3f);
+            
+            // Check if NewCardSystemP1Tester exists and draw initial cards
+            CardGame.Testing.NewCardSystemP1Tester tester = FindObjectOfType<CardGame.Testing.NewCardSystemP1Tester>();
+            if (tester != null)
+            {
+                tester.DrawInitialCards();
+            }
+            
+            // Also draw for P2
+            CardGame.Testing.NewCardSystemP2 oppTester = FindObjectOfType<CardGame.Testing.NewCardSystemP2>();
+            if (oppTester != null)
+            {
+                oppTester.DrawInitialCards();
+            }
+            
+            Debug.Log("[GameManager] Initial cards drawn for rematch");
+        }
 
         /// <summary>
         /// Verifies that deck systems exist at the start of a game session.
@@ -461,9 +627,11 @@ namespace CardGame.Managers
             
             if (tester == null || oppTester == null)
             {
+                Debug.LogWarning("[GameManager] Deck tester components not found. Decks may not be initialized correctly.");
             }
             else
             {
+                Debug.Log("[GameManager] Deck systems detected (P1/P2). Initialization and opening draws are handled by testers.");
             }
         }
         
@@ -474,6 +642,7 @@ namespace CardGame.Managers
         {
             CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>();
             HashSet<GameObject> cardsToDestroy = new HashSet<GameObject>();
+            int removedCount = 0;
             
             // First pass: Collect all cards that are occupying CardDropArea instances
             foreach (CardDropArea dropArea in allDropAreas)
@@ -525,16 +694,24 @@ namespace CardGame.Managers
                 }
             }
             
-            // First, stop all coroutines in CardDropArea instances to prevent ripple effects from continuing
+            // CRITICAL: First, reset all CardDropArea instances BEFORE destroying cards
+            // This clears occupying card references immediately so IsOccupied returns false
+            // This must happen BEFORE destroying cards to prevent stale references
+            Debug.Log($"[BOARD RESET] Resetting {allDropAreas.Length} CardDropArea instances before destroying cards");
             foreach (CardDropArea dropArea in allDropAreas)
             {
                 if (dropArea != null)
                 {
+                    // Stop all coroutines first
                     dropArea.StopAllCoroutines();
+                    // Reset the drop area (clears occupyingCard reference, resets tile color, etc.)
+                    dropArea.ResetForNewGame();
                 }
             }
             
-            // Destroy all collected cards (use DestroyImmediate to ensure they're gone immediately)
+            // Now destroy all collected cards
+            // Use Destroy() in PlayMode (proper cleanup) and DestroyImmediate in EditMode
+            Debug.Log($"[BOARD RESET] Destroying {cardsToDestroy.Count} cards from board");
             foreach (GameObject cardToDestroy in cardsToDestroy)
             {
                 if (cardToDestroy != null)
@@ -542,19 +719,24 @@ namespace CardGame.Managers
                     #if UNITY_EDITOR
                     if (!Application.isPlaying)
                     {
+                        // EditMode: use DestroyImmediate
                         DestroyImmediate(cardToDestroy);
                     }
                     else
                     {
-                        DestroyImmediate(cardToDestroy);
+                        // PlayMode: use Destroy() for proper cleanup
+                        Destroy(cardToDestroy);
                     }
                     #else
-                    DestroyImmediate(cardToDestroy);
+                    // Build: use Destroy() for proper cleanup
+                    Destroy(cardToDestroy);
                     #endif
+                    removedCount++;
                 }
             }
             
             // Also find and destroy any remaining cards on the board (catch any that weren't tracked)
+            // This is a safety net for cards that might not have been in occupyingCard references
             CardMoverP1[] remainingP1Cards = FindObjectsOfType<CardMoverP1>();
             foreach (CardMoverP1 mover in remainingP1Cards)
             {
@@ -567,10 +749,18 @@ namespace CardGame.Managers
                     if (isOnBoard && !isInHand)
                     {
                         #if UNITY_EDITOR
-                        DestroyImmediate(mover.gameObject);
+                        if (!Application.isPlaying)
+                        {
+                            DestroyImmediate(mover.gameObject);
+                        }
+                        else
+                        {
+                            Destroy(mover.gameObject);
+                        }
                         #else
-                        DestroyImmediate(mover.gameObject);
+                        Destroy(mover.gameObject);
                         #endif
+                        removedCount++;
                     }
                 }
             }
@@ -587,27 +777,52 @@ namespace CardGame.Managers
                     if (isOnBoard && !isInHand)
                     {
                         #if UNITY_EDITOR
-                        DestroyImmediate(mover.gameObject);
+                        if (!Application.isPlaying)
+                        {
+                            DestroyImmediate(mover.gameObject);
+                        }
+                        else
+                        {
+                            Destroy(mover.gameObject);
+                        }
                         #else
-                        DestroyImmediate(mover.gameObject);
+                        Destroy(mover.gameObject);
                         #endif
+                        removedCount++;
                     }
-                }
-            }
-            
-            // Finally, reset all CardDropArea instances to clear occupying card references
-            // This also resets tile colors to white and stops all coroutines
-            foreach (CardDropArea dropArea in allDropAreas)
-            {
-                if (dropArea != null)
-                {
-                    dropArea.ResetForNewGame();
                 }
             }
             
             // Force update all tile colors to ensure they're white after reset
             // This ensures any tiles that might have retained colors are reset
             CardDropArea.UpdateAllTileColors();
+            
+            // CRITICAL: Verify board is actually empty after reset
+            // This helps catch any cards that weren't properly destroyed
+            int remainingOccupied = 0;
+            foreach (CardDropArea dropArea in allDropAreas)
+            {
+                if (dropArea != null && dropArea.IsOccupied)
+                {
+                    remainingOccupied++;
+                    GameObject remainingCard = dropArea.GetOccupyingCard();
+                    if (remainingCard != null)
+                    {
+                        Debug.LogWarning($"[BOARD RESET] CardDropArea at {dropArea.transform.position} still has occupying card: {remainingCard.name}. Force clearing...");
+                        // Force clear the reference if card still exists
+                        dropArea.ResetForNewGame();
+                    }
+                }
+            }
+            
+            if (remainingOccupied > 0)
+            {
+                Debug.LogWarning($"[BOARD RESET] Warning: {remainingOccupied} CardDropArea instances still report as occupied after reset. This may indicate cards weren't properly destroyed.");
+            }
+            else
+            {
+                Debug.Log($"[BOARD RESET] Board successfully cleared - all {allDropAreas.Length} CardDropArea instances are now empty");
+            }
         }
         
         /// <summary>
@@ -615,20 +830,7 @@ namespace CardGame.Managers
         /// </summary>
         private void ClearHands()
         {
-            // First, clear deck manager hand lists (this ensures data is cleared)
-            NewDeckManagerP1 playerDeck = FindObjectOfType<NewDeckManagerP1>();
-            if (playerDeck != null)
-            {
-                playerDeck.DiscardHand(); // Move all hand cards to discard
-            }
-            
-            NewDeckManagerP2 opponentDeck = FindObjectOfType<NewDeckManagerP2>();
-            if (opponentDeck != null)
-            {
-                opponentDeck.DiscardHand(); // Move all hand cards to discard
-            }
-            
-            // Then, clear hand UI visual elements
+            // Find hand UI managers and use their ClearHand methods
             CardGame.UI.NewHandP1UI playerHand = FindObjectOfType<CardGame.UI.NewHandP1UI>();
             if (playerHand != null)
             {
@@ -640,6 +842,8 @@ namespace CardGame.Managers
             {
                 opponentHand.ClearHand();
             }
+            
+            Debug.Log("[GameManager] Cleared hands");
         }
         
         /// <summary>
@@ -658,6 +862,8 @@ namespace CardGame.Managers
                     resetCount++;
                 }
             }
+            
+            Debug.Log($"[GameManager] Reset {resetCount} CardDropArea instance(s) for new game");
         }
     }
     

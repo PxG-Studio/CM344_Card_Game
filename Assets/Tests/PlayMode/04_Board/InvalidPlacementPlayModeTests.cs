@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -220,11 +221,18 @@ namespace CardGame.Tests
             CardMoverP1 firstMover = FindCardMoverInHand(handUI, firstCard);
             Assert.IsNotNull(firstMover, "First card should have CardMoverP1");
             
+            // Verify card is in hand before placement
+            Assert.IsTrue(deckP1.Hand.Contains(firstCard), 
+                "First card should be in hand before placement");
+            
             bool placed = CardTestHelper.PlaceP1CardOnDropArea(firstMover, targetArea);
+            Assert.IsTrue(placed, "Card placement should succeed");
             yield return new WaitForSeconds(0.5f);
             
-            Assert.IsTrue(placed, "First card should be placed");
+            // Verify area is occupied after placement
             Assert.IsTrue(targetArea.IsOccupied, "Tile should be occupied after valid placement");
+            Assert.AreEqual(firstMover.gameObject, targetArea.GetOccupyingCard(), 
+                "First card should be the occupying card");
             
             // Count occupied tiles
             int occupiedCount = 0;
@@ -355,10 +363,17 @@ namespace CardGame.Tests
             CardMoverP1 firstMover = FindCardMoverInHand(handUI, firstCard);
             Assert.IsNotNull(firstMover, "First card should have CardMoverP1");
             
-            CardTestHelper.PlaceP1CardOnDropArea(firstMover, targetArea);
+            // Verify card is in hand before placement
+            // Hand is IReadOnlyList, so use LINQ Contains
+            Assert.IsTrue(deckP1.Hand.Contains(firstCard), 
+                "First card should be in hand before placement");
+            
+            bool placed = CardTestHelper.PlaceP1CardOnDropArea(firstMover, targetArea);
+            Assert.IsTrue(placed, "Card placement should succeed");
             yield return new WaitForSeconds(0.5f);
             
-            Assert.IsTrue(targetArea.IsOccupied, "Area should be occupied");
+            // Verify area is occupied after placement
+            Assert.IsTrue(targetArea.IsOccupied, "Area should be occupied after successful placement");
             Assert.AreEqual(firstMover.gameObject, targetArea.GetOccupyingCard(), 
                 "First card should be the occupying card");
             
