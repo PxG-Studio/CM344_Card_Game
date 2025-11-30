@@ -125,7 +125,6 @@ namespace CardGame.UI
                 if (!prefabWarningLogged.Contains(instanceId))
                 {
                     prefabWarningLogged.Add(instanceId);
-                    Debug.LogWarning($"[NewCardUI] Awake: Disabled raycasting for prefab asset '{gameObject.name}' (InstanceID: {instanceId}). Prefab assets should not be in the scene and cannot be dragged. If you see this message, please remove the prefab asset from the scene hierarchy.");
                 }
                 return; // Early return - prefab assets shouldn't be in the scene anyway
             }
@@ -145,24 +144,19 @@ namespace CardGame.UI
                     eventSystemObj = new GameObject("EventSystem");
                     eventSystemObj.AddComponent<EventSystem>();
                     eventSystemObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
-                    Debug.Log($"NewCardUI: Created EventSystem automatically for drag and drop");
                 }
             }
             
             SetupCardShadow();
             
-            // Diagnostic: Check if Canvas has GraphicRaycaster (only log warnings/errors)
+            // Check if Canvas has GraphicRaycaster
             if (canvas != null)
             {
                 GraphicRaycaster raycaster = canvas.GetComponent<GraphicRaycaster>();
                 if (raycaster == null)
                 {
-                    Debug.LogWarning($"[NewCardUI] Canvas {canvas.name} missing GraphicRaycaster! UI interactions may not work.");
+                    // Missing GraphicRaycaster - UI interactions may not work
                 }
-            }
-            else
-            {
-                Debug.LogWarning($"[NewCardUI] No Canvas found in parent hierarchy for '{gameObject.name}'! This card may not work as UI.");
             }
             
             // Auto-setup containers if not assigned (runtime setup)
@@ -426,8 +420,8 @@ namespace CardGame.UI
                         backImage = cardBackVisual.AddComponent<UnityEngine.UI.Image>();
                         if (backImage != null)
                         {
-                            // Create a simple colored rectangle as default back
-                            backImage.color = new Color(0.3f, 0.3f, 0.3f, 1f); // Dark gray placeholder
+                            // Use white background for card back
+                            backImage.color = Color.white;
                             
                             // Image component needs a sprite to render - create a simple white texture
                             Texture2D whiteTexture = new Texture2D(1, 1);
@@ -452,8 +446,8 @@ namespace CardGame.UI
                         backSpriteRenderer = cardBackVisual.AddComponent<SpriteRenderer>();
                         if (backSpriteRenderer != null)
                         {
-                            // Set a default color - will be overridden by captured color when flipped
-                            backSpriteRenderer.color = new Color(0.3f, 0.3f, 0.3f, 1f); // Dark gray placeholder
+                            // Use white background for card back
+                            backSpriteRenderer.color = Color.white;
                         }
                     }
                 }
@@ -469,7 +463,6 @@ namespace CardGame.UI
             // are already assigned since we're using the same field names in this method.
             // They will be visible in the Inspector after the prefab is saved or in Play mode.
             
-            Debug.Log($"NewCardUI: Auto-setup containers completed. FrontContainer: {frontContainer != null}, BackContainer: {backContainer != null}", this);
             
             SetupCardShadow();
         }
@@ -478,13 +471,11 @@ namespace CardGame.UI
         {
             if (cardData == null)
             {
-                Debug.LogError($"NewCardUI on {gameObject.name}: Cannot initialize with null card data!");
                 return;
             }
             
             if (cardData.Data == null)
             {
-                Debug.LogError($"NewCardUI on {gameObject.name}: Card data is null! Card: {cardData}");
                 return;
             }
             
@@ -493,7 +484,6 @@ namespace CardGame.UI
             // Verify card is set
             if (card == null)
             {
-                Debug.LogError($"NewCardUI on {gameObject.name}: CRITICAL - card field is null after assignment! This should never happen.");
             }
             
             // Set GameObject name to match card name for easier debugging and identification
@@ -516,7 +506,6 @@ namespace CardGame.UI
             // Final verification
             if (this.card == null)
             {
-                Debug.LogError($"NewCardUI on {gameObject.name}: CRITICAL - card is null after Initialize() completes!");
             }
             
             // Assign card back sprite (with fallback)
@@ -543,7 +532,6 @@ namespace CardGame.UI
                 }
                 else
                 {
-                    Debug.LogWarning($"[NewCardUI] Cannot start DelayedFlip coroutine - GameObject '{gameObject.name}' is inactive. This may indicate the card was instantiated inactive or parent is inactive.");
                 }
             }
         }
@@ -775,7 +763,6 @@ namespace CardGame.UI
                     // CRITICAL: Ensure material is valid
                     if (statText.fontMaterial == null || statText.font == null)
                     {
-                        Debug.LogError($"[STATS] '{cardName}' {statNames[i]} stat has NULL font/material!");
                     }
                     
                     // CRITICAL: Ensure Canvas is properly configured
@@ -853,7 +840,6 @@ namespace CardGame.UI
             // Only log warnings/errors when there are issues
             if (missingCount > 0)
             {
-                Debug.LogWarning($"[STATS] '{cardName}' ({state}): ❌ {missingCount}/4 stat texts MISSING. Visible: {visibleCount}/4");
                 
                 // Log detailed diagnostics for each missing stat - use ERROR for null components
                 for (int i = 0; i < statTexts.Length; i++)
@@ -861,7 +847,6 @@ namespace CardGame.UI
                     var statText = statTexts[i];
                     if (statText == null)
                     {
-                        Debug.LogError($"[STATS] '{cardName}' {statNames[i]} stat component is NULL - AutoFind attempted but not found. Assign stat text component in prefab!");
                     }
                     else
                     {
@@ -902,7 +887,6 @@ namespace CardGame.UI
                             if (!hasCombinedAlpha) issues += $"COMBINED_ALPHA_LOW({combinedAlpha:F2}) ";
                             if (!hasMesh) issues += "NO_MESH ";
                             
-                            Debug.LogWarning($"[STATS] '{cardName}' {statNames[i]} stat not visible - Issues: {issues.Trim()}");
                         }
                     }
                 }
@@ -993,11 +977,9 @@ namespace CardGame.UI
                 if (allTexts.Length > 0)
                 {
                     string[] textNames = allTexts.Select(t => t.name).ToArray();
-                    Debug.LogWarning($"[STATS] '{cardName}': Searching for stat texts. Found {allTexts.Length} TextMeshProUGUI components: {string.Join(", ", textNames)}");
                 }
                 else
                 {
-                    Debug.LogError($"[STATS] '{cardName}': No TextMeshProUGUI components found in children! Stat texts cannot be auto-found.");
                 }
                 
                 foreach (var text in allTexts)
@@ -1011,25 +993,21 @@ namespace CardGame.UI
                     {
                         topStatText = text;
                         foundAny = true;
-                        Debug.LogWarning($"[STATS] '{cardName}': AutoFound Top stat text: '{text.name}'");
                     }
                     else if (rightStatText == null && (textName.Contains("right") || textName.Contains("east")))
                     {
                         rightStatText = text;
                         foundAny = true;
-                        Debug.LogWarning($"[STATS] '{cardName}': AutoFound Right stat text: '{text.name}'");
                     }
                     else if (downStatText == null && (textName.Contains("down") || textName.Contains("bottom") || textName.Contains("south")))
                     {
                         downStatText = text;
                         foundAny = true;
-                        Debug.LogWarning($"[STATS] '{cardName}': AutoFound Down stat text: '{text.name}'");
                     }
                     else if (leftStatText == null && (textName.Contains("left") || textName.Contains("west")))
                     {
                         leftStatText = text;
                         foundAny = true;
-                        Debug.LogWarning($"[STATS] '{cardName}': AutoFound Left stat text: '{text.name}'");
                     }
                 }
                 
@@ -1042,11 +1020,9 @@ namespace CardGame.UI
                 
                 if (missing.Count > 0)
                 {
-                    Debug.LogError($"[STATS] '{cardName}': Could not find stat text components: {string.Join(", ", missing)}. Assign them in the prefab!");
                 }
                 else if (foundAny)
                 {
-                    Debug.LogWarning($"[STATS] '{cardName}': AutoFind used for stat text components. Assign stat text components in prefab to avoid this warning.");
                 }
             }
         }
@@ -1075,7 +1051,6 @@ namespace CardGame.UI
                 if (!prefabWarningLogged.Contains(instanceId))
                 {
                     prefabWarningLogged.Add(instanceId);
-                    Debug.LogWarning($"[NewCardUI] Start: DISABLED prefab asset '{gameObject.name}' (InstanceID: {instanceId}). Prefab assets should NOT be in the scene hierarchy. They should only be used as references for instantiation. This GameObject has been disabled to prevent it from intercepting drag events.");
                 }
                 return; // Early return - prefab assets shouldn't be processed
             }
@@ -1126,7 +1101,6 @@ namespace CardGame.UI
                 
                 if (shouldHaveCard)
                 {
-                    Debug.LogWarning($"[NewCardUI] Card is null in Start() for instantiated card. Initialize() may not have been called or card was cleared. GameObject: {gameObject.name}");
                 }
                 // Silently ignore for prefab assets and uninitialized instances not in hands
                 
@@ -1138,7 +1112,6 @@ namespace CardGame.UI
                     if (foundCard != null)
                     {
                         card = foundCard;
-                        Debug.Log($"[NewCardUI] Found and set card in Start() from parent NewHandP1UI: {card.Data.cardName}");
                     }
                 }
                 
@@ -1151,7 +1124,6 @@ namespace CardGame.UI
                         if (foundCard != null)
                         {
                             card = foundCard;
-                            Debug.Log($"[NewCardUI] Found and set card in Start() from parent NewHandP2UI: {card.Data.cardName}");
                         }
                     }
                 }
@@ -1169,7 +1141,6 @@ namespace CardGame.UI
                         if (foundCard != null)
                         {
                             card = foundCard;
-                            Debug.Log($"[NewCardUI] Found and set card in Start() from scene NewHandP1UI (fallback): {card.Data.cardName}");
                         }
                     }
                     
@@ -1182,7 +1153,6 @@ namespace CardGame.UI
                             if (foundCard != null)
                             {
                                 card = foundCard;
-                                Debug.Log($"[NewCardUI] Found and set card in Start() from scene NewHandP2UI (fallback): {card.Data.cardName}");
                             }
                         }
                     }
@@ -1285,28 +1255,29 @@ namespace CardGame.UI
         
         private void AssignCardBackSprite()
         {
-            // Try to get sprite from card data, fallback to default
+            // Try to load CardBack_Default.png from Resources
             Sprite backSprite = null;
-            if (card != null && card.Data != null && card.Data.cardBackSprite != null)
+            string cardName = card?.Data?.cardName ?? gameObject.name;
+            
+            // Try to load the CardBack_Default sprite from Resources
+            backSprite = Resources.Load<Sprite>("Sprite/CardBack_Default");
+            
+            if (backSprite == null)
             {
-                backSprite = card.Data.cardBackSprite;
-            }
-            else if (defaultCardBackSprite != null)
-            {
-                backSprite = defaultCardBackSprite;
-            }
-            else
-            {
-                // Ensure we have a shared runtime default sprite so every card
-                // shows SOME back even if assets are not fully wired.
+                // Fallback: Create runtime default white sprite if asset not found
                 if (runtimeDefaultBackSprite == null)
                 {
                     Texture2D tex = new Texture2D(1, 1);
                     tex.SetPixel(0, 0, Color.white);
                     tex.Apply();
                     runtimeDefaultBackSprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f));
+                    Debug.Log($"[CardBack_Default] CardBack_Default.png not found in Resources/Sprite/, created runtime default white sprite");
                 }
                 backSprite = runtimeDefaultBackSprite;
+            }
+            else
+            {
+                Debug.Log($"[CardBack_Default] Loaded CardBack_Default.png from Resources/Sprite/");
             }
             
             if (backContainer != null && backSprite != null)
@@ -1337,6 +1308,8 @@ namespace CardGame.UI
                         backSpriteRenderer.sortingLayerID = cardBackground.sortingLayerID;
                         backSpriteRenderer.sortingOrder = cardBackground.sortingOrder;
                     }
+                    
+                    Debug.Log($"[CardBack_Default] '{cardName}': Created new CardBackSprite GameObject");
                 }
 
                 backSpriteRenderer.sprite = backSprite;
@@ -1353,18 +1326,23 @@ namespace CardGame.UI
                         float scaleY = bgSize.y / backSize.y;
                         float uniform = Mathf.Min(scaleX, scaleY);
                         backSpriteRenderer.transform.localScale = new Vector3(uniform, uniform, 1f);
+                        Debug.Log($"[CardBack_Default] '{cardName}': Assigned CardBack_Default sprite. Scale: {uniform:F2}, Background size: {bgSize}, Back size: {backSize}");
                     }
                     else
                     {
                         backSpriteRenderer.transform.localScale = Vector3.one;
+                        Debug.Log($"[CardBack_Default] '{cardName}': Assigned CardBack_Default sprite. Using default scale (back size invalid)");
                     }
                 }
                 else
                 {
                     backSpriteRenderer.transform.localScale = Vector3.one;
+                    Debug.Log($"[CardBack_Default] '{cardName}': Assigned CardBack_Default sprite. Using default scale (no card background)");
                 }
-
-                // Back sprite assigned - no log needed for successful initialization
+            }
+            else
+            {
+                Debug.LogWarning($"[CardBack_Default] '{cardName}': Cannot assign CardBack_Default - backContainer: {backContainer != null}, backSprite: {backSprite != null}");
             }
         }
 
@@ -1428,7 +1406,6 @@ namespace CardGame.UI
                 cg.blocksRaycasts = false;
                 cg.interactable = false;
                 
-                Debug.LogWarning($"[NewCardUI] BLOCKED: Cannot drag '{gameObject.name}' (InstanceID: {GetInstanceID()}) - this is a prefab asset, not a cloned card instance. Prefab assets cannot be dragged. Only instantiated cards can be dragged. Disabled raycasting for this GameObject. If you see this message, please remove the prefab asset from the scene hierarchy.");
                 return;
             }
             
@@ -1436,14 +1413,12 @@ namespace CardGame.UI
             // Valid cloned cards should have their card reference set by Initialize() before drag can occur
             if (card == null)
             {
-                Debug.LogWarning($"[NewCardUI] Cannot drag '{gameObject.name}' - card reference is null. This may be an uninitialized prefab asset.");
                 return;
             }
             
             #if UNITY_EDITOR
             if (UnityEditor.PrefabUtility.IsPartOfPrefabAsset(gameObject))
             {
-                Debug.LogWarning($"[NewCardUI] Cannot drag prefab asset '{gameObject.name}'. Only instantiated cards can be dragged.");
                 return;
             }
             
@@ -1451,13 +1426,11 @@ namespace CardGame.UI
             bool isPrefabInstance = UnityEditor.PrefabUtility.IsPartOfPrefabInstance(gameObject);
             if (isPrefabInstance && card == null && Card == null)
             {
-                Debug.LogWarning($"[NewCardUI] Prefab instance '{gameObject.name}' has not been initialized. Initialize() may not have been called.");
             }
             #endif
             
             if (!allowDrag)
             {
-                Debug.LogWarning($"[NewCardUI] Drag not allowed - allowDrag is false");
                 return;
             }
             
@@ -1497,7 +1470,6 @@ namespace CardGame.UI
                else
                {
                    // [CardFront] Allow opponent cards to drag when it IS the opponent's turn
-                   Debug.Log($"[NewCardUI] Opponent card '{gameObject.name}' drag allowed - opponent's turn.");
                    // Continue with drag initialization below
                }
            }
@@ -1527,7 +1499,6 @@ namespace CardGame.UI
            
            if (!isCardInHand)
            {
-               Debug.LogWarning($"[NewCardUI] Cannot drag '{gameObject.name}' - card is not in hand (already on board or removed).");
                return;
            }
             
@@ -1539,7 +1510,6 @@ namespace CardGame.UI
                 if (Card != null)
                 {
                     card = Card;
-                    Debug.Log($"[NewCardUI] Recovered card from Card property: {card.Data.cardName}");
                 }
                 else
                 {
@@ -1554,7 +1524,6 @@ namespace CardGame.UI
                         if (foundCard != null)
                         {
                             card = foundCard;
-                            Debug.Log($"[NewCardUI] Recovered card from parent HandUI Hub: {card.Data.cardName}");
                         }
                     }
                     else if (handP2UI != null)
@@ -1563,7 +1532,6 @@ namespace CardGame.UI
                         if (foundCard != null)
                         {
                             card = foundCard;
-                            Debug.Log($"[NewCardUI] Recovered card from parent HandOppUI Hub: {card.Data.cardName}");
                         }
                     }
                     
@@ -1583,7 +1551,6 @@ namespace CardGame.UI
                                 card = handUI.GetCardForUIByIndex(siblingIndex);
                                 if (card != null)
                                 {
-                                    Debug.Log($"[NewCardUI] Recovered card by sibling index from HandUI Hub: {card.Data.cardName}");
                                 }
                             }
                         }
@@ -1595,7 +1562,6 @@ namespace CardGame.UI
                                 card = handP2UI.GetCardForUIByIndex(siblingIndex);
                                 if (card != null)
                                 {
-                                    Debug.Log($"[NewCardUI] Recovered card by sibling index from HandOppUI Hub: {card.Data.cardName}");
                                 }
                             }
                         }
@@ -1614,7 +1580,6 @@ namespace CardGame.UI
                             if (foundCard != null)
                             {
                                 card = foundCard;
-                                Debug.Log($"[NewCardUI] Recovered card via HandOppUI Hub's GetCardForUI: {card.Data.cardName}");
                             }
                         }
                         
@@ -1628,7 +1593,6 @@ namespace CardGame.UI
                                 if (foundCard != null)
                                 {
                                     card = foundCard;
-                                    Debug.Log($"[NewCardUI] Recovered card via HandUI Hub's GetCardForUI: {card.Data.cardName}");
                                 }
                             }
                         }
@@ -1643,13 +1607,9 @@ namespace CardGame.UI
                 // [CardFront] Additional check: If this is NOT a clone (i.e., it's the prefab asset or uninitialized instance), block it
                 if (!gameObject.name.Contains("(Clone)"))
                 {
-                    Debug.LogWarning($"[NewCardUI] Cannot drag '{gameObject.name}' - this appears to be a prefab asset or uninitialized instance. Only instantiated cards (clones) can be dragged. Please ensure you're dragging a card from the hand, not a prefab asset in the scene.");
                     return;
                 }
                 
-                Debug.LogError($"[NewCardUI] CRITICAL: Card reference lost. GameObject: {gameObject.name}, InstanceID: {GetInstanceID()}. Cannot start drag.");
-                Debug.LogError($"[NewCardUI] This indicates Initialize() was not called or card field was cleared. Check CardFactory.");
-                Debug.LogError($"[NewCardUI] Recovery strategies failed. Parent: {(transform.parent != null ? transform.parent.name : "null")}, IsOpponentCard: {isOpponentCard}, HasHandOppUI: {(GetComponentInParent<NewHandP2UI>() != null ? "Yes" : "No")}");
                 return;
             }
             
@@ -1666,7 +1626,6 @@ namespace CardGame.UI
                 bool canAct = CardGame.Managers.FateFlowController.Instance.CanAct(cardSide);
                 if (!canAct)
                 {
-                    Debug.LogWarning($"[NewCardUI] Cannot drag - not {cardSide}'s turn. Current fate: {CardGame.Managers.FateFlowController.Instance.CurrentFate}");
                     return; // Turn system blocks drag
                 }
             }
@@ -1786,7 +1745,6 @@ namespace CardGame.UI
                     if (canOpponentAct)
                     {
                         // It's the opponent's turn but drag wasn't started - this is unexpected
-                        Debug.LogWarning($"[NewCardUI] OnEndDrag: Opponent card '{gameObject.name}' drag should have started but didn't. Drag may have been interrupted.");
                     }
                     else
                     {
@@ -1798,12 +1756,10 @@ namespace CardGame.UI
                 // Only warn if this is a player card that should have been dragging
                 if (IsPlayerCard() && allowDrag)
                 {
-                    Debug.LogWarning($"[NewCardUI] OnEndDrag called but isDragging is false for player card '{gameObject.name}'. Drag may have been interrupted.");
                 }
                 return;
             }
             
-            Debug.Log($"[NewCardUI] OnEndDrag START for '{gameObject.name}'. Card: {(card != null ? card.Data?.cardName : "null")}, Position: {eventData.position}");
             
             isDragging = false;
             canvasGroup.alpha = 1f;
@@ -1812,39 +1768,31 @@ namespace CardGame.UI
             // [CardFront] Verify card reference before proceeding
             if (card == null || card.Data == null)
             {
-                Debug.LogError($"[NewCardUI] OnEndDrag: Card reference lost. Cannot complete drop. GameObject: {gameObject.name}");
                 return;
             }
             
-            Debug.Log($"[NewCardUI] OnEndDrag: Card '{card.Data.cardName}' dropped at screen position {eventData.position}");
             
             // [CardFront] Cluster approach: Use UI raycast to find drop area (local system)
-            Debug.Log($"[NewCardUI] OnEndDrag: Attempting to find drop area via UI raycast at position {eventData.position}...");
             CardDropArea dropArea = FindDropAreaViaRaycast(eventData);
             
             if (dropArea == null)
             {
-                Debug.Log($"[NewCardUI] OnEndDrag: UI raycast found no drop area. Checking drop areas in scene...");
                 // Diagnostic: Count all CardDropArea components in scene
                 CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>(true);
-                Debug.Log($"[NewCardUI] OnEndDrag: Found {allDropAreas.Length} CardDropArea component(s) in scene.");
                 foreach (var area in allDropAreas)
                 {
-                    Debug.Log($"[NewCardUI] OnEndDrag:   - CardDropArea '{area.name}' at {area.transform.position}, IsOccupied: {area.IsOccupied}");
                 }
             }
             
             // [CardFront] Fallback: Use Physics2D if UI raycast fails
             if (dropArea == null && Camera.main != null)
             {
-                Debug.Log($"[NewCardUI] OnEndDrag: Attempting Physics2D fallback at position {eventData.position}...");
                 dropArea = FindDropAreaViaPhysics2D(eventData);
             }
             
             // [CardFront] If drop area found, place card on board
             if (dropArea != null)
             {
-                Debug.Log($"[NewCardUI] OnEndDrag: Drop area found! '{dropArea.name}' at {dropArea.transform.position}. Placing card...");
                 
                 // [CardFront] Handle P2 cards differently - they use CardMoverP2 and OnCardDropP2
                 bool isOpponentCard = IsOpponentCard();
@@ -1859,7 +1807,6 @@ namespace CardGame.UI
                 return;
             }
             
-            Debug.LogWarning($"[NewCardUI] OnEndDrag: No valid drop area found for card '{card.Data.cardName}' at screen position {eventData.position}. Card will return to hand.");
             // Card returns to original position via NewHandP1UI.ArrangeCards()
         }
         
@@ -1870,35 +1817,28 @@ namespace CardGame.UI
         {
             if (EventSystem.current == null)
             {
-                Debug.LogWarning($"[NewCardUI] FindDropAreaViaRaycast: EventSystem.current is null!");
                 return null;
             }
             
             List<RaycastResult> raycastResults = new List<RaycastResult>();
             EventSystem.current.RaycastAll(eventData, raycastResults);
             
-            Debug.Log($"[NewCardUI] FindDropAreaViaRaycast: RaycastAll found {raycastResults.Count} UI object(s) at position {eventData.position}");
             
             foreach (RaycastResult result in raycastResults)
             {
-                Debug.Log($"[NewCardUI] FindDropAreaViaRaycast: Checking '{result.gameObject.name}' for CardDropArea...");
                 CardDropArea dropArea = result.gameObject.GetComponent<CardDropArea>();
                 if (dropArea != null)
                 {
-                    Debug.Log($"[NewCardUI] FindDropAreaViaRaycast: Found CardDropArea '{dropArea.name}'! IsOccupied: {dropArea.IsOccupied}");
                     if (!dropArea.IsOccupied)
                     {
-                        Debug.Log($"[NewCardUI] Found CardDropArea via UI raycast: {dropArea.name}");
                         return dropArea;
                     }
                     else
                     {
-                        Debug.Log($"[NewCardUI] FindDropAreaViaRaycast: CardDropArea '{dropArea.name}' is occupied. Skipping.");
                     }
                 }
             }
             
-            Debug.Log($"[NewCardUI] FindDropAreaViaRaycast: No unoccupied CardDropArea found in raycast results.");
             return null;
         }
         
@@ -1915,16 +1855,13 @@ namespace CardGame.UI
             if (canvas != null && canvas.renderMode == RenderMode.ScreenSpaceCamera && canvas.worldCamera != null)
             {
                 worldCamera = canvas.worldCamera;
-                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Using Canvas camera '{worldCamera.name}' for coordinate conversion.");
             }
             else if (Camera.main != null)
             {
                 worldCamera = Camera.main;
-                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Using Camera.main for coordinate conversion.");
             }
             else
             {
-                Debug.LogWarning($"[NewCardUI] FindDropAreaViaPhysics2D: No camera available! Cannot convert screen to world position.");
                 // Fall through to closest drop area search
             }
             
@@ -1936,41 +1873,33 @@ namespace CardGame.UI
                 worldPos = worldCamera.ScreenToWorldPoint(screenPos);
                 worldPos.z = 0f;
                 
-                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Screen position {eventData.position}, World position {worldPos}");
                 
                 // Try point-based detection first
                 Collider2D[] hitColliders = Physics2D.OverlapPointAll(worldPos);
                 
-                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Physics2D.OverlapPointAll found {hitColliders.Length} collider(s) at world position {worldPos}");
                 
                 foreach (Collider2D hitCollider in hitColliders)
                 {
                     if (hitCollider == null) continue;
                     
-                    Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Checking collider '{hitCollider.gameObject.name}' for CardDropArea...");
                     CardDropArea dropArea = hitCollider.GetComponent<CardDropArea>();
                     if (dropArea != null)
                     {
-                        Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Found CardDropArea '{dropArea.name}'! IsOccupied: {dropArea.IsOccupied}");
                         if (!dropArea.IsOccupied)
                         {
-                            Debug.Log($"[NewCardUI] Found CardDropArea via Physics2D: {dropArea.name}");
                             return dropArea;
                         }
                         else
                         {
-                            Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: CardDropArea '{dropArea.name}' is occupied. Skipping.");
                         }
                     }
                 }
                 
-                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Point-based detection found no drop area. Trying radius-based search...");
                 
                 // Fallback: Try radius-based detection (larger search area)
                 float searchRadius = 2f; // Search within 2 units
                 hitColliders = Physics2D.OverlapCircleAll(worldPos, searchRadius);
                 
-                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Physics2D.OverlapCircleAll found {hitColliders.Length} collider(s) within radius {searchRadius} at world position {worldPos}");
                 
                 CardDropArea closestDropArea = null;
                 float closestDistance = float.MaxValue;
@@ -1993,18 +1922,15 @@ namespace CardGame.UI
                 
                 if (closestDropArea != null)
                 {
-                    Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Found closest CardDropArea '{closestDropArea.name}' at distance {closestDistance}");
                     return closestDropArea;
                 }
             }
             
             // Final fallback: Find closest unoccupied drop area in scene (distance-based)
-            Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Physics2D detection failed. Using scene-based closest drop area search...");
             CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>();
             
             if (allDropAreas.Length == 0)
             {
-                Debug.LogWarning($"[NewCardUI] FindDropAreaViaPhysics2D: No CardDropArea components found in scene!");
                 return null;
             }
             
@@ -2034,21 +1960,17 @@ namespace CardGame.UI
             
             if (closest != null && minDist < 5f) // Only return if within reasonable distance (5 units)
             {
-                Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: Found closest unoccupied CardDropArea '{closest.name}' at distance {minDist}");
                 return closest;
             }
             
-            Debug.Log($"[NewCardUI] FindDropAreaViaPhysics2D: No unoccupied CardDropArea found in Physics2D results or nearby.");
             return null;
         }
         
         private void PlaceCardOnBoard(CardDropArea dropArea)
         {
-            Debug.Log($"PlaceCardOnBoard: Attempting to place card on {dropArea?.name}");
             
             if (dropArea == null || card == null)
             {
-                Debug.LogWarning($"PlaceCardOnBoard: dropArea or card is null. dropArea: {dropArea != null}, card: {card != null}");
                 return;
             }
             
@@ -2057,23 +1979,19 @@ namespace CardGame.UI
             {
                 if (!CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.Player))
                 {
-                    Debug.LogWarning($"Cannot place card - not player's turn. Current fate: {CardGame.Managers.FateFlowController.Instance.CurrentFate}");
                     return;
                 }
                 else
                 {
-                    Debug.Log($"PlaceCardOnBoard: Turn check passed. Current fate: {CardGame.Managers.FateFlowController.Instance.CurrentFate}");
                 }
             }
             else
             {
-                Debug.LogWarning("PlaceCardOnBoard: FateFlowController.Instance is null - allowing placement anyway");
             }
             
             // Check if drop area is occupied
             if (dropArea.IsOccupied)
             {
-                Debug.LogWarning($"Cannot place card - drop area {dropArea.name} is occupied");
                 return;
             }
             
@@ -2092,31 +2010,26 @@ namespace CardGame.UI
                 NewCard validatedCard = handUI.GetCardForUI(this);
                 if (validatedCard == null || validatedCard != card)
                 {
-                    Debug.LogWarning($"[NewCardUI] PlaceCardOnBoard: Card '{card.Data?.cardName}' not found in HandUI Hub. Cannot place.");
                     return;
                 }
             }
             else
             {
-                Debug.LogError("[NewCardUI] PlaceCardOnBoard: NewHandP1UI Hub not found in parent hierarchy. Cannot place card.");
                 return;
             }
             
             // [CardFront] Validate deckManager exists
             if (deckManager == null)
             {
-                Debug.LogError("[NewCardUI] PlaceCardOnBoard: DeckManager is null in HandUI Hub. Cannot place card.");
                 return;
             }
             
             // [CardFront] Final validation: Card must be in hand (via Hub connection)
             if (!deckManager.Hand.Contains(card))
             {
-                Debug.LogWarning($"[NewCardUI] PlaceCardOnBoard: Card '{card.Data?.cardName}' not found in hand. Hand contains {deckManager.Hand.Count} cards.");
                 return;
             }
             
-            Debug.Log($"[NewCardUI] PlaceCardOnBoard: All checks passed. Creating board card for '{card.Data.cardName}'...");
             
             // [CardFront] Hub approach: Use CardFactory to create board card
             // CardFactory is the Hub for card creation - use it instead of manual instantiation
@@ -2124,7 +2037,6 @@ namespace CardGame.UI
             
             if (boardCardPrefab == null)
             {
-                Debug.LogError("[NewCardUI] PlaceCardOnBoard: NewCardPrefab not found in Resources folder. Cannot create board card.");
                 return;
             }
             
@@ -2137,7 +2049,6 @@ namespace CardGame.UI
             
             if (boardCard == null)
             {
-                Debug.LogError("[NewCardUI] PlaceCardOnBoard: CardFactory failed to create board card.");
                 return;
             }
             
@@ -2150,19 +2061,16 @@ namespace CardGame.UI
             
             if (cardMover == null)
             {
-                Debug.LogError("[NewCardUI] PlaceCardOnBoard: Board card prefab missing CardMoverP1 component. Cannot drag board card.");
                 Destroy(boardCard);
                 return;
             }
             
             // [CardFront] Trigger drop through CardDropArea (uses event channel)
             // This will handle: playing card, placement, battles via Hub connections
-            Debug.Log($"[NewCardUI] PlaceCardOnBoard: Triggering drop for card '{card.Data.cardName}' on {dropArea.name}");
             dropArea.OnCardDrop(cardMover);
             
             // [CardFront] Remove from hand UI via event channel (cluster cleanup)
             // NewHandP1UI will handle removal when OnCardPlayed event fires
-            Debug.Log($"[NewCardUI] PlaceCardOnBoard: Card '{card.Data.cardName}' placement complete!");
         }
         
         /// <summary>
@@ -2170,11 +2078,9 @@ namespace CardGame.UI
         /// </summary>
         private void PlaceOpponentCardOnBoard(CardDropArea dropArea)
         {
-            Debug.Log($"[NewCardUI] PlaceOpponentCardOnBoard: Attempting to place opponent card on {dropArea?.name}");
             
             if (dropArea == null || card == null)
             {
-                Debug.LogWarning($"PlaceOpponentCardOnBoard: dropArea or card is null. dropArea: {dropArea != null}, card: {card != null}");
                 return;
             }
             
@@ -2183,23 +2089,19 @@ namespace CardGame.UI
             {
                 if (!CardGame.Managers.FateFlowController.Instance.CanAct(CardGame.Managers.FateSide.P2))
                 {
-                    Debug.LogWarning($"Cannot place opponent card - not opponent's turn. Current fate: {CardGame.Managers.FateFlowController.Instance.CurrentFate}");
                     return;
                 }
                 else
                 {
-                    Debug.Log($"PlaceOpponentCardOnBoard: Turn check passed. Current fate: {CardGame.Managers.FateFlowController.Instance.CurrentFate}");
                 }
             }
             else
             {
-                Debug.LogWarning("PlaceOpponentCardOnBoard: FateFlowController.Instance is null - allowing placement anyway");
             }
             
             // Check if drop area is occupied
             if (dropArea.IsOccupied)
             {
-                Debug.LogWarning($"Cannot place opponent card - drop area {dropArea.name} is occupied");
                 return;
             }
             
@@ -2218,31 +2120,26 @@ namespace CardGame.UI
                 NewCard validatedCard = handP2UI.GetCardForUI(this);
                 if (validatedCard == null || validatedCard != card)
                 {
-                    Debug.LogWarning($"[NewCardUI] PlaceOpponentCardOnBoard: Card '{card.Data?.cardName}' not found in HandOppUI Hub. Cannot place.");
                     return;
                 }
             }
             else
             {
-                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: NewHandP2UI Hub not found in parent hierarchy. Cannot place opponent card.");
                 return;
             }
             
             // [CardFront] Validate deckManagerP2 exists
             if (deckManagerP2 == null)
             {
-                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: DeckManagerOpp is null in HandOppUI Hub. Cannot place opponent card.");
                 return;
             }
             
             // [CardFront] Final validation: Card must be in opponent hand (via Hub connection)
             if (!deckManagerP2.Hand.Contains(card))
             {
-                Debug.LogWarning($"[NewCardUI] PlaceOpponentCardOnBoard: Card '{card.Data?.cardName}' not found in opponent hand. Hand contains {deckManagerP2.Hand.Count} cards.");
                 return;
             }
             
-            Debug.Log($"[NewCardUI] PlaceOpponentCardOnBoard: All checks passed. Creating opponent board card for '{card.Data.cardName}'...");
             
             // [CardFront] Hub approach: Get opponent board card prefab from NewHandP2UI (Hub)
             // NewHandP2UI has the cardPrefab reference assigned in Inspector - use that instead of Resources.Load
@@ -2250,7 +2147,6 @@ namespace CardGame.UI
             
             if (opponentPrefab == null)
             {
-                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: cardPrefab is null in NewHandP2UI Hub. Cannot create opponent board card. Please assign the prefab in the Inspector.");
                 return;
             }
             
@@ -2264,7 +2160,6 @@ namespace CardGame.UI
             
             if (boardCardOpp == null)
             {
-                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: Failed to instantiate opponent board card.");
                 return;
             }
             
@@ -2283,7 +2178,6 @@ namespace CardGame.UI
             
             if (cardMoverP2 == null)
             {
-                Debug.LogError("[NewCardUI] PlaceOpponentCardOnBoard: P2 board card prefab missing CardMoverP2 component. Cannot drag P2 board card. Please ensure the prefab has a CardMoverP2 component.");
                 Destroy(boardCardOpp);
                 return;
             }
@@ -2291,19 +2185,16 @@ namespace CardGame.UI
             // [CardFront] Safety check: Ensure card reference is set (CardFactory should have done this)
             if (cardMoverP2.Card == null)
             {
-                Debug.LogWarning("[NewCardUI] PlaceOpponentCardOnBoard: CardMoverP2 card reference is null (CardFactory should have set it). Setting it now as fallback.");
                 cardMoverP2.SetCard(card);
                 cardMoverP2.RefreshHomePosition();
             }
             
             // [CardFront] Trigger opponent drop through CardDropArea (uses event channel)
             // This will handle: playing card, placement, battles via Hub connections
-            Debug.Log($"[NewCardUI] PlaceOpponentCardOnBoard: Triggering opponent drop for card '{card.Data.cardName}' on {dropArea.name}");
             dropArea.OnCardDropP2(cardMoverP2);
             
             // [CardFront] Remove from hand UI via event channel (cluster cleanup)
             // NewHandP2UI will handle removal when OnCardPlayed event fires
-            Debug.Log($"[NewCardUI] PlaceOpponentCardOnBoard: Opponent card '{card.Data.cardName}' placement complete!");
         }
         
         public void RefreshVisuals()
@@ -2319,7 +2210,6 @@ namespace CardGame.UI
         {
             if (card == null)
             {
-                Debug.LogWarning($"[NewCardUI] SyncCardReferenceToMovers: Card is null for '{gameObject.name}'. Cannot sync to CardMover.");
                 return;
             }
             
@@ -2362,7 +2252,6 @@ namespace CardGame.UI
             
             if (syncCount == 0)
             {
-                Debug.LogWarning($"[NewCardUI] SyncCardReferenceToMovers: No CardMoverP1 (P1) or CardMoverP2 (P2) components found on '{gameObject.name}' or its children. Card will need to find reference via FindCardReference().");
             }
         }
 
