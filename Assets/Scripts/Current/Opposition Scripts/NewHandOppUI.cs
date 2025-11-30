@@ -240,10 +240,11 @@ namespace CardGame.UI
             yield return null;
             
             // Show alert marker for opponent draw
-            if (cardTransform != null)
-            {
-                DeltaMarkerSystem.ShowAlert(cardTransform, "!");
-            }
+            // Disabled - markers removed from board
+            // if (cardTransform != null)
+            // {
+            //     DeltaMarkerSystem.ShowAlert(cardTransform, "!");
+            // }
         }
         
         private void HandleCardUIPlayed(NewCardUI cardUI)
