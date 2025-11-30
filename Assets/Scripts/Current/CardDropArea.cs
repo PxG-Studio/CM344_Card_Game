@@ -44,6 +44,9 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     
     // Public property to access tileSpriteRenderer for debugging
     public SpriteRenderer TileSpriteRenderer => tileSpriteRenderer;
+    
+    // Store original tile color to restore on rematch
+    private Color originalTileColor = Color.white;
     // Note: Adjacency is now handled by hardcoded values:
     // - 1.6f for strict battle adjacency (AreCardsStrictlyAdjacent)
     // - 3.0f for lenient adjacency (GetAdjacentDropArea)
@@ -154,9 +157,24 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         cardsInCurrentChain.Clear();
         activeChainCount = 0;
         
-        // Note: Tile colors are updated via UpdateAllTileColors() called from GameManager.ClearBoard()
-        // This allows tiles to maintain their original appearance or be updated based on current state
-        // rather than being forced to white, giving a "fresh start" appearance (from prototype-3)
+        // Reset tile to original appearance (checked blue 4x4 pattern)
+        // This ensures tiles return to their default state after rematch
+        if (tileSpriteRenderer == null)
+        {
+            tileSpriteRenderer = GetComponent<SpriteRenderer>();
+        }
+        
+        if (tileSpriteRenderer != null)
+        {
+            // Ensure sprite renderer is enabled
+            if (!tileSpriteRenderer.enabled)
+            {
+                tileSpriteRenderer.enabled = true;
+            }
+            
+            // Reset to original color (restores checked blue 4x4 pattern)
+            tileSpriteRenderer.color = originalTileColor;
+        }
         
         if (debugBattles)
         {
@@ -229,6 +247,12 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         if (tileSpriteRenderer == null)
         {
             tileSpriteRenderer = GetComponent<SpriteRenderer>();
+        }
+        
+        // Store original tile color for rematch reset
+        if (tileSpriteRenderer != null)
+        {
+            originalTileColor = tileSpriteRenderer.color;
         }
         
         // Auto-find NewDeckManagerP1 if not assigned
