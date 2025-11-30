@@ -608,7 +608,29 @@ namespace CardGame.Tests
                 yield return null;
             }
             
-            // Wait for coin toss to complete
+            // If we have a selection but coin toss isn't complete, wait a short time for animation to start
+            // then force completion if it doesn't complete quickly
+            if (coinTossManager.HasSelection && !coinTossManager.IsComplete)
+            {
+                // Wait a short time for animation to potentially complete
+                float shortWait = 0f;
+                float shortTimeout = 2f; // Give animation 2 seconds to complete
+                while (!coinTossManager.IsComplete && shortWait < shortTimeout)
+                {
+                    yield return new WaitForSeconds(0.1f);
+                    shortWait += 0.1f;
+                }
+                
+                // If still not complete after short wait, force it
+                if (!coinTossManager.IsComplete)
+                {
+                    Debug.Log("[CardTestHelper] Coin toss animation not completing. Performing coin toss directly to force completion...");
+                    coinTossManager.PerformCoinToss();
+                    yield return new WaitForSeconds(0.1f);
+                }
+            }
+            
+            // Wait for coin toss to complete (with full timeout as fallback)
             float elapsed = 0f;
             while (!coinTossManager.IsComplete && elapsed < timeout)
             {
@@ -626,6 +648,14 @@ namespace CardGame.Tests
                 if (coinTossManager.HasSelection && !coinTossManager.IsComplete)
                 {
                     Debug.Log("[CardTestHelper] Selection exists but coin toss not complete. Performing coin toss directly...");
+                    coinTossManager.PerformCoinToss();
+                    yield return new WaitForSeconds(0.5f);
+                }
+                else if (!coinTossManager.HasSelection)
+                {
+                    // If no selection, make one and perform toss
+                    Debug.Log("[CardTestHelper] No selection exists. Making selection and performing coin toss...");
+                    coinTossManager.SetPlayerSelection(true, FateSide.Player);
                     coinTossManager.PerformCoinToss();
                     yield return new WaitForSeconds(0.5f);
                 }

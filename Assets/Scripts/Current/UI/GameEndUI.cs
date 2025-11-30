@@ -360,12 +360,14 @@ namespace CardGame.UI
         /// </summary>
         private void Rematch()
         {
+            Debug.Log("[REMATCH] Rematch button clicked - starting game reset");
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.ResetGameState();
             }
             else
             {
+                Debug.LogWarning("[REMATCH] GameManager.Instance is null - falling back to scene reload");
                 // Fallback: reload scene
                 UnityEngine.SceneManagement.SceneManager.LoadScene(
                     UnityEngine.SceneManagement.SceneManager.GetActiveScene().name

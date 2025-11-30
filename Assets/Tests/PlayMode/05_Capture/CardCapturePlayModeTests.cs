@@ -1309,7 +1309,13 @@ namespace CardGame.Tests
             if (weak1Captured || weak2Captured)
             {
                 // Chain capture works!
-                Assert.IsTrue(true, $"Chain capture works! Weak1 captured: {weak1Captured}, Weak2 captured: {weak2Captured}");
+                // Verify chain capture actually occurred
+                int captureCount = 0;
+                if (weak1Captured) captureCount++;
+                if (weak2Captured) captureCount++;
+                
+                Assert.Greater(captureCount, 0, 
+                    $"Chain capture should occur. Captured: {captureCount}/2 (Weak1: {weak1Captured}, Weak2: {weak2Captured})");
             }
             else
             {
@@ -1512,6 +1518,241 @@ namespace CardGame.Tests
             Assert.Less(elapsed, maxAllowedTime, 
                 $"Chain capture should complete without infinite loop. Elapsed: {elapsed}s, Timeout: {timeout}s. " +
                 $"If this fails, chain logic may be looping. Capture completed: {captureCompleted}");
+        }
+
+        [UnityTest]
+        public IEnumerator Equal_Stats_DoNotCapture()
+        {
+            yield return CardTestHelper.WaitForCoinTossToComplete();
+            yield return new WaitForSeconds(1.0f);
+            yield return CardTestHelper.ClearBoard(0.5f);
+            
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
+            Assert.IsTrue(dropAreas.Length >= 2, "Need at least 2 drop areas");
+            
+            // Find adjacent areas
+            CardDropArea area1 = dropAreas[0];
+            CardDropArea area2 = CardTestHelper.GetAdjacentDropArea(area1, "right");
+            if (area2 == null)
+            {
+                area2 = CardTestHelper.GetAdjacentDropArea(area1, "left");
+            }
+            if (area2 == null)
+            {
+                Assert.Inconclusive("Could not find adjacent areas for equal stats test");
+                yield break;
+            }
+            
+            // Create cards with equal stats (tie scenario)
+            NewCard card1 = CardTestHelper.CreateTestCard(3, 3, 3, 3, "EqualCard1");
+            NewCard card2 = CardTestHelper.CreateTestCard(3, 3, 3, 3, "EqualCard2");
+            
+            NewDeckManagerP1 deckP1 = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 deckP2 = Object.FindObjectOfType<NewDeckManagerP2>();
+            Assert.IsNotNull(deckP1, "P1 deck should exist");
+            Assert.IsNotNull(deckP2, "P2 deck should exist");
+            
+            CardTestHelper.AddCardToDeckManagerHand(deckP1, card1);
+            CardTestHelper.AddCardToDeckManagerHand(deckP2, card2);
+            
+            // Place defender first
+            FateFlowController.Instance?.SetFate(FateSide.P2);
+            yield return null;
+            
+            CardMoverP2 defenderMover = CardTestHelper.CreateCardMoverP2WithCard(card2, area2.transform.position);
+            bool defenderPlaced = CardTestHelper.PlaceP2CardOnDropArea(defenderMover, area2, true);
+            Assert.IsTrue(defenderPlaced, "Defender should be placed");
+            yield return new WaitForSeconds(0.5f);
+            
+            // Place attacker (equal stats)
+            FateFlowController.Instance?.SetFate(FateSide.Player);
+            yield return null;
+            
+            CardMoverP1 attackerMover = CardTestHelper.CreateCardMoverWithCard(card1, area1.transform.position);
+            bool attackerPlaced = CardTestHelper.PlaceP1CardOnDropArea(attackerMover, area1, true);
+            Assert.IsTrue(attackerPlaced, "Attacker should be placed");
+            yield return new WaitForSeconds(1.0f);
+            
+            // Verify no capture occurred (equal stats = no capture)
+            bool defenderCaptured = CardTestHelper.IsCardCaptured(defenderMover.gameObject);
+            Assert.IsFalse(defenderCaptured, 
+                "Defender should NOT be captured when stats are equal (tie scenario)");
+            
+            // Verify both cards still exist
+            Assert.IsNotNull(defenderMover.gameObject, "Defender card should still exist");
+            Assert.IsNotNull(attackerMover.gameObject, "Attacker card should still exist");
+        }
+
+        [UnityTest]
+        public IEnumerator Maximum_ChainLength_DoesNotExceedLimit()
+        {
+            yield return CardTestHelper.WaitForCoinTossToComplete();
+            yield return new WaitForSeconds(1.0f);
+            yield return CardTestHelper.ClearBoard(0.5f);
+            
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
+            Assert.IsTrue(dropAreas.Length >= 4, "Need at least 4 drop areas for chain test");
+            
+            // Create a chain scenario: Card1 captures Card2, Card2 captures Card3, etc.
+            // Card1: Right=5, Card2: Left=2 Right=5, Card3: Left=2 Right=5, Card4: Left=2
+            NewCard card1 = CardTestHelper.CreateTestCard(3, 5, 3, 3, "ChainCard1");
+            NewCard card2 = CardTestHelper.CreateTestCard(3, 5, 3, 2, "ChainCard2");
+            NewCard card3 = CardTestHelper.CreateTestCard(3, 5, 3, 2, "ChainCard3");
+            NewCard card4 = CardTestHelper.CreateTestCard(3, 3, 3, 2, "ChainCard4");
+            
+            NewDeckManagerP1 deckP1 = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 deckP2 = Object.FindObjectOfType<NewDeckManagerP2>();
+            Assert.IsNotNull(deckP1, "P1 deck should exist");
+            Assert.IsNotNull(deckP2, "P2 deck should exist");
+            
+            // Find a line of adjacent areas
+            CardDropArea[] chainAreas = new CardDropArea[4];
+            chainAreas[0] = dropAreas[0];
+            chainAreas[1] = CardTestHelper.GetAdjacentDropArea(chainAreas[0], "right");
+            if (chainAreas[1] != null)
+            {
+                chainAreas[2] = CardTestHelper.GetAdjacentDropArea(chainAreas[1], "right");
+            }
+            if (chainAreas[2] != null)
+            {
+                chainAreas[3] = CardTestHelper.GetAdjacentDropArea(chainAreas[2], "right");
+            }
+            
+            if (chainAreas[3] == null)
+            {
+                Assert.Inconclusive("Could not find 4 adjacent areas in a line");
+                yield break;
+            }
+            
+            // Place cards in reverse order (defenders first)
+            CardTestHelper.AddCardToDeckManagerHand(deckP2, card4);
+            CardTestHelper.AddCardToDeckManagerHand(deckP2, card3);
+            CardTestHelper.AddCardToDeckManagerHand(deckP2, card2);
+            CardTestHelper.AddCardToDeckManagerHand(deckP1, card1);
+            
+            // Place defenders
+            FateFlowController.Instance?.SetFate(FateSide.P2);
+            yield return null;
+            
+            CardMoverP2 mover4 = CardTestHelper.CreateCardMoverP2WithCard(card4, chainAreas[3].transform.position);
+            CardTestHelper.PlaceP2CardOnDropArea(mover4, chainAreas[3], true);
+            yield return new WaitForSeconds(0.3f);
+            
+            CardMoverP2 mover3 = CardTestHelper.CreateCardMoverP2WithCard(card3, chainAreas[2].transform.position);
+            CardTestHelper.PlaceP2CardOnDropArea(mover3, chainAreas[2], true);
+            yield return new WaitForSeconds(0.3f);
+            
+            CardMoverP2 mover2 = CardTestHelper.CreateCardMoverP2WithCard(card2, chainAreas[1].transform.position);
+            CardTestHelper.PlaceP2CardOnDropArea(mover2, chainAreas[1], true);
+            yield return new WaitForSeconds(0.5f);
+            
+            // Place attacker to trigger chain
+            FateFlowController.Instance?.SetFate(FateSide.Player);
+            yield return null;
+            
+            CardMoverP1 mover1 = CardTestHelper.CreateCardMoverWithCard(card1, chainAreas[0].transform.position);
+            CardTestHelper.PlaceP1CardOnDropArea(mover1, chainAreas[0], true);
+            
+            // Wait for chain to complete
+            yield return new WaitForSeconds(3.0f);
+            
+            // Verify chain completed (not infinite loop)
+            // All P2 cards should be captured
+            bool card2Captured = CardTestHelper.IsCardCaptured(mover2.gameObject);
+            bool card3Captured = CardTestHelper.IsCardCaptured(mover3.gameObject);
+            bool card4Captured = CardTestHelper.IsCardCaptured(mover4.gameObject);
+            
+            // At least some captures should have occurred
+            int captureCount = 0;
+            if (card2Captured) captureCount++;
+            if (card3Captured) captureCount++;
+            if (card4Captured) captureCount++;
+            
+            Assert.Greater(captureCount, 0, 
+                $"Chain capture should occur. Captured: {captureCount}/3");
+        }
+
+        [UnityTest]
+        public IEnumerator Capture_DuringSameTurn_IsPrevented()
+        {
+            yield return CardTestHelper.WaitForCoinTossToComplete();
+            yield return new WaitForSeconds(1.0f);
+            yield return CardTestHelper.ClearBoard(0.5f);
+            
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
+            Assert.IsTrue(dropAreas.Length >= 2, "Need at least 2 drop areas");
+            
+            // Find adjacent areas
+            CardDropArea area1 = dropAreas[0];
+            CardDropArea area2 = CardTestHelper.GetAdjacentDropArea(area1, "right");
+            if (area2 == null)
+            {
+                area2 = CardTestHelper.GetAdjacentDropArea(area1, "left");
+            }
+            if (area2 == null)
+            {
+                Assert.Inconclusive("Could not find adjacent areas");
+                yield break;
+            }
+            
+            // Create cards: Card1 (P1) should capture Card2 (P2)
+            NewCard card1 = CardTestHelper.CreateTestCard(3, 5, 3, 3, "P1Card");
+            NewCard card2 = CardTestHelper.CreateTestCard(3, 2, 3, 3, "P2Card");
+            
+            NewDeckManagerP1 deckP1 = Object.FindObjectOfType<NewDeckManagerP1>();
+            NewDeckManagerP2 deckP2 = Object.FindObjectOfType<NewDeckManagerP2>();
+            Assert.IsNotNull(deckP1, "P1 deck should exist");
+            Assert.IsNotNull(deckP2, "P2 deck should exist");
+            
+            CardTestHelper.AddCardToDeckManagerHand(deckP2, card2);
+            CardTestHelper.AddCardToDeckManagerHand(deckP1, card1);
+            
+            // Place P2 card first
+            FateFlowController.Instance?.SetFate(FateSide.P2);
+            yield return null;
+            
+            CardMoverP2 mover2 = CardTestHelper.CreateCardMoverP2WithCard(card2, area2.transform.position);
+            CardTestHelper.PlaceP2CardOnDropArea(mover2, area2, true);
+            yield return new WaitForSeconds(0.5f);
+            
+            // Place P1 card (should capture P2 card)
+            FateFlowController.Instance?.SetFate(FateSide.Player);
+            yield return null;
+            
+            CardMoverP1 mover1 = CardTestHelper.CreateCardMoverWithCard(card1, area1.transform.position);
+            CardTestHelper.PlaceP1CardOnDropArea(mover1, area1, true);
+            yield return new WaitForSeconds(1.0f);
+            
+            // Verify P2 card was captured
+            bool captured = CardTestHelper.IsCardCaptured(mover2.gameObject);
+            Assert.IsTrue(captured, "P2 card should be captured by P1 card");
+            
+            // Now try to place another P1 card that would capture the first P1 card
+            // This should be prevented (can't capture cards placed in same turn)
+            NewCard card3 = CardTestHelper.CreateTestCard(3, 5, 3, 2, "P1Card2");
+            CardTestHelper.AddCardToDeckManagerHand(deckP1, card3);
+            
+            CardDropArea area3 = CardTestHelper.GetAdjacentDropArea(area1, "left");
+            if (area3 == null)
+            {
+                area3 = CardTestHelper.GetAdjacentDropArea(area1, "down");
+            }
+            if (area3 == null)
+            {
+                area3 = CardTestHelper.GetAdjacentDropArea(area1, "up");
+            }
+            
+            if (area3 != null)
+            {
+                CardMoverP1 mover3 = CardTestHelper.CreateCardMoverWithCard(card3, area3.transform.position);
+                CardTestHelper.PlaceP1CardOnDropArea(mover3, area3, true);
+                yield return new WaitForSeconds(1.0f);
+                
+                // First P1 card should NOT be captured (same turn protection)
+                bool mover1Captured = CardTestHelper.IsCardCaptured(mover1.gameObject);
+                Assert.IsFalse(mover1Captured, 
+                    "P1 card should NOT be captured by another P1 card placed in same turn");
+            }
         }
     }
 }

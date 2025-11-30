@@ -107,6 +107,7 @@ namespace CardGame.Editor
                     string message = exception.Message ?? "";
                     string messageLower = message.ToLowerInvariant();
                     
+                    // Suppress MCP Unity related exceptions
                     if (stackTraceLower.Contains("mcpunity") || 
                         stackTraceLower.Contains("mcp-unity") ||
                         stackTraceLower.Contains("gamelovers.mcp") ||
@@ -116,6 +117,15 @@ namespace CardGame.Editor
                         messageLower.Contains("mcp-unity"))
                     {
                         return; // Suppress this exception
+                    }
+                    
+                    // Suppress known Unity test runner bugs (NullReferenceException in PlaymodeLauncher)
+                    // This is a Unity internal bug, not related to our code
+                    if (stackTrace.Contains("PlaymodeLauncher") && 
+                        stackTrace.Contains("BackgroundWatcher") &&
+                        stackTrace.Contains("OnPlayModeStateChanged"))
+                    {
+                        return; // Suppress this known Unity test runner bug
                     }
                 }
                 

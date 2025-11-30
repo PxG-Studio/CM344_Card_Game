@@ -50,7 +50,7 @@ namespace CardGame.Testing
             }
         }
         
-        private System.Collections.IEnumerator WaitForCoinTossThenDrawCards()
+        public System.Collections.IEnumerator WaitForCoinTossThenDrawCards()
         {
             // Wait for all required managers to be initialized
             yield return new WaitUntil(() => CoinTossManager.Instance != null);

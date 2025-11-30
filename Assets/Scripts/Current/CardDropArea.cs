@@ -41,6 +41,9 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     [SerializeField] private Vector3 cardScaleOnBoard = Vector3.one; // Leave at (1,1,1) to auto-match drop area size
     [SerializeField, Range(0.5f, 1.2f)] private float cardScaleFillPercent = 0.9f;
     [SerializeField] private SpriteRenderer tileSpriteRenderer;
+    
+    // Public property to access tileSpriteRenderer for debugging
+    public SpriteRenderer TileSpriteRenderer => tileSpriteRenderer;
     [SerializeField] private float adjacentCardDistance = 3f; // Distance to consider cards adjacent (increased from 2f)
     [SerializeField] private bool enableCardBattles = true; // Enable stat comparison and card flipping
     [SerializeField] private bool debugBattles = true; // Log battle detection for debugging
@@ -112,6 +115,9 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     /// </summary>
     public void ResetForNewGame()
     {
+        // Stop all running coroutines (ripple effects, chain captures, etc.)
+        StopAllCoroutines();
+        
         // Clear occupying card reference
         occupyingCard = null;
         
@@ -120,10 +126,33 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         cardsInCurrentChain.Clear();
         activeChainCount = 0;
         
+        // Ensure game object is active
+        if (!gameObject.activeInHierarchy)
+        {
+            gameObject.SetActive(true);
+        }
+        
         // Reset tile color to default (white/neutral)
+        // Ensure sprite renderer is found and enabled
+        if (tileSpriteRenderer == null)
+        {
+            tileSpriteRenderer = GetComponent<SpriteRenderer>();
+        }
+        
         if (tileSpriteRenderer != null)
         {
+            // Ensure sprite renderer is enabled
+            if (!tileSpriteRenderer.enabled)
+            {
+                tileSpriteRenderer.enabled = true;
+            }
+            
+            // Reset color to white
             tileSpriteRenderer.color = Color.white;
+        }
+        else
+        {
+            Debug.LogWarning($"[BOARD RESET] CardDropArea at {transform.position} has no SpriteRenderer component");
         }
         
         if (debugBattles)
@@ -387,14 +416,15 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                     // Card drawn after placement - automatic action, no log needed
                 }
                 
-                CheckBoardOccupancy();
-                
                 // [CardFront] Check if game should end (all cards played - both players have no cards left)
                 // Delay check by one frame to ensure hand removal events have fully propagated
                 if (GameEndManager.Instance != null)
                 {
                     StartCoroutine(DelayedGameEndCheck());
                 }
+                
+                // Check board occupancy after card placement (this will trigger game end if board is full)
+                CheckBoardOccupancy();
                 
                 if (enableCardBattles)
                 {
@@ -998,14 +1028,15 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                     // Card drawn after placement - automatic action, no log needed
                 }
                 
-                CheckBoardOccupancy();
-                
                 // [CardFront] Check if game should end (all cards played - both players have no cards left)
                 // Delay check by one frame to ensure hand removal events have fully propagated
                 if (GameEndManager.Instance != null)
                 {
                     StartCoroutine(DelayedGameEndCheck());
                 }
+                
+                // Check board occupancy after card placement (this will trigger game end if board is full)
+                CheckBoardOccupancy();
                 
                 if (enableCardBattles)
                 {
@@ -1872,6 +1903,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             if (gameEndManager != null)
             {
                 gameEndManager.SetChainsInProgress(false);
+                // Check game end after all chains complete
+                StartCoroutine(DelayedGameEndCheckAfterChains());
             }
         }
     }
@@ -1899,8 +1932,20 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // Board occupancy tracking (no logging for isolation)
         
         // Game ends when all 16 slots are filled (territory-based scoring)
-        if (debugBattles && occupiedSpaces >= totalSpaces && totalSpaces > 0)
+        // Trigger game end check if board is full (after chains complete if they're in progress)
+        if (occupiedSpaces >= totalSpaces && totalSpaces > 0)
         {
+            bool chainsInProgress = (GameEndManager.Instance != null && GameEndManager.Instance.AreChainsInProgress());
+            if (GameEndManager.Instance != null)
+            {
+                // If chains are in progress, the game end check will happen after chains complete
+                // Otherwise, trigger it immediately (with a small delay to ensure all updates are done)
+                if (!chainsInProgress)
+                {
+                    StartCoroutine(DelayedGameEndCheckAfterChains());
+                }
+                // If chains are in progress, DelayedGameEndCheckAfterChains() will be called when chains complete
+            }
         }
     }
     
@@ -2231,16 +2276,52 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     /// Updates all tile colors on the board based on their occupying cards' ownership.
     /// Called after ripple effects complete to ensure all tiles reflect current ownership.
     /// </summary>
-    private static void UpdateAllTileColors()
+    public static void UpdateAllTileColors()
     {
         CardDropArea[] allDropAreas = Object.FindObjectsOfType<CardDropArea>();
+        Debug.Log($"[BOARD RESET] Found {allDropAreas.Length} CardDropArea tiles");
+        
         foreach (CardDropArea dropArea in allDropAreas)
         {
             if (dropArea != null)
             {
+                // Ensure tile is active and has sprite renderer
+                if (!dropArea.gameObject.activeInHierarchy)
+                {
+                    Debug.LogWarning($"[BOARD RESET] CardDropArea at {dropArea.transform.position} is INACTIVE");
+                    dropArea.gameObject.SetActive(true);
+                }
+                
+                // Ensure sprite renderer exists and has a sprite
+                SpriteRenderer spriteRenderer = dropArea.TileSpriteRenderer;
+                if (spriteRenderer == null)
+                {
+                    spriteRenderer = dropArea.GetComponent<SpriteRenderer>();
+                }
+                
+                if (spriteRenderer != null)
+                {
+                    if (spriteRenderer.sprite == null)
+                    {
+                        Debug.LogWarning($"[BOARD RESET] CardDropArea at {dropArea.transform.position} has NO SPRITE assigned to SpriteRenderer");
+                    }
+                    
+                    if (!spriteRenderer.enabled)
+                    {
+                        Debug.LogWarning($"[BOARD RESET] CardDropArea at {dropArea.transform.position} SpriteRenderer is DISABLED");
+                        spriteRenderer.enabled = true;
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[BOARD RESET] CardDropArea at {dropArea.transform.position} has NO SpriteRenderer component");
+                }
+                
                 dropArea.UpdateTileColor();
             }
         }
+        
+        Debug.Log($"[BOARD RESET] Updated {allDropAreas.Length} tile colors");
     }
     
     /// <summary>
@@ -2430,6 +2511,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             if (gameEndManager != null)
             {
                 gameEndManager.SetChainsInProgress(false);
+                // Check game end after all chains complete
+                StartCoroutine(DelayedGameEndCheckAfterChains());
             }
         }
         
@@ -2457,6 +2540,34 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         
         if (GameEndManager.Instance != null)
         {
+            GameEndManager.Instance.CheckGameEnd();
+        }
+    }
+    
+    /// <summary>
+    /// [CardFront] Delays game end check after chains complete to ensure all chain captures and tile calculations are done
+    /// </summary>
+    private IEnumerator DelayedGameEndCheckAfterChains()
+    {
+        // Wait a frame to ensure all chain capture processing is complete
+        yield return null;
+        // Additional small delay to ensure tile color updates and score recalculations are done
+        yield return new WaitForSeconds(0.1f);
+        
+        if (GameEndManager.Instance != null)
+        {
+            // Double-check board occupancy before calling game end check
+            CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>();
+            int totalSpaces = allDropAreas.Length;
+            int occupiedSpaces = 0;
+            foreach (CardDropArea dropArea in allDropAreas)
+            {
+                if (dropArea != null && dropArea.IsOccupied)
+                {
+                    occupiedSpaces++;
+                }
+            }
+            
             GameEndManager.Instance.CheckGameEnd();
         }
     }

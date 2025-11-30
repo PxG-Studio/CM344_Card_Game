@@ -522,8 +522,9 @@ namespace CardGame.UI
                 {
                     StartCoroutine(PerformCoinTossAnimation());
                 }
-                catch (System.Exception e)
+                catch (System.Exception)
                 {
+                    // Exception caught and ignored
                 }
             }
             else if (coinTossManager != null && coinTossManager.IsComplete)

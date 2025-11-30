@@ -129,34 +129,34 @@ namespace CardGame.Managers
         
         private void PrepareGame()
         {
+            // Reset statistics for new game
+            CardDropArea.ResetGameStatistics();
             
-            // [CardFront] Reset statistics for new game (if not already reset by ResetGameState)
-            if (CardDropArea.GetCardsPlayed() > 0)
-            {
-                CardDropArea.ResetGameStatistics();
-            }
-            
-            // Reset managers for new game (if not already reset by ResetGameState)
+            // Reset managers for new game
             if (ScoreManager.Instance != null)
             {
-                // Only reset if scores are not already zero (avoid duplicate reset during rematch)
-                if (ScoreManager.Instance.P1Score > 0 || ScoreManager.Instance.P2Score > 0)
-                {
-                    ScoreManager.Instance.ResetScores();
-                }
+                ScoreManager.Instance.ResetScores();
             }
+            
             if (GameEndManager.Instance != null)
             {
                 GameEndManager.Instance.Reset();
             }
             
-            // Reset current game statistics (keep session stats)
+            // Reset current game statistics (keep session stats - wins/losses/ties are preserved)
             if (GameStatsTracker.Instance != null)
             {
                 GameStatsTracker.Instance.ResetCurrentGameStats();
             }
             
-            // Reset coin toss for new game (rematch)
+            // Reset Battle Front Influence bar UI
+            CardGame.UI.CardFrontlineUI frontlineUI = FindObjectOfType<CardGame.UI.CardFrontlineUI>();
+            if (frontlineUI != null)
+            {
+                frontlineUI.ResetFrontline();
+            }
+            
+            // Reset coin toss for new game
             if (CoinTossManager.Instance != null)
             {
                 CoinTossManager.Instance.ResetCoinToss();
@@ -169,6 +169,7 @@ namespace CardGame.Managers
             }
             
             // Perform coin toss and wait for result before starting game
+            // This will trigger card drawing through the normal game flow
             StartCoroutine(PerformCoinTossAndStartGame());
         }
         
@@ -381,52 +382,30 @@ namespace CardGame.Managers
         
         /// <summary>
         /// [CardFront] Resets game state for rematch without reloading scene
+        /// Reuses the same initialization flow as StartGame() to ensure consistency
         /// </summary>
         public void ResetGameState()
         {
-            // Hide game end UI first (before resetting other systems)
+            Debug.Log("[REMATCH] ResetGameState called - reusing initial game setup flow");
+            
+            // Step 1: Hide game end UI first (before resetting other systems)
+            Debug.Log("[REMATCH] Step 1: Hiding game end UI");
             CardGame.UI.GameEndUI gameEndUI = FindObjectOfType<CardGame.UI.GameEndUI>();
             if (gameEndUI != null)
             {
                 gameEndUI.HideGameEnd();
             }
             
-            // Reset statistics tracker (current game stats only, keep session stats)
-            if (GameStatsTracker.Instance != null)
-            {
-                GameStatsTracker.Instance.ResetCurrentGameStats();
-            }
-            else
-            {
-            }
-            
-            // Reset statistics in CardDropArea
-            CardDropArea.ResetGameStatistics();
-            
-            // Reset ScoreManager
-            if (ScoreManager.Instance != null)
-            {
-                ScoreManager.Instance.ResetScores();
-            }
-
-            // Reset Battle Front Influence bar UI
-            CardGame.UI.CardFrontlineUI frontlineUI = FindObjectOfType<CardGame.UI.CardFrontlineUI>();
-            if (frontlineUI != null)
-            {
-                frontlineUI.ResetFrontline();
-            }
-            
-            // Reset GameEndManager
-            if (GameEndManager.Instance != null)
-            {
-                GameEndManager.Instance.Reset();
-            }
-            
-            // Clear board - remove all cards from CardDropArea instances
-            // This also resets all CardDropArea instances (clears occupying card references and turn tracking)
+            // Step 2: Clear board - remove all cards from CardDropArea instances
+            Debug.Log("[REMATCH] Step 2: Clearing board (destroying all cards and resetting tiles)");
             ClearBoard();
             
-            // Reset deck managers
+            // Step 3: Clear hands (both UI and deck manager hand lists)
+            Debug.Log("[REMATCH] Step 3: Clearing player hands (UI and deck manager lists)");
+            ClearHands();
+            
+            // Step 4: Reinitialize decks (this will clear everything and rebuild from starting deck)
+            Debug.Log("[REMATCH] Step 4: Reinitializing deck managers");
             NewDeckManagerP1 playerDeck = FindObjectOfType<NewDeckManagerP1>();
             if (playerDeck != null)
             {
@@ -439,53 +418,28 @@ namespace CardGame.Managers
                 opponentDeck.InitializeDeck();
             }
             
-            // Clear hands - need to remove hand UI cards
-            ClearHands();
-            
-            // Reset coin toss for rematch
-            if (CoinTossManager.Instance != null)
-            {
-                CoinTossManager.Instance.ResetCoinToss();
-            }
-            
-            // Show coin toss UI again for rematch
+            // Step 5: Show coin toss UI (same as initial game start)
+            Debug.Log("[REMATCH] Step 5: Showing coin toss UI for new game");
             CardGame.UI.CoinTossUI coinTossUI = FindObjectOfType<CardGame.UI.CoinTossUI>(true); // Search inactive objects too
             if (coinTossUI != null)
             {
                 coinTossUI.Show();
             }
             
-            // Return to preparing state (will trigger normal game flow including initial card draw)
-            // Note: PrepareGame() will be called by ChangeState, which will handle final reset
+            // Step 6: Change to Preparing state - this will trigger PrepareGame() which handles:
+            // - Resetting statistics (current game only, preserves session stats)
+            // - Resetting ScoreManager
+            // - Resetting GameEndManager
+            // - Resetting Battle Front Influence bar
+            // - Resetting coin toss
+            // - Performing coin toss and starting game (including card drawing)
+            // This reuses the exact same flow as StartGame() for consistency
+            Debug.Log("[REMATCH] Step 6: Changing to Preparing state (will trigger normal game initialization flow)");
             ChangeState(GameState.Preparing);
             
-            // [CardFront] Trigger initial card draw after a short delay to ensure everything is reset
-            // The PrepareGame() method will handle initial setup, but we also need to draw cards
-            StartCoroutine(TriggerInitialCardDrawAfterReset());
+            Debug.Log("[REMATCH] ResetGameState completed - game will initialize through PrepareGame() just like a fresh start");
         }
         
-        /// <summary>
-        /// Triggers initial card draw after reset (called after short delay)
-        /// </summary>
-        private System.Collections.IEnumerator TriggerInitialCardDrawAfterReset()
-        {
-            // Wait for a short delay to ensure all managers are reset
-            yield return new UnityEngine.WaitForSeconds(0.3f);
-            
-            // Check if NewCardSystemP1Tester exists and draw initial cards
-            CardGame.Testing.NewCardSystemP1Tester tester = FindObjectOfType<CardGame.Testing.NewCardSystemP1Tester>();
-            if (tester != null)
-            {
-                tester.DrawInitialCards();
-            }
-            
-            // Also draw for P2
-            CardGame.Testing.NewCardSystemP2 oppTester = FindObjectOfType<CardGame.Testing.NewCardSystemP2>();
-            if (oppTester != null)
-            {
-                oppTester.DrawInitialCards();
-            }
-        }
 
         /// <summary>
         /// Verifies that deck systems exist at the start of a game session.
@@ -520,7 +474,6 @@ namespace CardGame.Managers
         {
             CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>();
             HashSet<GameObject> cardsToDestroy = new HashSet<GameObject>();
-            int removedCount = 0;
             
             // First pass: Collect all cards that are occupying CardDropArea instances
             foreach (CardDropArea dropArea in allDropAreas)
@@ -572,17 +525,78 @@ namespace CardGame.Managers
                 }
             }
             
-            // Destroy all collected cards
+            // First, stop all coroutines in CardDropArea instances to prevent ripple effects from continuing
+            foreach (CardDropArea dropArea in allDropAreas)
+            {
+                if (dropArea != null)
+                {
+                    dropArea.StopAllCoroutines();
+                }
+            }
+            
+            // Destroy all collected cards (use DestroyImmediate to ensure they're gone immediately)
             foreach (GameObject cardToDestroy in cardsToDestroy)
             {
                 if (cardToDestroy != null)
                 {
-                    Destroy(cardToDestroy);
-                    removedCount++;
+                    #if UNITY_EDITOR
+                    if (!Application.isPlaying)
+                    {
+                        DestroyImmediate(cardToDestroy);
+                    }
+                    else
+                    {
+                        DestroyImmediate(cardToDestroy);
+                    }
+                    #else
+                    DestroyImmediate(cardToDestroy);
+                    #endif
+                }
+            }
+            
+            // Also find and destroy any remaining cards on the board (catch any that weren't tracked)
+            CardMoverP1[] remainingP1Cards = FindObjectsOfType<CardMoverP1>();
+            foreach (CardMoverP1 mover in remainingP1Cards)
+            {
+                if (mover != null && mover.gameObject != null)
+                {
+                    bool isOnBoard = Mathf.Abs(mover.transform.position.z) < 1f;
+                    bool isInHand = mover.gameObject.transform.parent != null && 
+                                   mover.gameObject.transform.parent.GetComponent<CardGame.UI.NewHandP1UI>() != null;
+                    
+                    if (isOnBoard && !isInHand)
+                    {
+                        #if UNITY_EDITOR
+                        DestroyImmediate(mover.gameObject);
+                        #else
+                        DestroyImmediate(mover.gameObject);
+                        #endif
+                    }
+                }
+            }
+            
+            CardMoverP2[] remainingP2Cards = FindObjectsOfType<CardMoverP2>();
+            foreach (CardMoverP2 mover in remainingP2Cards)
+            {
+                if (mover != null && mover.gameObject != null)
+                {
+                    bool isOnBoard = Mathf.Abs(mover.transform.position.z) < 1f;
+                    bool isInHand = mover.gameObject.transform.parent != null && 
+                                   mover.gameObject.transform.parent.GetComponent<CardGame.UI.NewHandP2UI>() != null;
+                    
+                    if (isOnBoard && !isInHand)
+                    {
+                        #if UNITY_EDITOR
+                        DestroyImmediate(mover.gameObject);
+                        #else
+                        DestroyImmediate(mover.gameObject);
+                        #endif
+                    }
                 }
             }
             
             // Finally, reset all CardDropArea instances to clear occupying card references
+            // This also resets tile colors to white and stops all coroutines
             foreach (CardDropArea dropArea in allDropAreas)
             {
                 if (dropArea != null)
@@ -590,6 +604,10 @@ namespace CardGame.Managers
                     dropArea.ResetForNewGame();
                 }
             }
+            
+            // Force update all tile colors to ensure they're white after reset
+            // This ensures any tiles that might have retained colors are reset
+            CardDropArea.UpdateAllTileColors();
         }
         
         /// <summary>
@@ -597,7 +615,20 @@ namespace CardGame.Managers
         /// </summary>
         private void ClearHands()
         {
-            // Find hand UI managers and use their ClearHand methods
+            // First, clear deck manager hand lists (this ensures data is cleared)
+            NewDeckManagerP1 playerDeck = FindObjectOfType<NewDeckManagerP1>();
+            if (playerDeck != null)
+            {
+                playerDeck.DiscardHand(); // Move all hand cards to discard
+            }
+            
+            NewDeckManagerP2 opponentDeck = FindObjectOfType<NewDeckManagerP2>();
+            if (opponentDeck != null)
+            {
+                opponentDeck.DiscardHand(); // Move all hand cards to discard
+            }
+            
+            // Then, clear hand UI visual elements
             CardGame.UI.NewHandP1UI playerHand = FindObjectOfType<CardGame.UI.NewHandP1UI>();
             if (playerHand != null)
             {

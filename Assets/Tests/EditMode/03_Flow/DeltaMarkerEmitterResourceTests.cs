@@ -4,7 +4,7 @@ using NUnit.Framework;
 using UnityEngine;
 using CardGame.UI;
 
-namespace Tests.EditMode.Flow
+namespace CardGame.Tests
 {
     public class DeltaMarkerEmitterResourceTests
     {

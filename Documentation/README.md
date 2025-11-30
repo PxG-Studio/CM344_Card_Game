@@ -13,6 +13,10 @@ Documentation/
 ├── Handoffs/               # Handoff documents for team members
 ├── Quick-References/       # Quick reference guides
 └── Archive/                # Archived/old documentation
+    ├── Status-Reports/     # Status and completion reports
+    ├── Test-Documentation/ # Test-related documentation
+    ├── Fixes/              # Fix and repair documentation
+    └── Scripts/           # PowerShell scripts
 ```
 
 ## Quick Navigation
@@ -39,7 +43,13 @@ Documentation/
 - **[Quickstart Guide](Quick-References/QUICKSTART.md)** - Quick start guide for the project
 
 ### Archive
+- **[Root Directory Archive Index](Archive/ROOT_DIRECTORY_ARCHIVE_INDEX.md)** - Complete index of archived files from root directory
+- **[Root Cleanup Summary](ROOT_CLEANUP_SUMMARY.md)** - Summary of root directory cleanup and file organization
 - Old README files and deprecated documentation
+- Status reports and completion documents
+- Test documentation
+- Fix documentation
+- PowerShell scripts
 
 ## Contributing
 

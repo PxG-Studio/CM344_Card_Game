@@ -36,6 +36,15 @@ namespace CardGame.Managers
         
         private void Start()
         {
+            // Ensure all dependencies are found
+            EnsureDependencies();
+        }
+        
+        /// <summary>
+        /// Ensures all required dependencies are found and wired up
+        /// </summary>
+        private void EnsureDependencies()
+        {
             // Auto-find deck managers if not assigned
             if (playerDeckManager == null)
             {
@@ -46,12 +55,24 @@ namespace CardGame.Managers
                 opponentDeckManager = FindObjectOfType<NewDeckManagerP2>();
             }
             
+            // Auto-find GameEndUI if not assigned (it might be created dynamically by HUDSetup)
             if (gameEndUI == null)
             {
-                gameEndUI = FindObjectOfType<CardGame.UI.GameEndUI>();
-                if (gameEndUI == null)
-                {
-                }
+                gameEndUI = FindObjectOfType<CardGame.UI.GameEndUI>(true); // Search inactive objects too
+            }
+            
+            // Verify critical dependencies exist
+            if (ScoreManager.Instance == null)
+            {
+                // ScoreManager should be created by HUDSetup, but if it's missing, log a warning
+            }
+            if (GameStatsTracker.Instance == null)
+            {
+                // GameStatsTracker should be created by HUDSetup, but if it's missing, log a warning
+            }
+            if (GameManager.Instance == null)
+            {
+                // GameManager should exist, but if it's missing, log a warning
             }
         }
         
@@ -64,6 +85,9 @@ namespace CardGame.Managers
             {
                 return;
             }
+            
+            // Ensure dependencies are found (in case they were created after Start)
+            EnsureDependencies();
             
             // [CardFront] Check if all cards have been played
             // Game ends when:
@@ -88,6 +112,8 @@ namespace CardGame.Managers
             }
             else
             {
+                // Try to find it again
+                playerDeckManager = FindObjectOfType<NewDeckManagerP1>();
             }
             
             if (opponentDeckManager != null)
@@ -101,13 +127,35 @@ namespace CardGame.Managers
             }
             else
             {
+                // Try to find it again
+                opponentDeckManager = FindObjectOfType<NewDeckManagerP2>();
             }
             
-            // Game ends when both hands are empty AND all 10 cards are on the board
-            bool allCardsPlayed = (totalCardsPlayed >= 10) && playerHandEmpty && opponentHandEmpty;
+            // Check if board is full (16 cards on 4x4 board)
+            CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>();
+            int totalBoardSpaces = allDropAreas.Length;
+            int occupiedSpaces = 0;
+            foreach (CardDropArea dropArea in allDropAreas)
+            {
+                if (dropArea != null && dropArea.IsOccupied)
+                {
+                    occupiedSpaces++;
+                }
+            }
+            bool boardIsFull = (occupiedSpaces >= totalBoardSpaces && totalBoardSpaces > 0);
+            
+            // Game ends when:
+            // 1. Both hands are empty AND at least 10 cards are on the board, OR
+            // 2. The board is full (all 16 spaces occupied)
+            bool allCardsPlayed = ((totalCardsPlayed >= 10) && playerHandEmpty && opponentHandEmpty) || boardIsFull;
             
             if (allCardsPlayed)
             {
+                if (isGameEnding)
+                {
+                    return;
+                }
+                
                 isGameEnding = true;
                 
                 // Start coroutine to wait for chains to complete, then end game
@@ -121,6 +169,14 @@ namespace CardGame.Managers
         public void SetChainsInProgress(bool inProgress)
         {
             areChainsInProgress = inProgress;
+        }
+        
+        /// <summary>
+        /// Checks if chain captures are currently in progress
+        /// </summary>
+        public bool AreChainsInProgress()
+        {
+            return areChainsInProgress;
         }
         
         /// <summary>
@@ -154,56 +210,76 @@ namespace CardGame.Managers
         }
         
         /// <summary>
-        /// Evaluates the winner based on final scores and changes game state
+        /// Evaluates the winner based on Battle Front Influence bar control (not scores) and changes game state
         /// </summary>
         private void EvaluateWinner()
         {
-            if (ScoreManager.Instance == null)
+            // Get current board control values directly from CardDropArea (most up-to-date source)
+            (int p1Control, int p2Control) = CardDropArea.GetBoardControl();
+            
+            // Update the Battle Front Influence UI with current values to ensure it's in sync
+            CardGame.UI.CardFrontlineUI frontlineUI = FindObjectOfType<CardGame.UI.CardFrontlineUI>();
+            if (frontlineUI != null)
             {
-                return;
+                // Get current board occupancy for remaining fields calculation
+                CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>();
+                int totalSpaces = allDropAreas.Length;
+                int occupiedSpaces = 0;
+                foreach (CardDropArea dropArea in allDropAreas)
+                {
+                    if (dropArea != null && dropArea.IsOccupied)
+                    {
+                        occupiedSpaces++;
+                    }
+                }
+                int remainingFields = totalSpaces - occupiedSpaces;
+                
+                // Force update the frontline UI with current board state
+                frontlineUI.UpdateFrontline(p1Control, p2Control, remainingFields);
             }
             
-            int p1Score = ScoreManager.Instance.P1Score;
-            int p2Score = ScoreManager.Instance.P2Score;
-            bool isTie = p1Score == p2Score;
-            int scoreMargin = ScoreManager.Instance.GetScoreMargin();
+            bool isTie = p1Control == p2Control;
+            int controlMargin = Mathf.Abs(p1Control - p2Control);
+            
+            // Get statistics (still use scores for statistics display, but winner is determined by control)
+            int p1Score = ScoreManager.Instance != null ? ScoreManager.Instance.P1Score : 0;
+            int p2Score = ScoreManager.Instance != null ? ScoreManager.Instance.P2Score : 0;
+            int scoreMargin = ScoreManager.Instance != null ? ScoreManager.Instance.GetScoreMargin() : 0;
             
             // Get statistics
             int cardsPlayed = CardDropArea.GetCardsPlayed();
             int capturesMade = CardDropArea.GetCapturesMade();
             int longestChain = CardDropArea.GetLongestChain();
             
-            bool p1Won = p1Score > p2Score;
+            bool p1Won = p1Control > p2Control;
             
-            // Record statistics in GameStatsTracker
+            // Record statistics in GameStatsTracker (use control-based result)
             if (GameStatsTracker.Instance != null)
             {
-                GameStatsTracker.Instance.RecordGameResult(p1Won, isTie, cardsPlayed, capturesMade, longestChain, scoreMargin);
+                GameStatsTracker.Instance.RecordGameResult(p1Won, isTie, cardsPlayed, capturesMade, longestChain, controlMargin);
             }
-            
             
             if (GameManager.Instance == null)
             {
                 return;
             }
             
-            // Determine winner based on scores
-            if (p1Score > p2Score)
+            // Determine winner based on Battle Front Influence control (not scores)
+            if (p1Control > p2Control)
             {
                 GameManager.Instance.ChangeState(GameState.Victory);
-                ShowWinnerUI(true, false, cardsPlayed, capturesMade, longestChain, scoreMargin);
+                ShowWinnerUI(true, false, cardsPlayed, capturesMade, longestChain, controlMargin);
             }
-            else if (p2Score > p1Score)
+            else if (p2Control > p1Control)
             {
                 GameManager.Instance.ChangeState(GameState.Defeat);
-                ShowWinnerUI(false, false, cardsPlayed, capturesMade, longestChain, scoreMargin);
+                ShowWinnerUI(false, false, cardsPlayed, capturesMade, longestChain, controlMargin);
             }
             else
             {
-                // Tie - you may want to handle this differently
-                // Default to player victory for ties, or you could add a Tie state
-                GameManager.Instance.ChangeState(GameState.Victory);
-                ShowWinnerUI(true, true, cardsPlayed, capturesMade, longestChain, scoreMargin);
+                // Tie - both players have equal control
+                GameManager.Instance.ChangeState(GameState.Draw);
+                ShowWinnerUI(true, true, cardsPlayed, capturesMade, longestChain, controlMargin);
             }
         }
         
@@ -268,6 +344,9 @@ namespace CardGame.Managers
             isGameEnding = false;
             areChainsInProgress = false;
             StopAllCoroutines();
+            
+            // Re-ensure dependencies in case they were destroyed/recreated
+            EnsureDependencies();
         }
     }
 }

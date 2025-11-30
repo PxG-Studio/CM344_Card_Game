@@ -48,8 +48,20 @@ namespace CardGame.UI
         private float lastPivotAnchorX = -1f;
         private int lastP1Control = 0;
         private int lastP2Control = 0;
+        private int currentP1Control = 0;
+        private int currentP2Control = 0;
         private bool hasFrontlineHistory = false;
         private bool hasAnyControl = false;
+        
+        /// <summary>
+        /// Gets the current P1 control count from the Battle Front Influence bar.
+        /// </summary>
+        public int GetP1Control() => currentP1Control;
+        
+        /// <summary>
+        /// Gets the current P2 control count from the Battle Front Influence bar.
+        /// </summary>
+        public int GetP2Control() => currentP2Control;
         
         // Discrete segments that represent each tile on the 4x4 board.
         private Image[] segments;
@@ -127,6 +139,8 @@ namespace CardGame.UI
             hasAnyControl = false;
             lastP1Control = 0;
             lastP2Control = 0;
+            currentP1Control = 0;
+            currentP2Control = 0;
             lastRemainingFields = -1;
 
             // Clear segments to empty colour.
@@ -158,6 +172,10 @@ namespace CardGame.UI
         /// </summary>
         public void UpdateFrontline(int p1Control, int p2Control, int remainingFields)
         {
+            // Store current control values for external access
+            currentP1Control = p1Control;
+            currentP2Control = p2Control;
+            
             UpdateRemainingFields(remainingFields);
             
             // Show pretty delta markers for net morale change before updating the bar.

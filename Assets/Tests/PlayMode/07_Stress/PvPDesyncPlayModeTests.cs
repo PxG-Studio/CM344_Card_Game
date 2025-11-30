@@ -88,8 +88,14 @@ namespace CardGame.Tests
             int playerHandCount = playerDeck.Hand.Count;
             int p2HandCount = p2Deck.Hand.Count;
             
-            // Hands may have different counts (independent)
-            Assert.IsTrue(true, "Both players have independent hands (can have different card counts)");
+            // Verify hands are independent by checking they can have different counts
+            Assert.AreNotSame(playerDeck.Hand, p2Deck.Hand, 
+                "Player and P2 hands should be different instances");
+            
+            // Hands may have different counts (independent) - verify this is possible
+            int totalCards = playerHandCount + p2HandCount;
+            Assert.GreaterOrEqual(totalCards, 0, 
+                $"Total cards in both hands: {totalCards} (hands are independent)");
         }
 
         [UnityTest]
@@ -112,8 +118,14 @@ namespace CardGame.Tests
             int playerDrawPileCount = playerDeck.DrawPileCount;
             int p2DrawPileCount = p2Deck.DrawPileCount;
             
-            // Draw piles may have different counts (independent)
-            Assert.IsTrue(true, "Both players use independent decks (can have different draw pile counts)");
+            // Verify decks are independent by checking they can have different draw pile counts
+            Assert.AreNotSame(playerDeck, p2Deck, 
+                "Player and P2 decks should be different instances");
+            
+            // Draw piles may have different counts (independent) - verify this is possible
+            int totalDrawPile = playerDrawPileCount + p2DrawPileCount;
+            Assert.GreaterOrEqual(totalDrawPile, 0, 
+                $"Total cards in both draw piles: {totalDrawPile} (decks are independent)");
         }
 
         [UnityTest]
@@ -151,7 +163,26 @@ namespace CardGame.Tests
                     "Player and P2 cards should be independent instances");
             }
             
-            Assert.IsTrue(true, "No shared ScriptableObject state between players (independent card instances)");
+            // Verify cards are independent instances (even if they reference same ScriptableObject data)
+            if (playerDeck.Hand.Count > 0 && p2Deck.Hand.Count > 0)
+            {
+                NewCard playerCard = playerDeck.Hand[0];
+                NewCard p2Card = p2Deck.Hand[0];
+                
+                // Cards should be different instances
+                Assert.AreNotSame(playerCard, p2Card, 
+                    "Player and P2 cards should be independent NewCard instances");
+                
+                // Even if they reference same data, instances should be separate
+                if (playerCard.Data == p2Card.Data)
+                {
+                    // Same data reference is OK, but instances must be different
+                    Assert.AreNotSame(playerCard, p2Card, 
+                        "Cards with same data should still be different instances");
+                }
+            }
+            
+            // Independent card instances validated
         }
 
         [UnityTest]

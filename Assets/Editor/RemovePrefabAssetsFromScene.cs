@@ -20,18 +20,60 @@ namespace CardGame.Editor
         
         private static void OnSceneOpened(UnityEngine.SceneManagement.Scene scene, OpenSceneMode mode)
         {
-            // Run cleanup automatically when scene is opened
-            EditorApplication.delayCall += () => RemovePrefabAssets();
+            // Don't run during PlayMode (tests or runtime) - only in EditMode
+            if (Application.isPlaying)
+            {
+                return;
+            }
+            
+            // Skip test scenes (they're temporary and shouldn't be modified)
+            if (scene.name == null || scene.name.StartsWith("InitTestScene") || scene.name.Contains("Test"))
+            {
+                return;
+            }
+            
+            // Run cleanup automatically when scene is opened (with safety check)
+            EditorApplication.delayCall += () => 
+            {
+                try
+                {
+                    // Double-check we're still in EditMode
+                    if (!Application.isPlaying)
+                    {
+                        RemovePrefabAssets();
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    // Silently fail during test execution to avoid interfering with tests
+                    if (!ex.Message.Contains("test"))
+                    {
+                        Debug.LogWarning($"[RemovePrefabAssets] Error during cleanup: {ex.Message}");
+                    }
+                }
+            };
         }
         
         [MenuItem("CardFront/Tools/Remove Prefab Assets from Scene")]
         public static void RemovePrefabAssets()
         {
+            // Don't run during PlayMode
+            if (Application.isPlaying)
+            {
+                return;
+            }
+            
             UnityEngine.SceneManagement.Scene activeScene = EditorSceneManager.GetActiveScene();
             
             if (!activeScene.IsValid())
             {
                 Debug.LogWarning("[RemovePrefabAssets] No active scene found!");
+                return;
+            }
+            
+            // Skip test scenes
+            if (activeScene.name.StartsWith("InitTestScene") || activeScene.name.Contains("Test"))
+            {
                 return;
             }
             

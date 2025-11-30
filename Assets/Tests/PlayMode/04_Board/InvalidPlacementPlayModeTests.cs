@@ -5,11 +5,13 @@ using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using CardGame.Managers;
 using CardGame.Core;
+using CardGame.UI;
 
 namespace CardGame.Tests
 {
     /// <summary>
     /// PlayMode tests for invalid placement recovery - validates card return to hand on invalid drops.
+    /// Tests ACTUAL behavior, not just method existence.
     /// </summary>
     public class InvalidPlacementPlayModeTests
     {
@@ -18,11 +20,9 @@ namespace CardGame.Tests
         [UnitySetUp]
         public IEnumerator SetUp()
         {
-            // CRITICAL: Clear singleton instances from previous tests
             CardTestHelper.ClearSingletonInstances();
             yield return null;
             
-            // Verify scene exists in build settings
             bool sceneExists = false;
             for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
             {
@@ -56,118 +56,419 @@ namespace CardGame.Tests
                 Assert.Fail($"Scene '{SCENE_NAME}' failed to load within {timeout} seconds");
             }
             
-            yield return new WaitForSeconds(0.5f); // Wait for initialization
+            yield return new WaitForSeconds(0.5f);
         }
         
         [UnityTearDown]
         public IEnumerator TearDown()
         {
-            // Clean up after each test
             yield return null;
+            CardTestHelper.ClearBoard(0.1f);
             CardTestHelper.ClearSingletonInstances();
             yield return null;
         }
 
         [UnityTest]
-        public IEnumerator Card_ReturnsToHand_OnInvalidDrop()
+        public IEnumerator Card_ReturnsToHand_OnOccupiedTile()
         {
-            // Arrange: Wait for game to initialize
-            yield return new WaitForSeconds(2.0f);
+            yield return CardTestHelper.WaitForCoinTossToComplete();
+            yield return new WaitForSeconds(1.0f);
+            yield return CardTestHelper.ClearBoard(0.5f);
             
-            // Verify CardMoverP1 has ReturnToStartPosition method
-            var returnMethod = typeof(CardMoverP1).GetMethod("ReturnToStartPosition");
-            Assert.IsNotNull(returnMethod, "CardMoverP1 should have ReturnToStartPosition method");
+            NewDeckManagerP1 deckP1 = Object.FindObjectOfType<NewDeckManagerP1>();
+            Assert.IsNotNull(deckP1, "P1 deck should exist");
+            deckP1.InitializeDeck();
             
-            // Verify CardDropArea calls ReturnToStartPosition on invalid drops
+            if (deckP1.Hand.Count == 0)
+            {
+                deckP1.DrawCards(5);
+                yield return new WaitForSeconds(0.5f);
+            }
+            
+            Assert.Greater(deckP1.Hand.Count, 0, "P1 should have cards in hand");
+            
             CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
-            Assert.IsTrue(dropAreas.Length > 0, "CardDropArea instances should exist");
+            Assert.IsTrue(dropAreas.Length > 0, "Drop areas should exist");
             
-            // CardDropArea.OnCardDrop calls ReturnToStartPosition when card is not in hand or tile is occupied
-            Assert.IsTrue(true, "CardDropArea returns cards to hand on invalid drop");
+            CardDropArea targetArea = dropAreas[0];
+            NewHandP1UI handUI = Object.FindObjectOfType<NewHandP1UI>();
+            Assert.IsNotNull(handUI, "P1 hand UI should exist");
+            
+            // Get first card and place it
+            NewCard firstCard = deckP1.Hand[0];
+            CardMoverP1 firstMover = FindCardMoverInHand(handUI, firstCard);
+            Assert.IsNotNull(firstMover, "First card should have CardMoverP1 in hand");
+            
+            Vector3 firstOriginalPosition = firstMover.transform.position;
+            bool placed = CardTestHelper.PlaceP1CardOnDropArea(firstMover, targetArea);
+            yield return new WaitForSeconds(0.5f);
+            
+            Assert.IsTrue(placed, "First card should be placed successfully");
+            Assert.IsTrue(targetArea.IsOccupied, "Tile should be occupied after placement");
+            Assert.AreEqual(firstMover.gameObject, targetArea.GetOccupyingCard(), "First card should occupy the tile");
+            
+            // Try to place second card on same occupied tile (should fail)
+            Assert.Greater(deckP1.Hand.Count, 0, "Should have second card in hand");
+            NewCard secondCard = deckP1.Hand[0];
+            CardMoverP1 secondMover = FindCardMoverInHand(handUI, secondCard);
+            Assert.IsNotNull(secondMover, "Second card should have CardMoverP1 in hand");
+            
+            Vector3 secondOriginalPosition = secondMover.transform.position;
+            bool secondPlaced = CardTestHelper.PlaceP1CardOnDropArea(secondMover, targetArea);
+            yield return new WaitForSeconds(0.5f);
+            
+            // Verify second card was NOT placed
+            Assert.IsFalse(secondPlaced, "Second card should NOT be placed on occupied tile");
+            Assert.AreNotEqual(secondMover.gameObject, targetArea.GetOccupyingCard(), 
+                "Second card should NOT occupy the tile");
+            Assert.AreEqual(firstMover.gameObject, targetArea.GetOccupyingCard(), 
+                "First card should still occupy the tile");
+            
+            // Verify second card returned to hand (position should be similar to original)
+            float distanceFromOriginal = Vector3.Distance(secondMover.transform.position, secondOriginalPosition);
+            Assert.Less(distanceFromOriginal, 1.0f, 
+                "Second card should return to hand position after invalid drop");
+        }
+
+        [UnityTest]
+        public IEnumerator Card_ReturnsToHand_OnWrongTurn()
+        {
+            yield return CardTestHelper.WaitForCoinTossToComplete();
+            yield return new WaitForSeconds(1.0f);
+            yield return CardTestHelper.ClearBoard(0.5f);
+            
+            NewDeckManagerP1 deckP1 = Object.FindObjectOfType<NewDeckManagerP1>();
+            Assert.IsNotNull(deckP1, "P1 deck should exist");
+            deckP1.InitializeDeck();
+            
+            if (deckP1.Hand.Count == 0)
+            {
+                deckP1.DrawCards(5);
+                yield return new WaitForSeconds(0.5f);
+            }
+            
+            Assert.Greater(deckP1.Hand.Count, 0, "P1 should have cards in hand");
+            
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
+            Assert.IsTrue(dropAreas.Length > 0, "Drop areas should exist");
+            
+            CardDropArea targetArea = dropAreas[0];
+            Assert.IsFalse(targetArea.IsOccupied, "Target area should be empty");
+            
+            NewHandP1UI handUI = Object.FindObjectOfType<NewHandP1UI>();
+            Assert.IsNotNull(handUI, "P1 hand UI should exist");
+            
+            NewCard testCard = deckP1.Hand[0];
+            CardMoverP1 mover = FindCardMoverInHand(handUI, testCard);
+            Assert.IsNotNull(mover, "Card should have CardMoverP1 in hand");
+            
+            Vector3 originalPosition = mover.transform.position;
+            
+            // Set turn to P2 (wrong turn for P1 card)
+            FateFlowController fateController = FateFlowController.Instance;
+            Assert.IsNotNull(fateController, "FateFlowController should exist");
+            fateController.SetFate(FateSide.P2);
+            yield return new WaitForSeconds(0.2f);
+            
+            // Attempt to place P1 card on P2's turn (should fail)
+            bool placed = CardTestHelper.PlaceP1CardOnDropArea(mover, targetArea, false);
+            yield return new WaitForSeconds(0.5f);
+            
+            // Verify card was NOT placed
+            Assert.IsFalse(placed, "P1 card should NOT be placed on P2's turn");
+            Assert.IsFalse(targetArea.IsOccupied, "Tile should remain unoccupied");
+            
+            // Verify card returned to hand
+            float distanceFromOriginal = Vector3.Distance(mover.transform.position, originalPosition);
+            Assert.Less(distanceFromOriginal, 1.0f, 
+                "Card should return to hand position after wrong-turn drop");
         }
 
         [UnityTest]
         public IEnumerator InvalidDrop_DoesNotOccupyTile()
         {
-            // Arrange: Wait for game to initialize
-            yield return new WaitForSeconds(2.0f);
+            yield return CardTestHelper.WaitForCoinTossToComplete();
+            yield return new WaitForSeconds(1.0f);
+            yield return CardTestHelper.ClearBoard(0.5f);
             
             CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
-            Assert.IsTrue(dropAreas.Length > 0, "CardDropArea instances should exist");
+            Assert.AreEqual(16, dropAreas.Length, "Should have exactly 16 drop areas");
             
-            // Verify IsOccupied property exists
-            var isOccupiedProperty = typeof(CardDropArea).GetProperty("IsOccupied");
-            Assert.IsNotNull(isOccupiedProperty, "CardDropArea should have IsOccupied property");
-            
-            // When a card is returned due to invalid drop, IsOccupied should remain false
-            // CardDropArea only sets occupyingCard when card is successfully placed
-            Assert.IsTrue(true, "Invalid drops do not occupy tiles (IsOccupied remains false)");
-        }
-
-        [UnityTest]
-        public IEnumerator ReturnAnimation_CompletesAndRestoresInteractability()
-        {
-            // Arrange: Wait for game to initialize
-            yield return new WaitForSeconds(2.0f);
-            
-            // Verify CardMoverP1 has ReturnToStartPosition method
-            var returnMethod = typeof(CardMoverP1).GetMethod("ReturnToStartPosition");
-            Assert.IsNotNull(returnMethod, "CardMoverP1 should have ReturnToStartPosition method");
-            
-            // Verify RefreshHomePosition method exists
-            var refreshMethod = typeof(CardMoverP1).GetMethod("RefreshHomePosition");
-            Assert.IsNotNull(refreshMethod, "CardMoverP1 should have RefreshHomePosition method");
-            
-            // ReturnToStartPosition sets transform.position = startDragPosition
-            // This restores the card to its original position
-            Assert.IsTrue(true, "ReturnToStartPosition restores card position");
-        }
-
-        [UnityTest]
-        public IEnumerator CardScaleAndPosition_ResetCorrectly()
-        {
-            // Arrange: Wait for game to initialize
-            yield return new WaitForSeconds(2.0f);
-            
-            // Verify CardMoverP1 tracks startDragPosition
-            var startDragPositionField = typeof(CardMoverP1).GetField("startDragPosition", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            Assert.IsNotNull(startDragPositionField, "CardMoverP1 should track startDragPosition");
-            
-            // Verify ReturnToStartPosition resets position
-            var returnMethod = typeof(CardMoverP1).GetMethod("ReturnToStartPosition");
-            Assert.IsNotNull(returnMethod, "CardMoverP1 should have ReturnToStartPosition method");
-            
-            // CardDropArea.ApplyCardScale is called on valid placement, but not on invalid
-            // So scale should remain unchanged on invalid drop
-            Assert.IsTrue(true, "Card scale and position reset correctly on invalid drop");
-        }
-
-        [UnityTest]
-        public IEnumerator No_GhostTileReferences_RemainAfterInvalidDrop()
-        {
-            // Arrange: Wait for game to initialize
-            yield return new WaitForSeconds(2.0f);
-            
-            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
-            Assert.IsTrue(dropAreas.Length > 0, "CardDropArea instances should exist");
-            
-            // Verify IsOccupied property
-            var isOccupiedProperty = typeof(CardDropArea).GetProperty("IsOccupied");
-            Assert.IsNotNull(isOccupiedProperty, "CardDropArea should have IsOccupied property");
-            
-            // When ReturnToStartPosition is called, occupyingCard should not be set
-            // Only successful placements set occupyingCard
-            foreach (CardDropArea dropArea in dropAreas)
+            // Verify all tiles start unoccupied
+            foreach (CardDropArea area in dropAreas)
             {
-                // Check if drop area is unoccupied (should be at start)
-                bool isOccupied = dropArea.IsOccupied;
-                // At start, most areas should be unoccupied
-                // We just verify the property works correctly
+                Assert.IsFalse(area.IsOccupied, $"Area {area.name} should be unoccupied at start");
             }
             
-            Assert.IsTrue(true, "No ghost tile references remain after invalid drop (occupyingCard only set on valid placement)");
+            NewDeckManagerP1 deckP1 = Object.FindObjectOfType<NewDeckManagerP1>();
+            Assert.IsNotNull(deckP1, "P1 deck should exist");
+            deckP1.InitializeDeck();
+            
+            if (deckP1.Hand.Count == 0)
+            {
+                deckP1.DrawCards(5);
+                yield return new WaitForSeconds(0.5f);
+            }
+            
+            NewHandP1UI handUI = Object.FindObjectOfType<NewHandP1UI>();
+            Assert.IsNotNull(handUI, "P1 hand UI should exist");
+            
+            CardDropArea targetArea = dropAreas[0];
+            
+            // Place a card successfully
+            NewCard firstCard = deckP1.Hand[0];
+            CardMoverP1 firstMover = FindCardMoverInHand(handUI, firstCard);
+            Assert.IsNotNull(firstMover, "First card should have CardMoverP1");
+            
+            bool placed = CardTestHelper.PlaceP1CardOnDropArea(firstMover, targetArea);
+            yield return new WaitForSeconds(0.5f);
+            
+            Assert.IsTrue(placed, "First card should be placed");
+            Assert.IsTrue(targetArea.IsOccupied, "Tile should be occupied after valid placement");
+            
+            // Count occupied tiles
+            int occupiedCount = 0;
+            foreach (CardDropArea area in dropAreas)
+            {
+                if (area.IsOccupied) occupiedCount++;
+            }
+            Assert.AreEqual(1, occupiedCount, "Exactly one tile should be occupied");
+            
+            // Attempt invalid placement on occupied tile
+            if (deckP1.Hand.Count > 0)
+            {
+                NewCard secondCard = deckP1.Hand[0];
+                CardMoverP1 secondMover = FindCardMoverInHand(handUI, secondCard);
+                Assert.IsNotNull(secondMover, "Second card should have CardMoverP1");
+                
+                bool secondPlaced = CardTestHelper.PlaceP1CardOnDropArea(secondMover, targetArea);
+                yield return new WaitForSeconds(0.5f);
+                
+                Assert.IsFalse(secondPlaced, "Second card should NOT be placed");
+                
+                // Verify tile occupancy count didn't change
+                int occupiedCountAfter = 0;
+                foreach (CardDropArea area in dropAreas)
+                {
+                    if (area.IsOccupied) occupiedCountAfter++;
+                }
+                Assert.AreEqual(1, occupiedCountAfter, 
+                    "Tile occupancy count should remain 1 after invalid drop");
+                Assert.IsTrue(targetArea.IsOccupied, "Target tile should still be occupied by first card");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator Card_Position_Resets_AfterInvalidDrop()
+        {
+            yield return CardTestHelper.WaitForCoinTossToComplete();
+            yield return new WaitForSeconds(1.0f);
+            yield return CardTestHelper.ClearBoard(0.5f);
+            
+            NewDeckManagerP1 deckP1 = Object.FindObjectOfType<NewDeckManagerP1>();
+            Assert.IsNotNull(deckP1, "P1 deck should exist");
+            deckP1.InitializeDeck();
+            
+            if (deckP1.Hand.Count == 0)
+            {
+                deckP1.DrawCards(5);
+                yield return new WaitForSeconds(0.5f);
+            }
+            
+            NewHandP1UI handUI = Object.FindObjectOfType<NewHandP1UI>();
+            Assert.IsNotNull(handUI, "P1 hand UI should exist");
+            
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
+            CardDropArea occupiedArea = dropAreas[0];
+            
+            // Place first card
+            NewCard firstCard = deckP1.Hand[0];
+            CardMoverP1 firstMover = FindCardMoverInHand(handUI, firstCard);
+            Assert.IsNotNull(firstMover, "First card should have CardMoverP1");
+            
+            CardTestHelper.PlaceP1CardOnDropArea(firstMover, occupiedArea);
+            yield return new WaitForSeconds(0.5f);
+            
+            Assert.IsTrue(occupiedArea.IsOccupied, "Area should be occupied");
+            
+            // Get second card and record its position
+            Assert.Greater(deckP1.Hand.Count, 0, "Should have second card");
+            NewCard secondCard = deckP1.Hand[0];
+            CardMoverP1 secondMover = FindCardMoverInHand(handUI, secondCard);
+            Assert.IsNotNull(secondMover, "Second card should have CardMoverP1");
+            
+            Vector3 positionBeforeInvalidDrop = secondMover.transform.position;
+            Vector3 scaleBeforeInvalidDrop = secondMover.transform.localScale;
+            
+            // Attempt invalid drop
+            bool placed = CardTestHelper.PlaceP1CardOnDropArea(secondMover, occupiedArea);
+            yield return new WaitForSeconds(0.5f);
+            
+            Assert.IsFalse(placed, "Card should NOT be placed");
+            
+            // Verify position reset (should be close to original)
+            Vector3 positionAfterInvalidDrop = secondMover.transform.position;
+            float positionDelta = Vector3.Distance(positionBeforeInvalidDrop, positionAfterInvalidDrop);
+            Assert.Less(positionDelta, 0.5f, 
+                $"Card position should reset after invalid drop. Delta: {positionDelta}");
+            
+            // Verify scale unchanged (invalid drops don't apply board scale)
+            Vector3 scaleAfterInvalidDrop = secondMover.transform.localScale;
+            Assert.AreEqual(scaleBeforeInvalidDrop, scaleAfterInvalidDrop, 
+                "Card scale should remain unchanged after invalid drop");
+        }
+
+        [UnityTest]
+        public IEnumerator No_GhostReferences_AfterInvalidDrop()
+        {
+            yield return CardTestHelper.WaitForCoinTossToComplete();
+            yield return new WaitForSeconds(1.0f);
+            yield return CardTestHelper.ClearBoard(0.5f);
+            
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
+            Assert.AreEqual(16, dropAreas.Length, "Should have exactly 16 drop areas");
+            
+            // Verify all areas start with no occupying card
+            foreach (CardDropArea area in dropAreas)
+            {
+                Assert.IsFalse(area.IsOccupied, $"Area {area.name} should be unoccupied");
+                Assert.IsNull(area.GetOccupyingCard(), $"Area {area.name} should have no occupying card");
+            }
+            
+            NewDeckManagerP1 deckP1 = Object.FindObjectOfType<NewDeckManagerP1>();
+            Assert.IsNotNull(deckP1, "P1 deck should exist");
+            deckP1.InitializeDeck();
+            
+            if (deckP1.Hand.Count == 0)
+            {
+                deckP1.DrawCards(5);
+                yield return new WaitForSeconds(0.5f);
+            }
+            
+            NewHandP1UI handUI = Object.FindObjectOfType<NewHandP1UI>();
+            Assert.IsNotNull(handUI, "P1 hand UI should exist");
+            
+            CardDropArea targetArea = dropAreas[0];
+            
+            // Place a card successfully
+            NewCard firstCard = deckP1.Hand[0];
+            CardMoverP1 firstMover = FindCardMoverInHand(handUI, firstCard);
+            Assert.IsNotNull(firstMover, "First card should have CardMoverP1");
+            
+            CardTestHelper.PlaceP1CardOnDropArea(firstMover, targetArea);
+            yield return new WaitForSeconds(0.5f);
+            
+            Assert.IsTrue(targetArea.IsOccupied, "Area should be occupied");
+            Assert.AreEqual(firstMover.gameObject, targetArea.GetOccupyingCard(), 
+                "First card should be the occupying card");
+            
+            // Attempt invalid drop
+            if (deckP1.Hand.Count > 0)
+            {
+                NewCard secondCard = deckP1.Hand[0];
+                CardMoverP1 secondMover = FindCardMoverInHand(handUI, secondCard);
+                Assert.IsNotNull(secondMover, "Second card should have CardMoverP1");
+                
+                CardTestHelper.PlaceP1CardOnDropArea(secondMover, targetArea);
+                yield return new WaitForSeconds(0.5f);
+                
+                // Verify no ghost reference - first card should still be the only occupying card
+                Assert.AreEqual(firstMover.gameObject, targetArea.GetOccupyingCard(), 
+                    "First card should still be the only occupying card");
+                Assert.AreNotEqual(secondMover.gameObject, targetArea.GetOccupyingCard(), 
+                    "Second card should NOT be the occupying card");
+                
+                // Verify all other areas still have no occupying card
+                foreach (CardDropArea area in dropAreas)
+                {
+                    if (area != targetArea)
+                    {
+                        Assert.IsFalse(area.IsOccupied, $"Area {area.name} should remain unoccupied");
+                        Assert.IsNull(area.GetOccupyingCard(), 
+                            $"Area {area.name} should have no occupying card");
+                    }
+                }
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator Rapid_InvalidDrops_DoNotCorruptState()
+        {
+            yield return CardTestHelper.WaitForCoinTossToComplete();
+            yield return new WaitForSeconds(1.0f);
+            yield return CardTestHelper.ClearBoard(0.5f);
+            
+            NewDeckManagerP1 deckP1 = Object.FindObjectOfType<NewDeckManagerP1>();
+            Assert.IsNotNull(deckP1, "P1 deck should exist");
+            deckP1.InitializeDeck();
+            
+            if (deckP1.Hand.Count == 0)
+            {
+                deckP1.DrawCards(5);
+                yield return new WaitForSeconds(0.5f);
+            }
+            
+            NewHandP1UI handUI = Object.FindObjectOfType<NewHandP1UI>();
+            Assert.IsNotNull(handUI, "P1 hand UI should exist");
+            
+            CardDropArea[] dropAreas = Object.FindObjectsOfType<CardDropArea>();
+            CardDropArea targetArea = dropAreas[0];
+            
+            // Place a card
+            NewCard firstCard = deckP1.Hand[0];
+            CardMoverP1 firstMover = FindCardMoverInHand(handUI, firstCard);
+            Assert.IsNotNull(firstMover, "First card should have CardMoverP1");
+            
+            CardTestHelper.PlaceP1CardOnDropArea(firstMover, targetArea);
+            yield return new WaitForSeconds(0.5f);
+            
+            Assert.IsTrue(targetArea.IsOccupied, "Area should be occupied");
+            
+            // Perform rapid invalid drops
+            int invalidDropCount = 0;
+            for (int i = 0; i < Mathf.Min(3, deckP1.Hand.Count); i++)
+            {
+                NewCard card = deckP1.Hand[i];
+                CardMoverP1 mover = FindCardMoverInHand(handUI, card);
+                if (mover != null && mover != firstMover)
+                {
+                    bool placed = CardTestHelper.PlaceP1CardOnDropArea(mover, targetArea);
+                    if (!placed) invalidDropCount++;
+                    yield return null; // Minimal wait for rapid testing
+                }
+            }
+            
+            yield return new WaitForSeconds(0.5f);
+            
+            // Verify state is still correct
+            Assert.IsTrue(targetArea.IsOccupied, "Area should still be occupied");
+            Assert.AreEqual(firstMover.gameObject, targetArea.GetOccupyingCard(), 
+                "First card should still be the only occupying card");
+            
+            // Count total occupied areas
+            int occupiedCount = 0;
+            foreach (CardDropArea area in dropAreas)
+            {
+                if (area.IsOccupied) occupiedCount++;
+            }
+            Assert.AreEqual(1, occupiedCount, 
+                $"Exactly one area should be occupied after rapid invalid drops. Found: {occupiedCount}");
+        }
+
+        // Helper method to find CardMoverP1 in hand
+        private CardMoverP1 FindCardMoverInHand(NewHandP1UI handUI, NewCard card)
+        {
+            if (handUI == null || card == null) return null;
+            
+            foreach (Transform child in handUI.transform)
+            {
+                CardMoverP1 mover = child.GetComponent<CardMoverP1>();
+                if (mover != null && mover.Card == card)
+                {
+                    return mover;
+                }
+            }
+            return null;
         }
     }
 }
-

@@ -8,7 +8,7 @@ using CardGame.UI;
 using CardGame.Tests;
 using CardGame.Core;
 
-namespace CardGame.Tests.Endgame
+namespace CardGame.Tests
 {
     /// <summary>
     /// Deterministic end-to-end test:

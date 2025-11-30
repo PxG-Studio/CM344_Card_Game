@@ -86,8 +86,17 @@ namespace CardGame.Tests
             playerDeck.InitializeDeck();
             yield return null;
             
-            // Verify deck was shuffled (order changed from initial)
-            Assert.IsTrue(true, "Deck shuffle method exists (deterministic testing requires seeded RNG)");
+            // Verify deck was shuffled - check that deck has cards
+            int drawPileCount = playerDeck.DrawPileCount;
+            Assert.Greater(drawPileCount, 0, 
+                $"Deck should have cards after shuffle. DrawPileCount: {drawPileCount}");
+            
+            // Verify shuffle method can be called without error
+            playerDeck.ShuffleDeck();
+            yield return null;
+            int drawPileCountAfterShuffle = playerDeck.DrawPileCount;
+            Assert.AreEqual(drawPileCount, drawPileCountAfterShuffle, 
+                "Shuffle should not change card count, only order");
         }
 
         [UnityTest]
@@ -109,9 +118,14 @@ namespace CardGame.Tests
             int playerHandCount = playerDeck.Hand.Count;
             int opponentHandCount = opponentDeck.Hand.Count;
             
-            // Hands should have cards after initialization
-            Assert.GreaterOrEqual(playerHandCount, 0, "Player hand should exist (may be empty initially)");
-            Assert.GreaterOrEqual(opponentHandCount, 0, "Opponent hand should exist (may be empty initially)");
+            // After coin toss and initialization, at least one player should have cards
+            int totalCards = playerHandCount + opponentHandCount;
+            Assert.Greater(totalCards, 0, 
+                $"After initialization, at least one player should have cards. P1: {playerHandCount}, P2: {opponentHandCount}");
+            
+            // Verify hand collections exist (not null)
+            Assert.IsNotNull(playerDeck.Hand, "Player hand collection should exist");
+            Assert.IsNotNull(opponentDeck.Hand, "Opponent hand collection should exist");
             
             // Verify DrawCards method exists
             var drawCardsMethod = typeof(NewDeckManagerP1).GetMethod("DrawCards");

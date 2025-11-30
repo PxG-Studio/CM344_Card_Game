@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using CardGame.UI;
 
-namespace Tests.EditMode.Flow
+namespace CardGame.Tests
 {
     /// <summary>
     /// EditMode tests for the Battle Front Influence bar (CardFrontlineUI).

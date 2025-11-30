@@ -9,6 +9,12 @@ namespace CardGame.Tests
     /// EditMode tests for game end detection, score calculation, rematch/quit functionality,
     /// and score metrics persistence across games. These tests validate structure and API
     /// without requiring PlayMode.
+    /// 
+    /// This test suite follows the codebase structure:
+    /// - Uses CardGame.Managers namespace (GameManager, ScoreManager, GameEndManager, GameStatsTracker)
+    /// - Uses CardGame.UI namespace (GameEndUI, CardFrontlineUI)
+    /// - Validates API structure for rematch functionality
+    /// - Tests method existence and signatures (structural validation)
     /// </summary>
     public class GameEndAndRematchEditModeTests
     {
@@ -237,7 +243,14 @@ namespace CardGame.Tests
             Assert.IsNotNull(gameManagerType.GetMethod("ResetGameState"), 
                 "GameManager.ResetGameState should exist for rematch");
             
-            Assert.IsTrue(true, "All game end flow components exist with required methods");
+            // Verify all components have required methods (structure validation)
+            bool allMethodsExist = gameManagerType.GetMethod("ResetGameState") != null &&
+                                 gameEndManagerType.GetMethod("CheckGameEnd") != null &&
+                                 gameEndUIType.GetMethod("ShowGameEnd", new System.Type[] { typeof(bool), typeof(bool) }) != null &&
+                                 scoreManagerType.GetMethod("RecalculateScores") != null;
+            
+            Assert.IsTrue(allMethodsExist, 
+                "All game end flow components should exist with required methods");
         }
 
         [Test]
@@ -264,7 +277,125 @@ namespace CardGame.Tests
             Assert.IsNotNull(resetScoresMethod, 
                 "ScoreManager.ResetScores should exist (per-game reset, session stats persist)");
             
-            Assert.IsTrue(true, "Rematch flow preserves session stats while resetting per-game data");
+            // Verify method signatures match expected behavior
+            // ResetCurrentGameStats should exist (resets current game only)
+            // ResetSession should exist (resets entire session)
+            // ResetScores should exist (per-game reset)
+            bool allResetMethodsExist = resetCurrentMethod != null && 
+                                       resetSessionMethod != null && 
+                                       resetScoresMethod != null;
+            
+            Assert.IsTrue(allResetMethodsExist, 
+                "All reset methods should exist: ResetCurrentGameStats, ResetSession, ResetScores");
+            
+            // Verify they're different methods (not the same)
+            Assert.AreNotSame(resetCurrentMethod, resetSessionMethod, 
+                "ResetCurrentGameStats and ResetSession should be different methods");
+        }
+        
+        [Test]
+        public void CardDropArea_Has_ResetForNewGame_Method()
+        {
+            // Verify CardDropArea has ResetForNewGame method (critical for rematch board reset)
+            var cardDropAreaType = typeof(CardDropArea);
+            var resetForNewGameMethod = cardDropAreaType.GetMethod("ResetForNewGame");
+            Assert.IsNotNull(resetForNewGameMethod, 
+                "CardDropArea should have ResetForNewGame method (public, called during rematch)");
+            
+            // Verify ResetGameStatistics static method exists
+            var resetGameStatisticsMethod = cardDropAreaType.GetMethod("ResetGameStatistics", 
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            Assert.IsNotNull(resetGameStatisticsMethod, 
+                "CardDropArea should have ResetGameStatistics static method");
+        }
+        
+        [Test]
+        public void GameManager_ResetGameState_Calls_All_Required_Steps()
+        {
+            // Verify ResetGameState method exists and has correct signature
+            var gameManagerType = typeof(GameManager);
+            var resetGameStateMethod = gameManagerType.GetMethod("ResetGameState");
+            Assert.IsNotNull(resetGameStateMethod, "GameManager should have ResetGameState method");
+            
+            // Verify it's public (called by GameEndUI.Rematch)
+            Assert.IsTrue(resetGameStateMethod.IsPublic, "ResetGameState should be public");
+            
+            // Verify it has no parameters (takes no arguments)
+            var parameters = resetGameStateMethod.GetParameters();
+            Assert.AreEqual(0, parameters.Length, "ResetGameState should take no parameters");
+        }
+        
+        [Test]
+        public void CardFrontlineUI_Has_ResetFrontline_Method()
+        {
+            // Verify CardFrontlineUI has ResetFrontline method (called during rematch Step 5)
+            var frontlineUIType = typeof(CardFrontlineUI);
+            var resetFrontlineMethod = frontlineUIType.GetMethod("ResetFrontline");
+            Assert.IsNotNull(resetFrontlineMethod, 
+                "CardFrontlineUI should have ResetFrontline method (called during rematch)");
+            
+            // Verify GetP1Control and GetP2Control methods exist (used for winner evaluation)
+            var getP1ControlMethod = frontlineUIType.GetMethod("GetP1Control");
+            var getP2ControlMethod = frontlineUIType.GetMethod("GetP2Control");
+            
+            Assert.IsNotNull(getP1ControlMethod, 
+                "CardFrontlineUI should have GetP1Control method");
+            Assert.IsNotNull(getP2ControlMethod, 
+                "CardFrontlineUI should have GetP2Control method");
+        }
+        
+        [Test]
+        public void NewDeckManagerP1_And_P2_Have_InitializeDeck_Methods()
+        {
+            // Verify deck managers have InitializeDeck methods (called during rematch Step 8)
+            var deckManagerP1Type = typeof(NewDeckManagerP1);
+            var deckManagerP2Type = typeof(NewDeckManagerP2);
+            
+            var initP1Method = deckManagerP1Type.GetMethod("InitializeDeck");
+            var initP2Method = deckManagerP2Type.GetMethod("InitializeDeck");
+            
+            Assert.IsNotNull(initP1Method, 
+                "NewDeckManagerP1 should have InitializeDeck method (called during rematch)");
+            Assert.IsNotNull(initP2Method, 
+                "NewDeckManagerP2 should have InitializeDeck method (called during rematch)");
+        }
+        
+        [Test]
+        public void NewHandP1UI_And_P2UI_Have_ClearHand_Methods()
+        {
+            // Verify hand UI managers have ClearHand methods (called during rematch Step 9)
+            var handP1UIType = typeof(NewHandP1UI);
+            var handP2UIType = typeof(NewHandP2UI);
+            
+            var clearP1Method = handP1UIType.GetMethod("ClearHand");
+            var clearP2Method = handP2UIType.GetMethod("ClearHand");
+            
+            Assert.IsNotNull(clearP1Method, 
+                "NewHandP1UI should have ClearHand method (called during rematch)");
+            Assert.IsNotNull(clearP2Method, 
+                "NewHandP2UI should have ClearHand method (called during rematch)");
+        }
+        
+        [Test]
+        public void CoinTossManager_Has_ResetCoinToss_Method()
+        {
+            // Verify CoinTossManager has ResetCoinToss method (called during rematch Step 10)
+            var coinTossManagerType = typeof(CoinTossManager);
+            var resetCoinTossMethod = coinTossManagerType.GetMethod("ResetCoinToss");
+            
+            Assert.IsNotNull(resetCoinTossMethod, 
+                "CoinTossManager should have ResetCoinToss method (called during rematch)");
+        }
+        
+        [Test]
+        public void CoinTossUI_Has_Show_Method()
+        {
+            // Verify CoinTossUI has Show method (called during rematch Step 11)
+            var coinTossUIType = typeof(CoinTossUI);
+            var showMethod = coinTossUIType.GetMethod("Show");
+            
+            Assert.IsNotNull(showMethod, 
+                "CoinTossUI should have Show method (called during rematch)");
         }
     }
 }
