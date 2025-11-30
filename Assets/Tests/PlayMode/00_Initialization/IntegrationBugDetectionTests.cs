@@ -424,6 +424,21 @@ namespace CardGame.Tests
                 // Since defender is a P2 card (CardMoverP2), we need to call CheckCardBattlesP2
                 yield return new WaitForEndOfFrame(); // Wait for position to update
                 
+                // CRITICAL: Clear cardsPlayedThisTurn before manually triggering battle check
+                // This allows the defender to be flipped even though it was just placed
+                // (In normal gameplay, cardsPlayedThisTurn is cleared at the start of each turn)
+                var cardsPlayedThisTurnField = typeof(CardDropArea).GetField("cardsPlayedThisTurn",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+                if (cardsPlayedThisTurnField != null)
+                {
+                    var cardsPlayedThisTurn = cardsPlayedThisTurnField.GetValue(null) as System.Collections.Generic.HashSet<UnityEngine.GameObject>;
+                    if (cardsPlayedThisTurn != null)
+                    {
+                        Debug.Log($"[IntegrationBug_CaptureOccurs_ButScoreNotUpdated] Clearing cardsPlayedThisTurn before manual battle check (had {cardsPlayedThisTurn.Count} cards)");
+                        cardsPlayedThisTurn.Clear();
+                    }
+                }
+                
                 // Use the drop area where the defender was placed to trigger battle check
                 if (closestDropArea != null && defenderMover != null && defenderMover.Card != null)
                 {
@@ -436,7 +451,7 @@ namespace CardGame.Tests
                         Debug.Log($"[IntegrationBug_CaptureOccurs_ButScoreNotUpdated] Manually triggering CheckCardBattlesP2 after position adjustment...");
                         checkBattlesP2Method.Invoke(closestDropArea, new object[] { defenderMover, defenderMover.Card });
                         yield return new WaitForEndOfFrame(); // Wait for battle check to process
-                        yield return new WaitForSeconds(0.5f); // Give ripple coroutine time to start
+                        yield return new WaitForSeconds(0.2f); // Wait for coroutine to start (rippleBaseDelay is 0.1s)
                     }
                     else
                     {
@@ -445,6 +460,7 @@ namespace CardGame.Tests
                 }
                 
                 // Also trigger from attacker's perspective to ensure both directions are checked
+                // Note: cardsPlayedThisTurn is already cleared above, so both cards can be flipped
                 if (attackerArea != null && attackerMover != null && attackerMover.Card != null)
                 {
                     var checkBattlesMethod = typeof(CardDropArea).GetMethod("CheckCardBattlesP1",
@@ -455,6 +471,7 @@ namespace CardGame.Tests
                         Debug.Log($"[IntegrationBug_CaptureOccurs_ButScoreNotUpdated] Also triggering CheckCardBattles from attacker's perspective...");
                         checkBattlesMethod.Invoke(attackerArea, new object[] { attackerMover, attackerMover.Card });
                         yield return new WaitForEndOfFrame(); // Wait for battle check to process
+                        yield return new WaitForSeconds(0.2f); // Wait for coroutine to start (rippleBaseDelay is 0.1s)
                     }
                 }
             }

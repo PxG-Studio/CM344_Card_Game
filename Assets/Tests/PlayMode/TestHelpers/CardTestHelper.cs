@@ -155,23 +155,59 @@ namespace CardGame.Tests
             }
             if (flipAnim == null) return false;
             
-            // Check isFlipped property (card is captured when isFlipped = true, meaning back is showing)
-            var isFlippedProperty = typeof(CardFlipAnimation).GetProperty("isFlipped");
-            if (isFlippedProperty != null)
+            // CRITICAL: Check WasCaptured property instead of isFlipped
+            // isFlipped can be true for cards that are face-down but not captured (e.g., P2 cards initially)
+            // WasCaptured checks if lastCaptureColor != Color.clear, which is only set when a card is actually captured
+            var wasCapturedProperty = typeof(CardFlipAnimation).GetProperty("WasCaptured");
+            if (wasCapturedProperty != null)
             {
-                return (bool)isFlippedProperty.GetValue(flipAnim);
+                bool wasCaptured = (bool)wasCapturedProperty.GetValue(flipAnim);
+                
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    var lastCaptureColorProp = typeof(CardFlipAnimation).GetProperty("LastCaptureColor");
+                    Color lastCaptureColor = lastCaptureColorProp != null ? 
+                        (Color)lastCaptureColorProp.GetValue(flipAnim) : Color.clear;
+                    Debug.Log($"[IsCardCaptured] Card {cardObject.name}: WasCaptured={wasCaptured}, LastCaptureColor={lastCaptureColor}");
+                }
+                #endif
+                
+                return wasCaptured;
             }
             
-            // Fallback: check if back container is active
+            // Fallback: Check if lastCaptureColor is not clear (only set when captured)
+            var lastCaptureColorPropFallback = typeof(CardFlipAnimation).GetProperty("LastCaptureColor");
+            if (lastCaptureColorPropFallback != null)
+            {
+                Color lastCaptureColor = (Color)lastCaptureColorPropFallback.GetValue(flipAnim);
+                return lastCaptureColor != Color.clear;
+            }
+            
+            // Final fallback: check if back container is active AND card has a capture color
+            // This is less reliable but better than just checking isFlipped
+            // CRITICAL: We must check lastCaptureColor here too, because P2 cards start with back showing
+            // but haven't been captured yet
             var backContainerField = typeof(CardFlipAnimation).GetField("backContainer", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
             if (backContainerField != null)
             {
                 GameObject backContainer = backContainerField.GetValue(flipAnim) as GameObject;
-                if (backContainer != null)
+                if (backContainer != null && backContainer.activeSelf)
                 {
-                    return backContainer.activeSelf;
+                    // Check if there's actually a capture color set (lastCaptureColor != clear)
+                    // P2 cards start with back showing but haven't been captured, so we need this check
+                    var lastCaptureColorField = typeof(CardFlipAnimation).GetField("lastCaptureColor", 
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (lastCaptureColorField != null)
+                    {
+                        Color internalLastCaptureColor = (Color)lastCaptureColorField.GetValue(flipAnim);
+                        // Only consider it captured if back is showing AND there's a capture color
+                        return internalLastCaptureColor != Color.clear;
+                    }
+                    // If we can't check lastCaptureColor, don't assume captured (P2 cards start with back showing)
+                    return false;
                 }
             }
             
@@ -258,7 +294,32 @@ namespace CardGame.Tests
                 
                 // Add NewCardUI component for capture/flip functionality
                 CardGame.UI.NewCardUI cardUI = cardObj.AddComponent<CardGame.UI.NewCardUI>();
-                // Ensure Awake() is called before Initialize() to set up containers
+                
+                // Create front and back containers for flip animation (required for CardFlipAnimation)
+                GameObject frontContainer = new GameObject("FrontContainer");
+                frontContainer.transform.SetParent(cardObj.transform);
+                frontContainer.SetActive(true);
+                
+                GameObject backContainer = new GameObject("BackContainer");
+                backContainer.transform.SetParent(cardObj.transform);
+                backContainer.SetActive(false);
+                
+                // Set containers using reflection before Awake() is called
+                var frontContainerField = typeof(CardGame.UI.NewCardUI).GetField("frontContainer",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var backContainerField = typeof(CardGame.UI.NewCardUI).GetField("backContainer",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                
+                if (frontContainerField != null)
+                {
+                    frontContainerField.SetValue(cardUI, frontContainer);
+                }
+                if (backContainerField != null)
+                {
+                    backContainerField.SetValue(cardUI, backContainer);
+                }
+                
+                // Ensure Awake() is called before Initialize() to set up containers and CardFlipAnimation
                 var awakeMethod = typeof(CardGame.UI.NewCardUI).GetMethod("Awake", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 if (awakeMethod != null)
@@ -386,7 +447,32 @@ namespace CardGame.Tests
                 
                 // Add NewCardUI component for capture/flip functionality
                 CardGame.UI.NewCardUI cardUI = cardObj.AddComponent<CardGame.UI.NewCardUI>();
-                // Ensure Awake() is called before Initialize() to set up containers
+                
+                // Create front and back containers for flip animation (required for CardFlipAnimation)
+                GameObject frontContainer = new GameObject("FrontContainer");
+                frontContainer.transform.SetParent(cardObj.transform);
+                frontContainer.SetActive(true);
+                
+                GameObject backContainer = new GameObject("BackContainer");
+                backContainer.transform.SetParent(cardObj.transform);
+                backContainer.SetActive(false);
+                
+                // Set containers using reflection before Awake() is called
+                var frontContainerField = typeof(CardGame.UI.NewCardUI).GetField("frontContainer",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var backContainerField = typeof(CardGame.UI.NewCardUI).GetField("backContainer",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                
+                if (frontContainerField != null)
+                {
+                    frontContainerField.SetValue(cardUI, frontContainer);
+                }
+                if (backContainerField != null)
+                {
+                    backContainerField.SetValue(cardUI, backContainer);
+                }
+                
+                // Ensure Awake() is called before Initialize() to set up containers and CardFlipAnimation
                 var awakeMethod = typeof(CardGame.UI.NewCardUI).GetMethod("Awake", 
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 if (awakeMethod != null)
