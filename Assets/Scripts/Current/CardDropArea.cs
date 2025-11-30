@@ -123,7 +123,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // Reset tile color to default (white/neutral)
         if (tileSpriteRenderer != null)
         {
-            Debug.Log($"[TILE COLOR] ResetForNewGame: Resetting tile '{gameObject.name}' to white");
             tileSpriteRenderer.color = Color.white;
         }
         
@@ -376,7 +375,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 occupyingCard = cardMover.gameObject;
                 
                 // Update tile color to reflect P1 ownership (orange)
-                Debug.Log($"[TILE COLOR] OnCardDrop: Calling UpdateTileColor for P1 card '{cardMover.gameObject.name}' on tile '{gameObject.name}'");
                 UpdateTileColor();
                 
                 // Show alert marker for newly placed card
@@ -837,7 +835,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // Use cached color if available
         if (cachedP1Color.HasValue)
         {
-            Debug.Log($"[TILE COLOR] GetPlayerCaptureColor: Using cached P1 color: {cachedP1Color.Value}");
             return cachedP1Color.Value;
         }
         
@@ -846,29 +843,18 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         if (frontlineUI != null)
         {
             Color p1Color = frontlineUI.P1Color;
-            Debug.Log($"[TILE COLOR] GetPlayerCaptureColor: Retrieved from CardFrontlineUI: {p1Color}, Alpha: {p1Color.a}, IsWhite: {p1Color == Color.white}, IsClear: {p1Color == Color.clear}");
             
             // Validate color: must have alpha > 0 and not be white/clear
             if (p1Color.a > 0f && p1Color != Color.white && p1Color != Color.clear)
             {
                 cachedP1Color = p1Color;
-                Debug.Log($"[TILE COLOR] GetPlayerCaptureColor: ✅ Valid color cached: {p1Color}");
                 return p1Color;
             }
-            else
-            {
-                Debug.LogWarning($"[TILE COLOR] GetPlayerCaptureColor: ⚠️ Invalid color from CardFrontlineUI, using fallback");
-            }
-        }
-        else
-        {
-            Debug.LogWarning($"[TILE COLOR] GetPlayerCaptureColor: ⚠️ CardFrontlineUI not found, using fallback");
         }
         
         // Fallback: Orange color for player's captured cards
         Color fallbackColor = new Color(1f, 0.5f, 0f, 1f);
         cachedP1Color = fallbackColor;
-        Debug.Log($"[TILE COLOR] GetPlayerCaptureColor: Using fallback orange: {fallbackColor}");
         return fallbackColor;
     }
     
@@ -880,7 +866,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // Use cached color if available
         if (cachedP2Color.HasValue)
         {
-            Debug.Log($"[TILE COLOR] GetP2CaptureColor: Using cached P2 color: {cachedP2Color.Value}");
             return cachedP2Color.Value;
         }
         
@@ -889,29 +874,18 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         if (frontlineUI != null)
         {
             Color p2Color = frontlineUI.P2Color;
-            Debug.Log($"[TILE COLOR] GetP2CaptureColor: Retrieved from CardFrontlineUI: {p2Color}, Alpha: {p2Color.a}, IsWhite: {p2Color == Color.white}, IsClear: {p2Color == Color.clear}");
             
             // Validate color: must have alpha > 0 and not be white/clear
             if (p2Color.a > 0f && p2Color != Color.white && p2Color != Color.clear)
             {
                 cachedP2Color = p2Color;
-                Debug.Log($"[TILE COLOR] GetP2CaptureColor: ✅ Valid color cached: {p2Color}");
                 return p2Color;
             }
-            else
-            {
-                Debug.LogWarning($"[TILE COLOR] GetP2CaptureColor: ⚠️ Invalid color from CardFrontlineUI, using fallback");
-            }
-        }
-        else
-        {
-            Debug.LogWarning($"[TILE COLOR] GetP2CaptureColor: ⚠️ CardFrontlineUI not found, using fallback");
         }
         
         // Fallback: Green color for P2's captured cards
         Color fallbackColor = new Color(0f, 0.8f, 0f, 1f);
         cachedP2Color = fallbackColor;
-        Debug.Log($"[TILE COLOR] GetP2CaptureColor: Using fallback green: {fallbackColor}");
         return fallbackColor;
     }
     
@@ -1012,7 +986,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 occupyingCard = cardMoverP2.gameObject;
                 
                 // Update tile color to reflect P2 ownership (green)
-                Debug.Log($"[TILE COLOR] OnCardDropP2: Calling UpdateTileColor for P2 card '{cardMoverP2.gameObject.name}' on tile '{gameObject.name}'");
                 UpdateTileColor();
                 
                 // Show alert marker for new opponent card
@@ -2132,16 +2105,12 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     /// </summary>
     private void UpdateTileColor()
     {
-        string tileName = gameObject.name;
-        Color previousColor = tileSpriteRenderer != null ? tileSpriteRenderer.color : Color.clear;
-        
         if (tileSpriteRenderer == null)
         {
             // Try to find tile sprite renderer if not set
             tileSpriteRenderer = GetComponent<SpriteRenderer>();
             if (tileSpriteRenderer == null)
             {
-                Debug.LogWarning($"[TILE COLOR] UpdateTileColor: ❌ No SpriteRenderer found on '{tileName}'");
                 return;
             }
         }
@@ -2165,13 +2134,11 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 {
                     card = moverP1.gameObject;
                     isOccupied = true;
-                    Debug.Log($"[TILE COLOR] UpdateTileColor: '{tileName}' - Found P1 card via Physics2D: '{card.name}'");
                 }
                 else if (moverP2 != null && moverP2.IsPlayed)
                 {
                     card = moverP2.gameObject;
                     isOccupied = true;
-                    Debug.Log($"[TILE COLOR] UpdateTileColor: '{tileName}' - Found P2 card via Physics2D: '{card.name}'");
                 }
             }
         }
@@ -2184,11 +2151,9 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             
             if (isOwnershipColor)
             {
-                Debug.LogWarning($"[TILE COLOR] UpdateTileColor: '{tileName}' - ⚠️ Not occupied but has ownership color {currentColor}, keeping it (card may be temporarily missing)");
                 return; // Keep current color - card might be temporarily missing
             }
             
-            Debug.Log($"[TILE COLOR] UpdateTileColor: '{tileName}' - Not occupied, setting to white (was {currentColor})");
             tileSpriteRenderer.color = Color.white;
             return;
         }
@@ -2201,16 +2166,13 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             
             if (isOwnershipColor)
             {
-                Debug.LogWarning($"[TILE COLOR] UpdateTileColor: '{tileName}' - ⚠️ IsOccupied=true but card is null! Keeping current ownership color: {currentColor}");
                 return; // Keep current color - don't reset to white
             }
             
-            Debug.LogWarning($"[TILE COLOR] UpdateTileColor: '{tileName}' - ⚠️ IsOccupied=true but card is null! Current color: {currentColor}, resetting to white");
             tileSpriteRenderer.color = Color.white;
             return;
         }
         
-        string cardName = card.name;
         bool isPlayerCard = IsPlayerCard(card);
         Color tileColor;
         
@@ -2218,20 +2180,17 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
             // P1 ownership - orange color
             tileColor = GetPlayerCaptureColor(); // Orange
-            Debug.Log($"[TILE COLOR] UpdateTileColor: '{tileName}' - P1 card '{cardName}', color: {tileColor}");
         }
         else
         {
             // P2 ownership - green color
             tileColor = GetP2CaptureColor(); // Green
-            Debug.Log($"[TILE COLOR] UpdateTileColor: '{tileName}' - P2 card '{cardName}', color: {tileColor}");
         }
         
         // Validate color before setting (ensure it's not white/clear)
         if (tileColor.a > 0f && tileColor != Color.white && tileColor != Color.clear)
         {
             tileSpriteRenderer.color = tileColor;
-            Debug.Log($"[TILE COLOR] UpdateTileColor: '{tileName}' - ✅ Set color to {tileColor} (was {previousColor})");
         }
         else
         {
@@ -2241,7 +2200,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 : new Color(0f, 0.8f, 0f, 1f); // Green fallback
             
             tileSpriteRenderer.color = fallbackColor;
-            Debug.LogWarning($"[TILE COLOR] UpdateTileColor: '{tileName}' - ⚠️ Invalid color {tileColor}, using fallback {fallbackColor}");
         }
     }
     
@@ -2253,30 +2211,19 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     {
         if (cardObject == null)
         {
-            Debug.LogWarning($"[TILE COLOR] UpdateTileColorForCard: cardObject is null");
             return;
         }
         
-        Debug.Log($"[TILE COLOR] UpdateTileColorForCard: Looking for tile containing card '{cardObject.name}'");
-        
         // Find the CardDropArea that contains this card
         CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>();
-        bool found = false;
         
         foreach (CardDropArea dropArea in allDropAreas)
         {
             if (dropArea != null && dropArea.GetOccupyingCard() == cardObject)
             {
-                Debug.Log($"[TILE COLOR] UpdateTileColorForCard: Found card '{cardObject.name}' on tile '{dropArea.gameObject.name}', updating color");
                 dropArea.UpdateTileColor();
-                found = true;
                 break;
             }
-        }
-        
-        if (!found)
-        {
-            Debug.LogWarning($"[TILE COLOR] UpdateTileColorForCard: Card '{cardObject.name}' not found in any drop area");
         }
     }
     
@@ -2286,31 +2233,14 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     /// </summary>
     private static void UpdateAllTileColors()
     {
-        Debug.Log($"[TILE COLOR] UpdateAllTileColors: Updating all tile colors after ripple effects");
         CardDropArea[] allDropAreas = Object.FindObjectsOfType<CardDropArea>();
-        int updatedCount = 0;
-        int preservedCount = 0;
-        
         foreach (CardDropArea dropArea in allDropAreas)
         {
             if (dropArea != null)
             {
-                Color beforeColor = dropArea.tileSpriteRenderer != null ? dropArea.tileSpriteRenderer.color : Color.clear;
                 dropArea.UpdateTileColor();
-                Color afterColor = dropArea.tileSpriteRenderer != null ? dropArea.tileSpriteRenderer.color : Color.clear;
-                
-                if (beforeColor != afterColor)
-                {
-                    updatedCount++;
-                }
-                else if (afterColor != Color.white && afterColor != Color.clear)
-                {
-                    preservedCount++;
-                }
             }
         }
-        
-        Debug.Log($"[TILE COLOR] UpdateAllTileColors: Complete - {updatedCount} tiles updated, {preservedCount} tiles preserved");
     }
     
     /// <summary>

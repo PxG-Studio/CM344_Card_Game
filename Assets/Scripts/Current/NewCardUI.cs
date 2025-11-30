@@ -67,9 +67,9 @@ namespace CardGame.UI
         
         [Header("Shadow Settings")]
         [SerializeField] private bool enableCardShadow = true;
-        [SerializeField] private Vector2 shadowOffset = new Vector2(0.08f, -0.08f);
-        [SerializeField] private float shadowScaleMultiplier = 1.05f;
-        [SerializeField] private Color shadowColor = new Color(0f, 0f, 0f, 0.35f);
+        [SerializeField] private Vector2 shadowOffset = new Vector2(0.16f, -0.16f); // Increased by 100% (was 0.08f, -0.08f)
+        [SerializeField] private float shadowScaleMultiplier = 1.15f; // Increased by ~100% (was 1.05f)
+        [SerializeField] private Color shadowColor = new Color(0f, 0f, 0f, 0.70f); // Increased by 100% (was 0.35f)
         [SerializeField] private SpriteRenderer cardShadow;
         
         public Color PlayerCapturedColor => playerCapturedColor;
@@ -147,6 +147,11 @@ namespace CardGame.UI
                 }
             }
             
+            Debug.Log($"[CARD SHADOW] Awake: Initial shadow settings for '{gameObject.name}' - " +
+                     $"Enabled: {enableCardShadow}, " +
+                     $"Offset: ({shadowOffset.x:F3}, {shadowOffset.y:F3}), " +
+                     $"Scale: {shadowScaleMultiplier:F3}, " +
+                     $"Color: RGBA({shadowColor.r:F2}, {shadowColor.g:F2}, {shadowColor.b:F2}, {shadowColor.a:F2})");
             SetupCardShadow();
             
             // Check if Canvas has GraphicRaycaster
@@ -199,8 +204,11 @@ namespace CardGame.UI
         
         private void SetupCardShadow()
         {
+            string cardName = card != null && card.Data != null ? card.Data.cardName : gameObject.name;
+            
             if (!enableCardShadow)
             {
+                Debug.Log($"[CARD SHADOW] '{cardName}': Shadow disabled (enableCardShadow=false)");
                 if (cardShadow != null)
                 {
                     cardShadow.gameObject.SetActive(false);
@@ -210,11 +218,18 @@ namespace CardGame.UI
             
             if (cardBackground == null)
             {
+                Debug.LogWarning($"[CARD SHADOW] '{cardName}': ⚠️ cardBackground is null, cannot setup shadow");
                 return;
             }
             
+            // Force shadow values to be 50% increased from original (override prefab values)
+            shadowOffset = new Vector2(0.12f, -0.12f); // 50% increase from 0.08 (was 0.16 for 100% increase)
+            shadowScaleMultiplier = 1.10f; // 50% increase from 1.05 (was 1.15 for 100% increase)
+            shadowColor = new Color(0f, 0f, 0f, 0.525f); // 50% increase from 0.35 (was 0.70 for 100% increase)
+            
             if (cardShadow == null)
             {
+                Debug.Log($"[CARD SHADOW] '{cardName}': Creating new shadow GameObject");
                 GameObject shadowObj = new GameObject("CardShadow");
                 shadowObj.transform.SetParent(cardBackground.transform, false);
                 cardShadow = shadowObj.AddComponent<SpriteRenderer>();
@@ -228,6 +243,15 @@ namespace CardGame.UI
             cardShadow.transform.localRotation = Quaternion.identity;
             cardShadow.sortingLayerID = cardBackground.sortingLayerID;
             cardShadow.sortingOrder = cardBackground.sortingOrder - 1;
+            
+            Debug.Log($"[CARD SHADOW] '{cardName}': Shadow setup complete - " +
+                     $"Offset: ({shadowOffset.x:F3}, {shadowOffset.y:F3}), " +
+                     $"Scale: {shadowScaleMultiplier:F3}, " +
+                     $"Color: RGBA({shadowColor.r:F2}, {shadowColor.g:F2}, {shadowColor.b:F2}, {shadowColor.a:F2}), " +
+                     $"Position: {cardShadow.transform.localPosition}, " +
+                     $"Active: {cardShadow.gameObject.activeSelf}, " +
+                     $"Sprite: {(cardShadow.sprite != null ? cardShadow.sprite.name : "NULL")}, " +
+                     $"SortingOrder: {cardShadow.sortingOrder} (cardBackground: {cardBackground.sortingOrder})");
         }
 
         // Inspect / zoom helpers have been removed.
@@ -464,6 +488,7 @@ namespace CardGame.UI
             // They will be visible in the Inspector after the prefab is saved or in Play mode.
             
             
+            Debug.Log($"[CARD SHADOW] UpdateVisuals: Re-setting up shadow for '{(card != null && card.Data != null ? card.Data.cardName : gameObject.name)}'");
             SetupCardShadow();
         }
         
@@ -605,6 +630,7 @@ namespace CardGame.UI
                 }
                 // If captured (face down), color will be applied by CardFlipAnimation during capture
                 
+                Debug.Log($"[CARD SHADOW] UpdateCardBack: Re-setting up shadow for '{(card != null && card.Data != null ? card.Data.cardName : gameObject.name)}'");
                 SetupCardShadow();
             }
 
