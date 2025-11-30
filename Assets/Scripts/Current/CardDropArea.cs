@@ -483,8 +483,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 // Update tile color to reflect P1 ownership (orange)
                 UpdateTileColor();
                 
-                // Show alert marker for newly placed card
-                DeltaMarkerSystem.ShowAlert(cardMover.transform, "!");
+                // Show alert marker for newly placed card (disabled - markers removed from board)
+                // DeltaMarkerSystem.ShowAlert(cardMover.transform, "!");
                 
                 // NOTE: PlayCard() already calls DrawCard() if DrawPileCount > 0, so we don't need to call it here
                 // This prevents drawing two cards (one from PlayCard, one from OnCardDrop)
@@ -585,7 +585,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                     cardMover.SetPlayed(true);
                     cardsPlayedThisTurn.Add(cardMover.gameObject);
                     UpdateTileColor();
-                    DeltaMarkerSystem.ShowAlert(cardMover.transform, "!");
+                    // DeltaMarkerSystem.ShowAlert(cardMover.transform, "!"); // Disabled - markers removed from board
                     if (deckManagerP1.DrawPileCount > 0)
                     {
                         deckManagerP1.DrawCard();
@@ -1376,8 +1376,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 // Update tile color to reflect P2 ownership (green)
                 UpdateTileColor();
                 
-                // Show alert marker for new opponent card
-                DeltaMarkerSystem.ShowAlert(cardMoverP2.transform, "!");
+                // Show alert marker for new opponent card (disabled - markers removed from board)
+                // DeltaMarkerSystem.ShowAlert(cardMoverP2.transform, "!");
                 
                 // NOTE: PlayCard() already calls DrawCard() if DrawPileCount > 0, so we don't need to call it here
                 // This prevents drawing two cards (one from PlayCard, one from OnCardDropP2)
@@ -2215,34 +2215,44 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         if (Application.isEditor)
         {
             Debug.Log($"[CheckBattleBetweenCardsForRipple] placedCardIsPlayer={placedCardIsPlayer}, otherCardIsPlayer={otherCardIsPlayer}, " +
-                      $"placedCardObject={placedCardObject?.name}, otherCardObject={otherCardObject?.name}");
+                      $"placedCardObject={placedCardObject?.name}, otherCardObject={otherCardObject?.name}, isChainCapture={isChainCapture}");
         }
         #endif
-        
-        if (placedCardIsPlayer == otherCardIsPlayer)
-        {
-            return null; // Same player, no battle
-        }
         
         // STRICT ADJACENCY CHECK FIRST - This is the primary gatekeeper
         // Use strict tolerance to ensure cards 7.66 units apart are NEVER compared
         // But allow lenient mode for orthogonal neighbors when requested (e.g., from CheckCardBattlesP1)
+        // EXCEPTION: For chain captures, we still want to check stats and log warnings even if not strictly adjacent
+        // (but only if they're leniently adjacent, to avoid checking cards that are truly far apart)
         float totalDistance;
-        if (!AreCardsStrictlyAdjacent(placedPos, otherPos, out totalDistance, useLenientForOrthogonal))
-        {
-            // Always log strict adjacency rejections to help debug test failures
-            return null; // Not strictly adjacent - reject immediately
-        }
+        bool isStrictlyAdjacent = AreCardsStrictlyAdjacent(placedPos, otherPos, out totalDistance, useLenientForOrthogonal);
         
         Vector3 delta = otherPos - placedPos;
         float deltaX = Mathf.Abs(delta.x);
-        float deltaY = Mathf.Abs(delta.y); // Y is vertical (up/down)
+        float deltaY = Mathf.Abs(delta.y);
         
-        if (debugBattles)
+        // For chain captures, also check lenient adjacency (3.0f tolerance) to catch cases where
+        // a weak card tries to chain capture a stronger card that's leniently but not strictly adjacent
+        bool isLenientlyAdjacent = false;
+        if (isChainCapture && !isStrictlyAdjacent)
         {
+            // Check if cards are within lenient tolerance (3.0f) for orthogonal neighbors
+            float lenientDistance = Vector3.Distance(placedPos, otherPos);
+            bool isOrthogonal = (deltaY < 0.5f && deltaX > 0.1f) || (deltaX < 0.5f && deltaY > 0.1f);
+            isLenientlyAdjacent = isOrthogonal && lenientDistance <= 3.0f;
         }
         
+        if (!isStrictlyAdjacent && !isLenientlyAdjacent)
+        {
+            // Not adjacent at all - reject immediately
+            return null;
+        }
+        
+        // If we're here and isChainCapture is true but not strictly adjacent, we'll continue
+        // to check stats and log the warning, but won't create a flip target
+        
         // Only check directly adjacent cards (orthogonal neighbors)
+        // For chain captures with lenient adjacency, we still need to check if they're orthogonal
         bool isOrthogonalNeighbor = false;
         string directionName = "";
         int placedCardStat = 0;
@@ -2295,12 +2305,55 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
         }
         
-        if (!isOrthogonalNeighbor)
+        // For chain captures with lenient adjacency, allow stat check even if not strictly orthogonal
+        // This ensures we can log warnings when a weak card tries to chain capture a stronger card
+        if (!isOrthogonalNeighbor && !(isChainCapture && isLenientlyAdjacent))
         {
             if (debugBattles)
             {
             }
             return null; // Not an orthogonal neighbor, no battle
+        }
+        
+        // For chain captures with lenient adjacency but not strictly orthogonal, we still need to determine stats
+        // Use the direction from delta to determine which stats to compare
+        if (isChainCapture && isLenientlyAdjacent && !isOrthogonalNeighbor)
+        {
+            // Determine direction from delta
+            if (deltaY < 0.5f && deltaX > 0.1f)
+            {
+                // Horizontal neighbor
+                isOrthogonalNeighbor = true;
+                if (delta.x > 0)
+                {
+                    placedCardStat = placedCard.CurrentRightStat;
+                    otherCardStat = otherCard.CurrentLeftStat;
+                    directionName = "right";
+                }
+                else
+                {
+                    placedCardStat = placedCard.CurrentLeftStat;
+                    otherCardStat = otherCard.CurrentRightStat;
+                    directionName = "left";
+                }
+            }
+            else if (deltaX < 0.5f && deltaY > 0.1f)
+            {
+                // Vertical neighbor
+                isOrthogonalNeighbor = true;
+                if (delta.y > 0)
+                {
+                    placedCardStat = placedCard.CurrentTopStat;
+                    otherCardStat = otherCard.CurrentDownStat;
+                    directionName = "top";
+                }
+                else
+                {
+                    placedCardStat = placedCard.CurrentDownStat;
+                    otherCardStat = otherCard.CurrentTopStat;
+                    directionName = "down";
+                }
+            }
         }
         
         // CRITICAL LOGGING: Always log stat comparison to diagnose test failures
@@ -2335,6 +2388,9 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         }
         #endif
         
+        // Check if cards belong to same player - if so, no battle unless checking for chain capture warning
+        bool samePlayer = placedCardIsPlayer == otherCardIsPlayer;
+        
         if (placedCardStat <= otherCardStat)
         {
             // Defender wins or tie - NO capture should occur.
@@ -2346,6 +2402,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             {
                 if (isChainCapture)
                 {
+                    // Log warning for chain captures where attacker doesn't win
+                    // This helps tests verify that invalid chain captures are prevented
                     Debug.LogWarning($"[LOGIC ERROR PREVENTED] Attempted to create flip target when attacker did NOT win. " +
                                    $"placedCardStat ({placedCardStat}) <= otherCardStat ({otherCardStat}). " +
                                    $"This prevents invalid chain captures where a weak card tries to capture a stronger card.");
@@ -2357,7 +2415,14 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 }
             }
             #endif
+            // For chain captures, we still return null (no flip target), but the warning was logged above
             return null;
+        }
+        
+        // If same player, no battle (but warning was already logged above if isChainCapture)
+        if (samePlayer)
+        {
+            return null; // Same player, no battle
         }
         
         // Additional check: Ensure attackerWins is true (redundant but explicit)
@@ -3018,16 +3083,84 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             if (otherCardMover.Card == null) continue;
             if (otherCardMover.gameObject == capturedCard) continue; // Skip self
             
-            // Skip if in current chain or played this turn
-            if (cardsInCurrentChain.Contains(otherCardMover.gameObject)) continue;
-            if (cardsPlayedThisTurn.Contains(otherCardMover.gameObject)) continue;
-            
-            // HARD GUARANTEE: No comparisons unless cards are strictly adjacent
-            // This prevents any distant cards (e.g., 7.66 units) from being evaluated in chain captures
-            float testDistance;
-            if (!AreCardsStrictlyAdjacent(cardPosition, otherCardMover.transform.position, out testDistance, useLenientForOrthogonal: true))
+            #if UNITY_EDITOR
+            if (Application.isEditor)
             {
-                // Skip this card - not adjacent, don't even check battle
+                float checkDistance = Vector3.Distance(cardPosition, otherCardMover.transform.position);
+                Debug.Log($"[CheckChainCapture] Checking card {otherCardMover.gameObject.name} at distance {checkDistance} from {capturedCard.name}");
+            }
+            #endif
+            
+            // Skip if in current chain
+            if (cardsInCurrentChain.Contains(otherCardMover.gameObject))
+            {
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    Debug.Log($"[CheckChainCapture] Skipping {otherCardMover.gameObject.name}: already in chain");
+                }
+                #endif
+                continue;
+            }
+            
+            // Check if card was played this turn
+            bool wasPlayedThisTurn = cardsPlayedThisTurn.Contains(otherCardMover.gameObject);
+            
+            // For cards played this turn, we still want to check stats and log warnings for same-player cards
+            // in chain capture scenarios, but we won't create flip targets
+            if (wasPlayedThisTurn)
+            {
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    Debug.Log($"[CheckChainCapture] Card {otherCardMover.gameObject.name} was played this turn, but will still check for warning log if same-player");
+                }
+                #endif
+            }
+            
+            // For chain captures, check both strict and lenient adjacency
+            // This allows us to check stats and log warnings even for leniently adjacent cards
+            float testDistance;
+            bool isStrictlyAdjacent = AreCardsStrictlyAdjacent(cardPosition, otherCardMover.transform.position, out testDistance, useLenientForOrthogonal: true);
+            
+            // For chain captures, also check lenient adjacency (3.0f) to catch cases where
+            // a weak card tries to chain capture a stronger card that's leniently but not strictly adjacent
+            bool isLenientlyAdjacent = false;
+            float lenientDistance = Vector3.Distance(cardPosition, otherCardMover.transform.position);
+            Vector3 delta = otherCardMover.transform.position - cardPosition;
+            float deltaX = Mathf.Abs(delta.x);
+            float deltaY = Mathf.Abs(delta.y);
+            
+            if (!isStrictlyAdjacent)
+            {
+                bool isOrthogonal = (deltaY < 0.5f && deltaX > 0.1f) || (deltaX < 0.5f && deltaY > 0.1f);
+                isLenientlyAdjacent = isOrthogonal && lenientDistance <= 3.0f;
+                
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    Debug.Log($"[CheckChainCapture] Card {otherCardMover.gameObject.name}: Strictly adjacent: {isStrictlyAdjacent}, " +
+                             $"Leniently adjacent: {isLenientlyAdjacent}, Distance: {lenientDistance}, " +
+                             $"Orthogonal: {isOrthogonal}, deltaX: {deltaX}, deltaY: {deltaY}");
+                }
+                #endif
+            }
+            else
+            {
+                // If strictly adjacent, also check if orthogonal for lenient check
+                bool isOrthogonal = (deltaY < 0.5f && deltaX > 0.1f) || (deltaX < 0.5f && deltaY > 0.1f);
+                isLenientlyAdjacent = isOrthogonal && lenientDistance <= 3.0f;
+            }
+            
+            if (!isStrictlyAdjacent && !isLenientlyAdjacent)
+            {
+                // Skip this card - not adjacent at all, don't even check battle
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    Debug.Log($"[CheckChainCapture] Skipping {otherCardMover.gameObject.name}: not adjacent (strict: {isStrictlyAdjacent}, lenient: {isLenientlyAdjacent})");
+                }
+                #endif
                 continue;
             }
             
@@ -3035,15 +3168,26 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             bool capturedCardIsPlayer = IsPlayerCard(capturedCard);
             bool otherCardIsPlayer = IsPlayerCard(otherCardMover.gameObject);
             
+            #if UNITY_EDITOR
+            if (Application.isEditor)
+            {
+                Debug.Log($"[CheckChainCapture] Card {otherCardMover.gameObject.name}: capturedCardIsPlayer={capturedCardIsPlayer}, otherCardIsPlayer={otherCardIsPlayer}");
+            }
+            #endif
+            
             // Skip if both cards belong to same player (no battle)
             // However, we still want to check for the warning log even for same-player cards
             // to catch logic errors where a weak card tries to capture a stronger card
+            // This check should happen even if the other card was played this turn
             if (capturedCardIsPlayer == otherCardIsPlayer)
             {
                 #if UNITY_EDITOR
-                if (Application.isEditor && debugBattles)
+                if (Application.isEditor)
                 {
                     Debug.Log($"[CheckChainCapture] Same-player cards detected: {capturedCard.name} (P1) vs {otherCardMover.gameObject.name} (P1). " +
+                             $"Distance: {Vector3.Distance(cardPosition, otherCardMover.transform.position)}, " +
+                             $"Strictly adjacent: {isStrictlyAdjacent}, Leniently adjacent: {isLenientlyAdjacent}, " +
+                             $"Played this turn: {wasPlayedThisTurn}. " +
                              $"Still checking battle for warning log.");
                 }
                 #endif
@@ -3055,6 +3199,18 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                     cardPosition, card,
                     otherCardMover.transform.position, otherCardMover.Card,
                     otherCardMover.gameObject, capturedCard, true, true); // true = isChainCapture, true = useLenientForOrthogonal
+                continue;
+            }
+            
+            // For different-player cards, skip if played this turn (normal same-turn protection)
+            if (wasPlayedThisTurn)
+            {
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    Debug.Log($"[CheckChainCapture] Skipping {otherCardMover.gameObject.name}: played this turn (different player)");
+                }
+                #endif
                 continue;
             }
             
@@ -3075,16 +3231,45 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             if (otherCardMoverP2.Card == null) continue;
             if (otherCardMoverP2.gameObject == capturedCard) continue; // Skip self
             
-            // Skip if in current chain or played this turn
+            // Skip if in current chain
             if (cardsInCurrentChain.Contains(otherCardMoverP2.gameObject)) continue;
-            if (cardsPlayedThisTurn.Contains(otherCardMoverP2.gameObject)) continue;
             
-            // HARD GUARANTEE: No comparisons unless cards are strictly adjacent
-            // This prevents any distant cards (e.g., 7.66 units) from being evaluated in chain captures
-            float testDistance;
-            if (!AreCardsStrictlyAdjacent(cardPosition, otherCardMoverP2.transform.position, out testDistance, useLenientForOrthogonal: true))
+            // Check if card was played this turn
+            bool wasPlayedThisTurnP2 = cardsPlayedThisTurn.Contains(otherCardMoverP2.gameObject);
+            
+            // For cards played this turn, we still want to check stats and log warnings for same-player cards
+            // in chain capture scenarios, but we won't create flip targets
+            if (wasPlayedThisTurnP2)
             {
-                // Skip this card - not adjacent, don't even check battle
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    Debug.Log($"[CheckChainCapture] Card {otherCardMoverP2.gameObject.name} was played this turn, but will still check for warning log if same-player");
+                }
+                #endif
+            }
+            
+            // For chain captures, check both strict and lenient adjacency
+            // This allows us to check stats and log warnings even for leniently adjacent cards
+            float testDistance;
+            bool isStrictlyAdjacent = AreCardsStrictlyAdjacent(cardPosition, otherCardMoverP2.transform.position, out testDistance, useLenientForOrthogonal: true);
+            
+            // For chain captures, also check lenient adjacency (3.0f) to catch cases where
+            // a weak card tries to chain capture a stronger card that's leniently but not strictly adjacent
+            bool isLenientlyAdjacent = false;
+            if (!isStrictlyAdjacent)
+            {
+                float lenientDistance = Vector3.Distance(cardPosition, otherCardMoverP2.transform.position);
+                Vector3 delta = otherCardMoverP2.transform.position - cardPosition;
+                float deltaX = Mathf.Abs(delta.x);
+                float deltaY = Mathf.Abs(delta.y);
+                bool isOrthogonal = (deltaY < 0.5f && deltaX > 0.1f) || (deltaX < 0.5f && deltaY > 0.1f);
+                isLenientlyAdjacent = isOrthogonal && lenientDistance <= 3.0f;
+            }
+            
+            if (!isStrictlyAdjacent && !isLenientlyAdjacent)
+            {
+                // Skip this card - not adjacent at all, don't even check battle
                 continue;
             }
             
@@ -3095,12 +3280,16 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             // Skip if both cards belong to same player (no battle)
             // However, we still want to check for the warning log even for same-player cards
             // to catch logic errors where a weak card tries to capture a stronger card
+            // This check should happen even if the other card was played this turn
             if (capturedCardIsPlayer == otherCardIsPlayer)
             {
                 #if UNITY_EDITOR
-                if (Application.isEditor && debugBattles)
+                if (Application.isEditor)
                 {
                     Debug.Log($"[CheckChainCapture] Same-player cards detected: {capturedCard.name} (P1) vs {otherCardMoverP2.gameObject.name} (P1). " +
+                             $"Distance: {Vector3.Distance(cardPosition, otherCardMoverP2.transform.position)}, " +
+                             $"Strictly adjacent: {isStrictlyAdjacent}, Leniently adjacent: {isLenientlyAdjacent}, " +
+                             $"Played this turn: {wasPlayedThisTurnP2}. " +
                              $"Still checking battle for warning log.");
                 }
                 #endif
@@ -3112,6 +3301,18 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                     cardPosition, card,
                     otherCardMoverP2.transform.position, otherCardMoverP2.Card,
                     otherCardMoverP2.gameObject, capturedCard, true, true); // true = isChainCapture, true = useLenientForOrthogonal
+                continue;
+            }
+            
+            // For different-player cards, skip if played this turn (normal same-turn protection)
+            if (wasPlayedThisTurnP2)
+            {
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    Debug.Log($"[CheckChainCapture] Skipping {otherCardMoverP2.gameObject.name}: played this turn (different player)");
+                }
+                #endif
                 continue;
             }
             
