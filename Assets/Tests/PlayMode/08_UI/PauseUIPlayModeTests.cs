@@ -6,6 +6,7 @@ using UnityEngine.TestTools;
 using UnityEngine.UI;
 using CardGame.UI;
 using CardGame.Managers;
+using CardGame.Core;
 
 namespace CardGame.Tests
 {
@@ -62,6 +63,7 @@ namespace CardGame.Tests
         {
             PauseUI pauseUI = Object.FindObjectOfType<PauseUI>();
             Assert.IsNotNull(pauseUI, "PauseUI should exist after scene load");
+            yield return null;
         }
 
         [UnityTest]

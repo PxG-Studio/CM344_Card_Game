@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using UnityEngine;
 using CardGame.UI;
+using CardGame.UI.CursorSystem;
 using System.Reflection;
 
 namespace CardGame.Tests

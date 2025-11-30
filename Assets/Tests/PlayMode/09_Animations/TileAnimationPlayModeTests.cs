@@ -72,6 +72,7 @@ namespace CardGame.Tests
             
             // Note: Tiles may or may not have animation effects (optional feature)
             Assert.IsTrue(true, $"Found {tilesWithAnimation} tiles with TileAnimationEffect");
+            yield return null;
         }
 
         [UnityTest]

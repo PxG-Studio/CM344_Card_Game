@@ -3,6 +3,7 @@ using UnityEngine;
 using CardGame.UI;
 using CardGame.Managers;
 using System.Reflection;
+using UnityEngine.Scripting;
 
 namespace CardGame.Tests
 {
@@ -42,7 +43,7 @@ namespace CardGame.Tests
         public void HUDSetup_Has_DefaultExecutionOrder()
         {
             // Verify HUDSetup has DefaultExecutionOrder attribute
-            var attributes = typeof(HUDSetup).GetCustomAttributes(typeof(DefaultExecutionOrderAttribute), true);
+            var attributes = typeof(HUDSetup).GetCustomAttributes(typeof(UnityEngine.DefaultExecutionOrder), true);
             Assert.Greater(attributes.Length, 0,
                 "HUDSetup should have DefaultExecutionOrder attribute");
         }

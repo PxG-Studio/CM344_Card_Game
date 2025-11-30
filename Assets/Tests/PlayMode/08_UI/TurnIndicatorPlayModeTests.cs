@@ -59,6 +59,7 @@ namespace CardGame.Tests
             {
                 Assert.IsNotNull(indicator, "TurnIndicatorUI should exist if implemented");
             }
+            yield return null;
         }
 
         [UnityTest]
@@ -97,6 +98,7 @@ namespace CardGame.Tests
             {
                 Assert.IsNotNull(indicator, "TurnIndicatorMoving should exist if implemented");
             }
+            yield return null;
         }
 
         [UnityTest]
@@ -109,6 +111,7 @@ namespace CardGame.Tests
             {
                 Assert.IsNotNull(indicator, "TurnIndicator3D should exist if implemented");
             }
+            yield return null;
         }
     }
 }

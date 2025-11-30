@@ -56,6 +56,7 @@ namespace CardGame.Tests
         {
             HUDManager hudManager = Object.FindObjectOfType<HUDManager>();
             Assert.IsNotNull(hudManager, "HUDManager should be created by HUDSetup");
+            yield return null;
         }
 
         [UnityTest]
@@ -74,6 +75,7 @@ namespace CardGame.Tests
             Assert.IsNotNull(gameEndManager, "GameEndManager should be initialized by HUDSetup");
             Assert.IsNotNull(coinTossManager, "CoinTossManager should be initialized by HUDSetup");
             Assert.IsNotNull(fateController, "FateFlowController should be initialized by HUDSetup");
+            yield return null;
         }
 
         [UnityTest]
@@ -82,6 +84,7 @@ namespace CardGame.Tests
         {
             GameEndUI gameEndUI = Object.FindObjectOfType<GameEndUI>(true);
             Assert.IsNotNull(gameEndUI, "GameEndUI should be created by HUDSetup");
+            yield return null;
         }
 
         [UnityTest]
@@ -90,6 +93,7 @@ namespace CardGame.Tests
         {
             CoinTossUI coinTossUI = Object.FindObjectOfType<CoinTossUI>(true);
             Assert.IsNotNull(coinTossUI, "CoinTossUI should be created by HUDSetup");
+            yield return null;
         }
 
         [UnityTest]
@@ -98,6 +102,7 @@ namespace CardGame.Tests
         {
             DeltaMarkerEmitter emitter = Object.FindObjectOfType<DeltaMarkerEmitter>();
             Assert.IsNotNull(emitter, "DeltaMarkerEmitter should be created by HUDSetup");
+            yield return null;
         }
 
         [UnityTest]
@@ -106,6 +111,7 @@ namespace CardGame.Tests
         {
             ScoreUI scoreUI = Object.FindObjectOfType<ScoreUI>();
             Assert.IsNotNull(scoreUI, "ScoreUI should exist after HUDSetup");
+            yield return null;
         }
 
         [UnityTest]
@@ -114,6 +120,7 @@ namespace CardGame.Tests
         {
             CardFrontlineUI frontlineUI = Object.FindObjectOfType<CardFrontlineUI>();
             Assert.IsNotNull(frontlineUI, "CardFrontlineUI should exist after HUDSetup");
+            yield return null;
         }
 
         [UnityTest]
@@ -123,6 +130,7 @@ namespace CardGame.Tests
             UnityEngine.EventSystems.EventSystem eventSystem = 
                 UnityEngine.EventSystems.EventSystem.current;
             Assert.IsNotNull(eventSystem, "EventSystem should be created by HUDSetup");
+            yield return null;
         }
 
         [UnityTest]
@@ -170,6 +178,7 @@ namespace CardGame.Tests
             HUDManager hudManager = Object.FindObjectOfType<HUDManager>();
             Assert.IsNotNull(hudManager, 
                 "HUDSetup should complete even if some optional components are missing");
+            yield return null;
         }
 
         [UnityTest]
@@ -178,6 +187,7 @@ namespace CardGame.Tests
         {
             HUDManager hudManager = Object.FindObjectOfType<HUDManager>();
             Assert.IsNotNull(hudManager, "HUDManager should exist");
+            yield return null;
             
             // Verify HUDManager has its references wired up
             // (This depends on HUDManager's internal structure)

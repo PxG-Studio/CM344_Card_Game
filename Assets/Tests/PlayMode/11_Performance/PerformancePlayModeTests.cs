@@ -5,6 +5,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using CardGame.Managers;
 using CardGame.Core;
+using CardGame.UI;
 using System.Diagnostics;
 
 namespace CardGame.Tests

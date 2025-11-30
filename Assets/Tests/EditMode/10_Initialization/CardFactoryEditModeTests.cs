@@ -73,7 +73,7 @@ namespace CardGame.Tests
         public void CardFactory_CreateCardUI_Handles_Null_Prefab()
         {
             // Create test card
-            NewCardData cardData = ScriptableObject.CreateInstance<NewCardData>();
+            NewCardData.NewCardData cardData = ScriptableObject.CreateInstance<NewCardData.NewCardData>();
             cardData.cardName = "TestCard";
             NewCard card = new NewCard(cardData);
             
@@ -92,7 +92,7 @@ namespace CardGame.Tests
         public void CardFactory_CreateCardUI_Handles_Null_Parent()
         {
             // Create test card and prefab
-            NewCardData cardData = ScriptableObject.CreateInstance<NewCardData>();
+            NewCardData.NewCardData cardData = ScriptableObject.CreateInstance<NewCardData.NewCardData>();
             cardData.cardName = "TestCard";
             NewCard card = new NewCard(cardData);
             
@@ -116,7 +116,7 @@ namespace CardGame.Tests
             Assert.IsNull(result1, "CreateBoardCard should return null for null card");
             
             // Test null prefab
-            NewCardData cardData = ScriptableObject.CreateInstance<NewCardData>();
+            NewCardData.NewCardData cardData = ScriptableObject.CreateInstance<NewCardData.NewCardData>();
             cardData.cardName = "TestCard";
             NewCard card = new NewCard(cardData);
             GameObject result2 = CardFactory.CreateBoardCard(card, null, Vector3.zero);

@@ -58,6 +58,7 @@ namespace CardGame.Tests
             {
                 Assert.IsNotNull(cutIn, "VictoryCutInController should exist if implemented");
             }
+            yield return null;
         }
 
         [UnityTest]

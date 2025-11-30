@@ -55,8 +55,9 @@ namespace CardGame.Tests
         [Timeout(30000)]
         public IEnumerator CardFactory_Creates_CardUI_Correctly()
         {
+            yield return null;
             // Create test card data
-            NewCardData cardData = ScriptableObject.CreateInstance<NewCardData>();
+            NewCardData.NewCardData cardData = ScriptableObject.CreateInstance<NewCardData.NewCardData>();
             cardData.TopStat = 5;
             cardData.RightStat = 3;
             cardData.DownStat = 4;
@@ -94,6 +95,7 @@ namespace CardGame.Tests
             {
                 Assert.Inconclusive("Card prefab not found - cannot test CardFactory");
             }
+            yield return null;
         }
 
         [UnityTest]
@@ -118,13 +120,14 @@ namespace CardGame.Tests
                 
                 Object.Destroy(parentObj);
             }
+            yield return null;
         }
 
         [UnityTest]
         [Timeout(30000)]
         public IEnumerator CardFactory_Handles_Null_Prefab()
         {
-            NewCardData cardData = ScriptableObject.CreateInstance<NewCardData>();
+            NewCardData.NewCardData cardData = ScriptableObject.CreateInstance<NewCardData.NewCardData>();
             cardData.cardName = "TestCard";
             NewCard card = new NewCard(cardData);
             
@@ -137,13 +140,14 @@ namespace CardGame.Tests
             Assert.IsNull(cardUI, "CardFactory should return null for null prefab");
             
             Object.Destroy(parentObj);
+            yield return null;
         }
 
         [UnityTest]
         [Timeout(30000)]
         public IEnumerator CardFactory_Creates_Active_Cards()
         {
-            NewCardData cardData = ScriptableObject.CreateInstance<NewCardData>();
+            NewCardData.NewCardData cardData = ScriptableObject.CreateInstance<NewCardData.NewCardData>();
             cardData.cardName = "TestCard";
             NewCard card = new NewCard(cardData);
             
@@ -178,13 +182,14 @@ namespace CardGame.Tests
                 
                 Object.Destroy(parentObj);
             }
+            yield return null;
         }
 
         [UnityTest]
         [Timeout(30000)]
         public IEnumerator CardFactory_Creates_BoardCard_Correctly()
         {
-            NewCardData cardData = ScriptableObject.CreateInstance<NewCardData>();
+            NewCardData.NewCardData cardData = ScriptableObject.CreateInstance<NewCardData.NewCardData>();
             cardData.cardName = "TestBoardCard";
             NewCard card = new NewCard(cardData);
             
@@ -225,6 +230,7 @@ namespace CardGame.Tests
                 
                 Object.Destroy(boardCard);
             }
+            yield return null;
         }
     }
 }

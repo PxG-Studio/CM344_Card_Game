@@ -55,6 +55,7 @@ namespace CardGame.Tests
         {
             ScoreUI scoreUI = Object.FindObjectOfType<ScoreUI>();
             Assert.IsNotNull(scoreUI, "ScoreUI should exist after scene load");
+            yield return null;
         }
 
         [UnityTest]
