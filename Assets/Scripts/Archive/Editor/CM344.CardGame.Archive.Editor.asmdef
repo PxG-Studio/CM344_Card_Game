@@ -1,0 +1,20 @@
+{
+    "name": "CM344.CardGame.Archive.Editor",
+    "rootNamespace": "CardGame.Editor",
+    "references": [
+        "CM344.CardGame",
+        "UnityEditor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
+
