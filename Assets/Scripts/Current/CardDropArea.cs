@@ -187,7 +187,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 circleCol.isTrigger = true;
             }
             
-            Debug.Log($"[CardDropArea] Verified Collider2D on '{gameObject.name}': {existingCollider.GetType().Name}, enabled: {existingCollider.enabled}, isTrigger: {existingCollider.isTrigger}");
+            // Collider2D verified - no log needed for successful initialization
         }
         
         if (tileSpriteRenderer == null)
@@ -365,15 +365,14 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 {
                     card = cardUI.Card;
                     cardMover.SetCard(card); // Sync it to CardMoverP1 for future use
-                    Debug.Log($"[CardDropArea] Found card '{card.Data.cardName}' via NewCardUI for '{cardMover.gameObject.name}'. Synced to CardMoverP1.");
+                    // Card reference synced - initialization action, no log needed
                 }
             }
             
             if (card != null && deckManagerP1.Hand.Contains(card))
             {
-                Debug.Log($"[CardDropArea] Playing card '{card.Data.cardName}' from hand. CardMoverP1: '{cardMover.gameObject.name}'");
+                // Card placed on board (P1) - interaction handled, no verbose log needed
                 deckManagerP1.PlayCard(card);
-                Debug.Log($"Card {card.Data.cardName} played from drop area and placed on board");
                 
                 // [CardFront] Track cards played for statistics
                 gameCardsPlayed++;
@@ -389,7 +388,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 if (deckManagerP1 != null && deckManagerP1.DrawPileCount > 0)
                 {
                     deckManagerP1.DrawCard();
-                    Debug.Log($"[CardDropArea] Drew card for P1 after placing {card.Data.cardName}");
+                    // Card drawn after placement - automatic action, no log needed
                 }
                 
                 CheckBoardOccupancy();
@@ -413,6 +412,39 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                     scoreManager.RecalculateScores();
                 }
                 UpdateFrontlineUI();
+                
+                   // Ensure stat text is visible on the placed card
+                   NewCardUI cardUI = cardMover.GetComponent<NewCardUI>();
+                   if (cardUI == null) cardUI = cardMover.GetComponentInChildren<NewCardUI>();
+                   if (cardUI == null) cardUI = cardMover.GetComponentInParent<NewCardUI>();
+                   if (cardUI != null)
+                   {
+                       // CRITICAL: Ensure frontContainer is active for board cards (they should be face-up)
+                       var frontContainerField = typeof(NewCardUI).GetField("frontContainer",
+                           System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                       if (frontContainerField != null)
+                       {
+                           var frontContainer = frontContainerField.GetValue(cardUI) as GameObject;
+                           if (frontContainer != null && !frontContainer.activeInHierarchy)
+                           {
+                               frontContainer.SetActive(true);
+                           }
+                       }
+                       
+                       // Update visuals to refresh stat text values
+                       cardUI.SendMessage("UpdateVisuals", SendMessageOptions.DontRequireReceiver);
+                       
+                       // Ensure stat text is visible
+                       cardUI.EnsureStatTextVisible();
+                       StartCoroutine(EnsureStatTextVisibleAfterPlacement(cardUI));
+                       
+                       // Log stat visibility status after placement (P1) - only log warnings/errors
+                       bool statsVisible = cardUI.AreStatsVisuallyVisible();
+                       if (!statsVisible)
+                       {
+                           Debug.LogWarning($"[STATS] Card '{card.Data.cardName}' placed on board: Stats ❌ NOT VISIBLE - Fix required!");
+                       }
+                   }
 
                 GameManager.Instance?.NotifyCardPlaced(this, card);
                 FateFlowController.Instance?.AdvanceFateFlow();
@@ -434,7 +466,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             cardMover.ReturnToStartPosition();
         }
         
-        Debug.Log("Card dropped here");
     }
     
     /// <summary>
@@ -446,8 +477,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         
         Vector3 placedPosition = placedCardMover.transform.position;
         
-        // ALWAYS log entry point for debugging test failures
-        Debug.Log($"[CheckCardBattlesP1] ENTRY: Checking battles for {placedCard.Data.cardName} at position {placedPosition}");
+        // Checking battles for placed card (no verbose logging for isolation)
         
         List<FlipTarget> flipTargets = new List<FlipTarget>();
         FlipTarget placedCardFlipTarget = null;
@@ -476,27 +506,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             }
         }
         
-        Debug.Log($"[CheckCardBattlesP1] Found {allCardMovers.Length} CardMovers (P1) and {allCardMoverP2s.Length} CardMoverP2s (P2) total ({cardsOnBoard} on board, {cardsInHands} in hands)");
-        
-        // Log all cards on board for debugging
-        if (cardsOnBoard > 0)
-        {
-            Debug.Log($"[CheckCardBattlesP1] Cards on board (will check for adjacency):");
-            foreach (CardMoverP1 mover in allCardMovers)
-            {
-                if (mover != null && Mathf.Abs(mover.transform.position.z) < 1f && mover != placedCardMover)
-                {
-                    Debug.Log($"  - {mover.gameObject.name} at {mover.transform.position}");
-                }
-            }
-            foreach (CardMoverP2 moverP2 in allCardMoverP2s)
-            {
-                if (moverP2 != null && Mathf.Abs(moverP2.transform.position.z) < 1f)
-                {
-                    Debug.Log($"  - {moverP2.gameObject.name} at {moverP2.transform.position}");
-                }
-            }
-        }
+        // Card battles checking (no verbose logging for isolation)
         
         // Check against regular CardMovers
         foreach (CardMoverP1 otherCardMover in allCardMovers)
@@ -631,8 +641,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // Execute ripple effect if we have any flips
         if (flipTargets.Count > 0)
         {
-            Debug.Log($"[CheckCardBattlesP1] ✅ Found {flipTargets.Count} flip target(s). Will execute flips. " +
-                $"First target: {flipTargets[0].card.Data?.cardName ?? "unknown"} with capture color ({flipTargets[0].captureColor.r:F2}, {flipTargets[0].captureColor.g:F2}, {flipTargets[0].captureColor.b:F2})");
+            // Found flip targets, executing flips (no verbose logging)
             
             if (useRippleEffect)
             {
@@ -649,7 +658,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         }
         else
         {
-            Debug.Log($"[CheckCardBattlesP1] ❌ No flip targets created for {placedCard.Data.cardName}. No captures will occur.");
+            // No flip targets created (no verbose logging)
         }
     }
     
@@ -933,15 +942,14 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 {
                     card = cardUI.Card;
                     cardMoverP2.SetCard(card); // Sync it to CardMoverP2 for future use
-                    Debug.Log($"[CardDropArea] Found card '{card.Data.cardName}' via NewCardUI for '{cardMoverP2.gameObject.name}'. Synced to CardMoverP2.");
+                    // Card reference synced - initialization action, no log needed
                 }
             }
             
             if (card != null && deckManagerP2.Hand.Contains(card))
             {
-                Debug.Log($"[CardDropArea] Playing card '{card.Data.cardName}' from hand. CardMoverP2: '{cardMoverP2.gameObject.name}'");
+                // Card placed on board (P2) - interaction handled, no verbose log needed
                 deckManagerP2.PlayCard(card);
-                Debug.Log($"Card {card.Data.cardName} played from drop area and placed on board");
                 
                 // [CardFront] Track cards played for statistics
                 gameCardsPlayed++;
@@ -957,7 +965,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 if (deckManagerP2 != null && deckManagerP2.DrawPileCount > 0)
                 {
                     deckManagerP2.DrawCard();
-                    Debug.Log($"[CardDropArea] Drew card for P2 after placing {card.Data.cardName}");
+                    // Card drawn after placement - automatic action, no log needed
                 }
                 
                 CheckBoardOccupancy();
@@ -981,6 +989,39 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                     scoreManager.RecalculateScores();
                 }
                 UpdateFrontlineUI();
+                
+                   // Ensure stat text is visible on the placed card
+                   NewCardUI cardUI = cardMoverP2.GetComponent<NewCardUI>();
+                   if (cardUI == null) cardUI = cardMoverP2.GetComponentInChildren<NewCardUI>();
+                   if (cardUI == null) cardUI = cardMoverP2.GetComponentInParent<NewCardUI>();
+                   if (cardUI != null)
+                   {
+                       // CRITICAL: Ensure frontContainer is active for board cards (they should be face-up)
+                       var frontContainerField = typeof(NewCardUI).GetField("frontContainer",
+                           System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                       if (frontContainerField != null)
+                       {
+                           var frontContainer = frontContainerField.GetValue(cardUI) as GameObject;
+                           if (frontContainer != null && !frontContainer.activeInHierarchy)
+                           {
+                               frontContainer.SetActive(true);
+                           }
+                       }
+                       
+                       // Update visuals to refresh stat text values
+                       cardUI.SendMessage("UpdateVisuals", SendMessageOptions.DontRequireReceiver);
+                       
+                       // Ensure stat text is visible
+                       cardUI.EnsureStatTextVisible();
+                       StartCoroutine(EnsureStatTextVisibleAfterPlacement(cardUI));
+                       
+                       // Log stat visibility status after placement (P2) - only log warnings/errors
+                       bool statsVisible = cardUI.AreStatsVisuallyVisible();
+                       if (!statsVisible)
+                       {
+                           Debug.LogWarning($"[STATS] Card '{card.Data.cardName}' placed on board: Stats ❌ NOT VISIBLE - Fix required!");
+                       }
+                   }
 
                 GameManager.Instance?.NotifyCardPlaced(this, card);
                 FateFlowController.Instance?.AdvanceFateFlow();
@@ -1002,7 +1043,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             cardMoverP2.ReturnToStartPosition();
         }
         
-        Debug.Log("Card dropped here");
     }
     
     /// <summary>
@@ -1015,7 +1055,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         Vector3 placedPosition = placedCardMover.transform.position;
         
         // ALWAYS log entry point for debugging test failures
-        Debug.Log($"[CheckCardBattlesP2] ENTRY: Checking battles for {placedCard.Data.cardName} at position {placedPosition}");
+        // Checking battles for placed card (no verbose logging for isolation)
         
         List<FlipTarget> flipTargets = new List<FlipTarget>();
         FlipTarget placedCardFlipTarget = null;
@@ -1041,28 +1081,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             {
                 if (Mathf.Abs(moverP2.transform.position.z) < 1f) cardsOnBoard++;
                 else cardsInHands++;
-            }
-        }
-        
-        Debug.Log($"[CheckCardBattlesP2] Found {allCardMovers.Length} CardMovers (P1) and {allCardMoverP2s.Length} CardMoverP2s (P2) total ({cardsOnBoard} on board, {cardsInHands} in hands)");
-        
-        // Log all cards on board for debugging
-        if (cardsOnBoard > 0)
-        {
-            Debug.Log($"[CheckCardBattlesP2] Cards on board (will check for adjacency):");
-            foreach (CardMoverP1 mover in allCardMovers)
-            {
-                if (mover != null && Mathf.Abs(mover.transform.position.z) < 1f)
-                {
-                    Debug.Log($"  - {mover.gameObject.name} at {mover.transform.position}");
-                }
-            }
-            foreach (CardMoverP2 moverP2 in allCardMoverP2s)
-            {
-                if (moverP2 != null && Mathf.Abs(moverP2.transform.position.z) < 1f && moverP2 != placedCardMover)
-                {
-                    Debug.Log($"  - {moverP2.gameObject.name} at {moverP2.transform.position}");
-                }
             }
         }
         
@@ -1197,8 +1215,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // Execute ripple effect if we have any flips
         if (flipTargets.Count > 0)
         {
-            Debug.Log($"[CheckCardBattlesP2] ✅ Found {flipTargets.Count} flip target(s). Will execute flips. " +
-                $"First target: {flipTargets[0].card.Data?.cardName ?? "unknown"} with capture color ({flipTargets[0].captureColor.r:F2}, {flipTargets[0].captureColor.g:F2}, {flipTargets[0].captureColor.b:F2})");
+            // Found flip targets, executing flips (no verbose logging)
             
             if (useRippleEffect)
             {
@@ -1215,7 +1232,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         }
         else
         {
-            Debug.Log($"[CheckCardBattlesP2] ❌ No flip targets created for {placedCard.Data.cardName}. No captures will occur.");
+            // No flip targets created (no verbose logging)
         }
     }
     
@@ -1900,10 +1917,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             }
         }
         
-        if (debugBattles)
-        {
-            Debug.Log($"Board occupancy: {occupiedSpaces}/{totalSpaces} spaces filled");
-        }
+        // Board occupancy tracking (no logging for isolation)
         
         // Game ends when all 16 slots are filled (territory-based scoring)
         if (debugBattles && occupiedSpaces >= totalSpaces && totalSpaces > 0)
@@ -2324,6 +2338,28 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         if (GameEndManager.Instance != null)
         {
             GameEndManager.Instance.CheckGameEnd();
+        }
+    }
+    
+    /// <summary>
+    /// Ensures stat text is visible after card placement on board
+    /// </summary>
+    private IEnumerator EnsureStatTextVisibleAfterPlacement(NewCardUI cardUI)
+    {
+        // Wait a frame to ensure card is fully placed
+        yield return null;
+        
+        if (cardUI != null)
+        {
+            cardUI.EnsureStatTextVisible();
+        }
+        
+        // Also check after a short delay to catch any timing issues
+        yield return new WaitForSeconds(0.1f);
+        
+        if (cardUI != null)
+        {
+            cardUI.EnsureStatTextVisible();
         }
     }
 }

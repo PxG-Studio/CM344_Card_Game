@@ -322,6 +322,8 @@ namespace CardGame.UI
             for (int i = 0; i < cardCount; i++)
             {
                 NewCardUI cardUI = cardUIList[i];
+                if (cardUI == null) continue;
+                
                 RectTransform rectTransform = cardUI.GetComponent<RectTransform>();
                 
                 // Calculate position

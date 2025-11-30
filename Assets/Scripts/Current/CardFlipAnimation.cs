@@ -193,6 +193,17 @@ namespace CardGame.UI
         {
             if (cardUI == null) return;
             
+            // Check if this is a board card or being dragged
+            bool isOnBoard = cardUI.GetComponent<CardMoverP1>() != null || cardUI.GetComponent<CardMoverP2>() != null;
+            bool isBeingDragged = false;
+            
+            // Check if card is being dragged using reflection (isDragging is private)
+            var isDraggingField = typeof(NewCardUI).GetField("isDragging",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (isDraggingField != null)
+            {
+                isBeingDragged = (bool)isDraggingField.GetValue(cardUI);
+            }
             
             // Get all text fields using reflection
             string[] textFieldNames = {
@@ -217,11 +228,12 @@ namespace CardGame.UI
                         TMPro.TextMeshProUGUI tmpText = textComponent as TMPro.TextMeshProUGUI;
                         if (tmpText != null)
                         {
-                            // Only hide stat text if we're actually hiding (showing back)
-                            // When showing front, stat text should always be visible
-                            if (fieldName.Contains("Stat") && !hide)
+                            // Stat text should always be visible for board cards or cards being dragged
+                            if (fieldName.Contains("Stat") && (isOnBoard || isBeingDragged || !hide))
                             {
                                 tmpText.enabled = true; // Force stat text to be visible
+                                tmpText.alpha = 1f;
+                                tmpText.gameObject.SetActive(true);
                             }
                             else
                             {
@@ -240,10 +252,15 @@ namespace CardGame.UI
                 {
                     if (text != null)
                     {
-                        // If showing front and this is a stat text, keep it visible
-                        if (!hide && (text.name.Contains("Stat") || text.name.Contains("Top") || text.name.Contains("Right") || text.name.Contains("Down") || text.name.Contains("Left")))
+                        bool isStatText = text.name.Contains("Stat") || text.name.Contains("Top") || text.name.Contains("Right") || text.name.Contains("Down") || text.name.Contains("Left");
+                        
+                        // Stat text should always be visible for board cards or cards being dragged
+                        if (isStatText && (isOnBoard || isBeingDragged || !hide))
                         {
-                            text.enabled = true; // Force stat text to be visible
+                            // Always keep stat text visible for board cards or during drag
+                            text.enabled = true;
+                            text.alpha = 1f;
+                            text.gameObject.SetActive(true);
                         }
                         else
                         {
@@ -259,10 +276,14 @@ namespace CardGame.UI
             {
                 if (text != null && !text.transform.IsChildOf(backContainer != null ? backContainer.transform : null))
                 {
-                    // If showing front and this is a stat text, keep it visible
-                    if (!hide && (text.name.Contains("Stat") || text.name.Contains("Top") || text.name.Contains("Right") || text.name.Contains("Down") || text.name.Contains("Left")))
+                    bool isStatText = text.name.Contains("Stat") || text.name.Contains("Top") || text.name.Contains("Right") || text.name.Contains("Down") || text.name.Contains("Left");
+                    
+                    // Stat text should always be visible for board cards or cards being dragged
+                    if (isStatText && (isOnBoard || isBeingDragged || !hide))
                     {
                         text.enabled = true; // Force stat text to be visible
+                        text.alpha = 1f;
+                        text.gameObject.SetActive(true);
                     }
                     else
                     {

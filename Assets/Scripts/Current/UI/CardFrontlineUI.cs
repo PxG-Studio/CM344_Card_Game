@@ -306,9 +306,7 @@ namespace CardGame.UI
         
         private void UpdateFrontlineBar(int p1, int p2)
         {
-            // DEBUG: Log raw control values driving the bar so we can diagnose
-            // cases where the bar appears fully filled unexpectedly.
-            Debug.Log($"[CardFrontlineUI] UpdateFrontlineBar - p1Control={p1}, p2Control={p2}, lastRemainingFields={lastRemainingFields}");
+            // Automatic UI update - no log needed
             // Special case: at game start, no tiles are controlled by either side.
             // The bar should appear completely empty (white background only),
             // with the pivot centered.
@@ -335,14 +333,12 @@ namespace CardGame.UI
             // should stabilise at 16 as the game progresses.
             int totalTilesInt = Mathf.Max(1, p1 + p2 + Mathf.Max(0, lastRemainingFields));
             float totalTiles = totalTilesInt;
-            Debug.Log($"[CardFrontlineUI] Computed totals - totalTiles={totalTiles}, occupied={p1 + p2}, remaining(last)={Mathf.Max(0, lastRemainingFields)}");
             
             // Each side fills from its outer edge toward the centre in direct
             // proportion to how many tiles that side controls across the whole board.
             // One tile on a 4x4 board = 1/16 of that side's half, not the full half.
             float p1FillAmount = Mathf.Clamp01(p1 / totalTiles); // 0..1 overall
             float p2FillAmount = Mathf.Clamp01(p2 / totalTiles); // 0..1 overall
-            Debug.Log($"[CardFrontlineUI] Fill amounts - p1Fill={p1FillAmount:F3}, p2Fill={p2FillAmount:F3}");
             
             // Update discrete segments instead of continuous fills.
             UpdateSegments(p1FillAmount, p2FillAmount);
@@ -494,7 +490,7 @@ namespace CardGame.UI
                 uiPos = RectTransformUtility.WorldToScreenPoint(null, anchor.position);
             }
 
-            Debug.Log($"[CardFrontlineUI] ShowFrontlineDelta: delta={deltaValue}, uiPos={uiPos}");
+            // Delta marker shown - no log needed (automatic UI update)
             DeltaMarkerSystem.ShowDeltaAtUI(deltaValue, uiPos);
         }
         

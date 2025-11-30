@@ -259,6 +259,21 @@ public class CardMoverP2 : MonoBehaviour
         startDragPosition = transform.position;
         pointerStartPosition = GetMousePositionInWorldSpace();
         transform.position = GetMousePositionInWorldSpace();
+        
+        // Ensure stat text is visible during drag
+        NewCardUI cardUI = GetComponent<NewCardUI>();
+        if (cardUI == null) cardUI = GetComponentInChildren<NewCardUI>();
+        if (cardUI == null) cardUI = GetComponentInParent<NewCardUI>();
+        if (cardUI != null)
+        {
+            cardUI.EnsureStatTextVisible();
+            string cardName = card?.Data?.cardName ?? gameObject.name;
+            bool statsVisible = cardUI.AreStatsVisuallyVisible();
+            if (!statsVisible)
+            {
+                Debug.LogWarning($"[STATS] Dragging '{cardName}': Stats ❌ NOT VISIBLE - Fix required!");
+            }
+        }
     }
 
     private void OnMouseDrag()
@@ -276,6 +291,15 @@ public class CardMoverP2 : MonoBehaviour
             }
         }
         transform.position = currentPointer;
+        
+        // Continuously ensure stat text is visible during drag
+        NewCardUI cardUI = GetComponent<NewCardUI>();
+        if (cardUI == null) cardUI = GetComponentInChildren<NewCardUI>();
+        if (cardUI == null) cardUI = GetComponentInParent<NewCardUI>();
+        if (cardUI != null)
+        {
+            cardUI.EnsureStatTextVisible();
+        }
     }
     private void OnMouseUp()
     {

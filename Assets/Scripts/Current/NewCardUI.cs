@@ -93,6 +93,9 @@ namespace CardGame.UI
         // has neither a per-card back nor an assigned default will still show a
         // consistent back image instead of being invisible.
         private static Sprite runtimeDefaultBackSprite;
+        
+        // Track prefab instances that have already logged warnings (to reduce log spam)
+        private static HashSet<int> prefabWarningLogged = new HashSet<int>();
 
         
         private void Awake()
@@ -118,7 +121,12 @@ namespace CardGame.UI
             {
                 canvasGroup.blocksRaycasts = false;
                 canvasGroup.interactable = false;
-                Debug.LogWarning($"[NewCardUI] Awake: Disabled raycasting for prefab asset '{gameObject.name}' (InstanceID: {GetInstanceID()}). Prefab assets should not be in the scene and cannot be dragged. If you see this message, please remove the prefab asset from the scene hierarchy.");
+                int instanceId = GetInstanceID();
+                if (!prefabWarningLogged.Contains(instanceId))
+                {
+                    prefabWarningLogged.Add(instanceId);
+                    Debug.LogWarning($"[NewCardUI] Awake: Disabled raycasting for prefab asset '{gameObject.name}' (InstanceID: {instanceId}). Prefab assets should not be in the scene and cannot be dragged. If you see this message, please remove the prefab asset from the scene hierarchy.");
+                }
                 return; // Early return - prefab assets shouldn't be in the scene anyway
             }
             
@@ -143,7 +151,7 @@ namespace CardGame.UI
             
             SetupCardShadow();
             
-            // Diagnostic: Check if Canvas has GraphicRaycaster
+            // Diagnostic: Check if Canvas has GraphicRaycaster (only log warnings/errors)
             if (canvas != null)
             {
                 GraphicRaycaster raycaster = canvas.GetComponent<GraphicRaycaster>();
@@ -151,20 +159,11 @@ namespace CardGame.UI
                 {
                     Debug.LogWarning($"[NewCardUI] Canvas {canvas.name} missing GraphicRaycaster! UI interactions may not work.");
                 }
-                else
-                {
-                    Debug.Log($"[NewCardUI] GraphicRaycaster found on Canvas '{canvas.name}' for '{gameObject.name}'. UI raycasting should work.");
-                }
             }
             else
             {
                 Debug.LogWarning($"[NewCardUI] No Canvas found in parent hierarchy for '{gameObject.name}'! This card may not work as UI.");
             }
-            
-            // [CardFront] Diagnostic: Log card type and drag readiness
-            bool isPlayerCard = IsPlayerCard();
-            bool isOpponentCard = IsOpponentCard();
-            Debug.Log($"[NewCardUI] Awake complete for '{gameObject.name}'. IsPlayerCard: {isPlayerCard}, IsOpponentCard: {isOpponentCard}, AllowDrag: {allowDrag}, CanvasGroup.interactable: {canvasGroup.interactable}, CanvasGroup.blocksRaycasts: {canvasGroup.blocksRaycasts}");
             
             // Auto-setup containers if not assigned (runtime setup)
             // Always set up containers if they're missing - needed for battle captures even if card starts face up
@@ -490,7 +489,6 @@ namespace CardGame.UI
             }
             
             card = cardData;
-            Debug.Log($"NewCardUI on {gameObject.name}: Initialized with card '{cardData.Data.cardName}' (InstanceID: {cardData.InstanceID}). Card field set: {card != null}");
             
             // Verify card is set
             if (card == null)
@@ -624,6 +622,433 @@ namespace CardGame.UI
 
             // Ensure the correct Fire/Earth border frame is applied on top.
             EnsureBorderOverlay(isPlayerCard);
+            
+            // Ensure stat text is visible
+            EnsureStatTextVisible();
+        }
+        
+        /// <summary>
+        /// Ensures stat text components are visible and active
+        /// </summary>
+        /// <summary>
+        /// Force stat text to be visible - can be called externally
+        /// </summary>
+        public void ForceStatTextVisible()
+        {
+            EnsureStatTextVisible();
+        }
+        
+        public void EnsureStatTextVisible()
+        {
+            // Check if this card is on the board (has CardMover component) or is being dragged
+            bool isOnBoard = GetComponent<CardMoverP1>() != null || GetComponent<CardMoverP2>() != null;
+            bool isBeingDragged = isDragging;
+            
+            // Also check if CardMover is dragging (since CardMover doesn't set NewCardUI.isDragging)
+            if (!isBeingDragged)
+            {
+                CardMoverP1 moverP1 = GetComponent<CardMoverP1>();
+                CardMoverP2 moverP2 = GetComponent<CardMoverP2>();
+                if (moverP1 != null)
+                {
+                    var isDraggingField = typeof(CardMoverP1).GetField("isDragging",
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (isDraggingField != null)
+                    {
+                        isBeingDragged = (bool)isDraggingField.GetValue(moverP1);
+                    }
+                }
+                if (!isBeingDragged && moverP2 != null)
+                {
+                    var isDraggingField = typeof(CardMoverP2).GetField("isDragging",
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (isDraggingField != null)
+                    {
+                        isBeingDragged = (bool)isDraggingField.GetValue(moverP2);
+                    }
+                }
+            }
+            
+            string cardName = card?.Data?.cardName ?? gameObject.name;
+            
+            // Show stats for board cards or cards being dragged
+            if (!isOnBoard && !isBeingDragged)
+            {
+                return;
+            }
+            
+            string state = isOnBoard ? "on board" : "dragging";
+            
+            // Auto-find stat text components if they're not assigned
+            AutoFindStatTextComponents();
+            
+            // CRITICAL: Ensure frontContainer is active (stat text is usually a child of frontContainer)
+            if (frontContainer != null && !frontContainer.activeInHierarchy)
+            {
+                frontContainer.SetActive(true);
+            }
+            
+            // Update stat values first to ensure they're current
+            if (card != null && card.Data != null)
+            {
+                if (topStatText != null) topStatText.text = card.CurrentTopStat.ToString();
+                if (rightStatText != null) rightStatText.text = card.CurrentRightStat.ToString();
+                if (downStatText != null) downStatText.text = card.CurrentDownStat.ToString();
+                if (leftStatText != null) leftStatText.text = card.CurrentLeftStat.ToString();
+            }
+            
+            // Ensure all stat text components are visible
+            TextMeshProUGUI[] statTexts = { topStatText, rightStatText, downStatText, leftStatText };
+            string[] statNames = { "Top", "Right", "Down", "Left" };
+            int visibleCount = 0;
+            int missingCount = 0;
+            
+            for (int i = 0; i < statTexts.Length; i++)
+            {
+                var statText = statTexts[i];
+                if (statText != null)
+                {
+                    // Ensure entire parent hierarchy is active
+                    Transform current = statText.transform;
+                    while (current != null && current != transform)
+                    {
+                        if (!current.gameObject.activeInHierarchy)
+                        {
+                            current.gameObject.SetActive(true);
+                        }
+                        current = current.parent;
+                    }
+                    
+                    // Force CanvasGroup to allow rendering (if parent has CanvasGroup)
+                    CanvasGroup parentCanvasGroup = statText.GetComponentInParent<CanvasGroup>();
+                    if (parentCanvasGroup != null)
+                    {
+                        parentCanvasGroup.alpha = 1f;
+                        parentCanvasGroup.interactable = true;
+                        parentCanvasGroup.blocksRaycasts = true;
+                    }
+                    
+                    statText.gameObject.SetActive(true);
+                    statText.enabled = true;
+                    statText.alpha = 1f;
+                    
+                    // Force color to be fully opaque white (or current color but fully opaque)
+                    Color currentColor = statText.color;
+                    statText.color = new Color(currentColor.r, currentColor.g, currentColor.b, 1f);
+                    
+                    // Force TextMeshPro properties
+                    statText.enableWordWrapping = false;
+                    statText.raycastTarget = false; // Prevent blocking raycasts
+                    
+                    // Ensure the text is not empty
+                    if (string.IsNullOrEmpty(statText.text))
+                    {
+                        // Try to update the text value
+                        if (card != null && card.Data != null)
+                        {
+                            if (statText == topStatText) statText.text = card.CurrentTopStat.ToString();
+                            else if (statText == rightStatText) statText.text = card.CurrentRightStat.ToString();
+                            else if (statText == downStatText) statText.text = card.CurrentDownStat.ToString();
+                            else if (statText == leftStatText) statText.text = card.CurrentLeftStat.ToString();
+                        }
+                    }
+                    
+                    // CRITICAL: Ensure RectTransform has valid size
+                    RectTransform rect = statText.rectTransform;
+                    if (rect != null && (rect.rect.width <= 0.1f || rect.rect.height <= 0.1f))
+                    {
+                        // Set a minimum size if zero
+                        if (rect.rect.width <= 0.1f) rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 50f);
+                        if (rect.rect.height <= 0.1f) rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 50f);
+                    }
+                    
+                    // CRITICAL: Ensure font size is valid
+                    if (statText.fontSize <= 0.1f)
+                    {
+                        statText.fontSize = 24f; // Set a default font size if zero
+                    }
+                    
+                    // CRITICAL: Ensure text color is highly visible (bright white for debugging)
+                    statText.color = Color.white;
+                    statText.alpha = 1f;
+                    
+                    // CRITICAL: Ensure material is valid
+                    if (statText.fontMaterial == null || statText.font == null)
+                    {
+                        Debug.LogError($"[STATS] '{cardName}' {statNames[i]} stat has NULL font/material!");
+                    }
+                    
+                    // CRITICAL: Ensure Canvas is properly configured
+                    Canvas parentCanvas = statText.GetComponentInParent<Canvas>();
+                    if (parentCanvas != null)
+                    {
+                        // Ensure stat text renders on top
+                        CanvasRenderer canvasRenderer = statText.GetComponent<CanvasRenderer>();
+                        if (canvasRenderer != null)
+                        {
+                            canvasRenderer.cullTransparentMesh = false; // Don't cull transparent meshes
+                        }
+                        
+                        // Set high sorting order to bring to front
+                        if (parentCanvas.sortingOrder < 100)
+                        {
+                            parentCanvas.sortingOrder = 100;
+                        }
+                    }
+                    
+                    // Force update the mesh to ensure it renders
+                    statText.ForceMeshUpdate();
+                    
+                    // Bring stat text to front to prevent it from being hidden by other elements
+                    statText.transform.SetAsLastSibling();
+                    
+                    // Also bring the parent container to front if it exists
+                    if (statText.transform.parent != null)
+                    {
+                        statText.transform.parent.SetAsLastSibling();
+                    }
+                    
+                    // COMPREHENSIVE visibility check (same as AreStatsVisuallyVisible)
+                    bool isActive = statText.gameObject.activeInHierarchy;
+                    bool isEnabled = statText.enabled;
+                    bool hasAlpha = statText.alpha > 0.9f;
+                    bool hasText = !string.IsNullOrEmpty(statText.text);
+                    bool hasSize = rect != null && rect.rect.width > 0.1f && rect.rect.height > 0.1f;
+                    bool hasFontSize = statText.fontSize > 0.1f;
+                    
+                    // Check all parent CanvasGroups for combined alpha
+                    float combinedAlpha = statText.alpha;
+                    Transform currentParent = statText.transform.parent;
+                    while (currentParent != null && currentParent != transform)
+                    {
+                        CanvasGroup cg = currentParent.GetComponent<CanvasGroup>();
+                        if (cg != null)
+                        {
+                            combinedAlpha *= cg.alpha;
+                        }
+                        currentParent = currentParent.parent;
+                    }
+                    bool hasCombinedAlpha = combinedAlpha > 0.9f;
+                    
+                    // Check if TextMeshPro mesh is actually generated
+                    bool hasMesh = statText.textInfo != null && statText.textInfo.characterCount > 0;
+                    
+                    bool isVisible = isActive && isEnabled && hasAlpha && hasText && hasSize && hasFontSize && hasCombinedAlpha && hasMesh;
+                    
+                    if (isVisible)
+                    {
+                        visibleCount++;
+                    }
+                    else
+                    {
+                        missingCount++;
+                    }
+                }
+                else
+                {
+                    missingCount++;
+                }
+            }
+            
+            // Only log warnings/errors when there are issues
+            if (missingCount > 0)
+            {
+                Debug.LogWarning($"[STATS] '{cardName}' ({state}): ❌ {missingCount}/4 stat texts MISSING. Visible: {visibleCount}/4");
+                
+                // Log detailed diagnostics for each missing stat - use ERROR for null components
+                for (int i = 0; i < statTexts.Length; i++)
+                {
+                    var statText = statTexts[i];
+                    if (statText == null)
+                    {
+                        Debug.LogError($"[STATS] '{cardName}' {statNames[i]} stat component is NULL - AutoFind attempted but not found. Assign stat text component in prefab!");
+                    }
+                    else
+                    {
+                        // Use comprehensive visibility check to determine why it's not visible
+                        bool isActive = statText.gameObject.activeInHierarchy;
+                        bool isEnabled = statText.enabled;
+                        bool hasAlpha = statText.alpha > 0.9f;
+                        bool hasText = !string.IsNullOrEmpty(statText.text);
+                        
+                        RectTransform rect = statText.rectTransform;
+                        bool hasSize = rect != null && rect.rect.width > 0.1f && rect.rect.height > 0.1f;
+                        bool hasFontSize = statText.fontSize > 0.1f;
+                        
+                        // Check parent CanvasGroup alpha
+                        float combinedAlpha = statText.alpha;
+                        Transform current = statText.transform.parent;
+                        while (current != null && current != transform)
+                        {
+                            CanvasGroup cg = current.GetComponent<CanvasGroup>();
+                            if (cg != null) combinedAlpha *= cg.alpha;
+                            current = current.parent;
+                        }
+                        bool hasCombinedAlpha = combinedAlpha > 0.9f;
+                        
+                        bool hasMesh = statText.textInfo != null && statText.textInfo.characterCount > 0;
+                        
+                        bool isVisible = isActive && isEnabled && hasAlpha && hasText && hasSize && hasFontSize && hasCombinedAlpha && hasMesh;
+                        
+                        if (!isVisible)
+                        {
+                            string issues = "";
+                            if (!isActive) issues += "NOT_ACTIVE ";
+                            if (!isEnabled) issues += "NOT_ENABLED ";
+                            if (!hasAlpha) issues += $"ALPHA_LOW({statText.alpha:F2}) ";
+                            if (!hasText) issues += "NO_TEXT ";
+                            if (!hasSize) issues += $"NO_SIZE({rect?.rect.width:F1}x{rect?.rect.height:F1}) ";
+                            if (!hasFontSize) issues += $"FONT_SIZE_ZERO({statText.fontSize:F2}) ";
+                            if (!hasCombinedAlpha) issues += $"COMBINED_ALPHA_LOW({combinedAlpha:F2}) ";
+                            if (!hasMesh) issues += "NO_MESH ";
+                            
+                            Debug.LogWarning($"[STATS] '{cardName}' {statNames[i]} stat not visible - Issues: {issues.Trim()}");
+                        }
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Returns true if all stat texts are visually visible
+        /// Performs comprehensive checks including RectTransform size, font size, and parent CanvasGroup alpha
+        /// </summary>
+        public bool AreStatsVisuallyVisible()
+        {
+            TextMeshProUGUI[] statTexts = { topStatText, rightStatText, downStatText, leftStatText };
+            int visibleCount = 0;
+            
+            foreach (var statText in statTexts)
+            {
+                if (statText == null) continue;
+                
+                // Basic visibility checks
+                if (!statText.gameObject.activeInHierarchy || 
+                    !statText.enabled || 
+                    statText.alpha < 0.9f || 
+                    string.IsNullOrEmpty(statText.text))
+                {
+                    continue;
+                }
+                
+                // CRITICAL: Check RectTransform size (text can exist but have zero size)
+                RectTransform rect = statText.rectTransform;
+                if (rect == null || rect.rect.width <= 0.1f || rect.rect.height <= 0.1f)
+                {
+                    continue;
+                }
+                
+                // CRITICAL: Check font size (text can exist but be too small to render)
+                if (statText.fontSize <= 0.1f)
+                {
+                    continue;
+                }
+                
+                // CRITICAL: Check all parent CanvasGroups (not just immediate parent)
+                Transform current = statText.transform.parent;
+                float combinedAlpha = statText.alpha;
+                while (current != null && current != transform)
+                {
+                    CanvasGroup cg = current.GetComponent<CanvasGroup>();
+                    if (cg != null)
+                    {
+                        combinedAlpha *= cg.alpha;
+                        if (combinedAlpha < 0.9f) break; // Early exit if alpha too low
+                    }
+                    current = current.parent;
+                }
+                if (combinedAlpha < 0.9f)
+                {
+                    continue;
+                }
+                
+                // CRITICAL: Check if TextMeshPro mesh is actually generated
+                if (statText.textInfo == null || statText.textInfo.characterCount == 0)
+                {
+                    continue;
+                }
+                
+                visibleCount++;
+            }
+            
+            return visibleCount == 4;
+        }
+        
+        /// <summary>
+        /// Auto-finds stat text components by searching the hierarchy if they're not assigned
+        /// Logs warnings if auto-find is used (components should be assigned in prefab)
+        /// </summary>
+        private void AutoFindStatTextComponents()
+        {
+            // Only try to find if stat text is null
+            if (topStatText == null || rightStatText == null || downStatText == null || leftStatText == null)
+            {
+                string cardName = card?.Data?.cardName ?? gameObject.name;
+                
+                // Search all TextMeshProUGUI components in children
+                TextMeshProUGUI[] allTexts = GetComponentsInChildren<TextMeshProUGUI>(true);
+                bool foundAny = false;
+                
+                // Log all found text components for debugging
+                if (allTexts.Length > 0)
+                {
+                    string[] textNames = allTexts.Select(t => t.name).ToArray();
+                    Debug.LogWarning($"[STATS] '{cardName}': Searching for stat texts. Found {allTexts.Length} TextMeshProUGUI components: {string.Join(", ", textNames)}");
+                }
+                else
+                {
+                    Debug.LogError($"[STATS] '{cardName}': No TextMeshProUGUI components found in children! Stat texts cannot be auto-found.");
+                }
+                
+                foreach (var text in allTexts)
+                {
+                    if (text == null) continue;
+                    
+                    string textName = text.name.ToLower();
+                    
+                    // Try to match by name patterns
+                    if (topStatText == null && (textName.Contains("top") || textName.Contains("up") || textName.Contains("north")))
+                    {
+                        topStatText = text;
+                        foundAny = true;
+                        Debug.LogWarning($"[STATS] '{cardName}': AutoFound Top stat text: '{text.name}'");
+                    }
+                    else if (rightStatText == null && (textName.Contains("right") || textName.Contains("east")))
+                    {
+                        rightStatText = text;
+                        foundAny = true;
+                        Debug.LogWarning($"[STATS] '{cardName}': AutoFound Right stat text: '{text.name}'");
+                    }
+                    else if (downStatText == null && (textName.Contains("down") || textName.Contains("bottom") || textName.Contains("south")))
+                    {
+                        downStatText = text;
+                        foundAny = true;
+                        Debug.LogWarning($"[STATS] '{cardName}': AutoFound Down stat text: '{text.name}'");
+                    }
+                    else if (leftStatText == null && (textName.Contains("left") || textName.Contains("west")))
+                    {
+                        leftStatText = text;
+                        foundAny = true;
+                        Debug.LogWarning($"[STATS] '{cardName}': AutoFound Left stat text: '{text.name}'");
+                    }
+                }
+                
+                // Log which stat texts are still missing
+                List<string> missing = new List<string>();
+                if (topStatText == null) missing.Add("Top");
+                if (rightStatText == null) missing.Add("Right");
+                if (downStatText == null) missing.Add("Down");
+                if (leftStatText == null) missing.Add("Left");
+                
+                if (missing.Count > 0)
+                {
+                    Debug.LogError($"[STATS] '{cardName}': Could not find stat text components: {string.Join(", ", missing)}. Assign them in the prefab!");
+                }
+                else if (foundAny)
+                {
+                    Debug.LogWarning($"[STATS] '{cardName}': AutoFind used for stat text components. Assign stat text components in prefab to avoid this warning.");
+                }
+            }
         }
         
         private void Start()
@@ -646,7 +1071,12 @@ namespace CardGame.UI
                 cg.interactable = false;
                 gameObject.SetActive(false); // Disable the entire GameObject
                 
-                Debug.LogWarning($"[NewCardUI] Start: DISABLED prefab asset '{gameObject.name}' (InstanceID: {GetInstanceID()}). Prefab assets should NOT be in the scene hierarchy. They should only be used as references for instantiation. This GameObject has been disabled to prevent it from intercepting drag events.");
+                int instanceId = GetInstanceID();
+                if (!prefabWarningLogged.Contains(instanceId))
+                {
+                    prefabWarningLogged.Add(instanceId);
+                    Debug.LogWarning($"[NewCardUI] Start: DISABLED prefab asset '{gameObject.name}' (InstanceID: {instanceId}). Prefab assets should NOT be in the scene hierarchy. They should only be used as references for instantiation. This GameObject has been disabled to prevent it from intercepting drag events.");
+                }
                 return; // Early return - prefab assets shouldn't be processed
             }
             
@@ -761,13 +1191,65 @@ namespace CardGame.UI
             }
             else
             {
-                Debug.Log($"NewCardUI on {gameObject.name}: Card verified in Start(): {card.Data?.cardName ?? "UNNAMED"}");
+                // Card verified in Start() - no log needed for successful initialization
             }
         }
         
         private void Update()
         {
             // No per-frame behaviour required currently.
+        }
+        
+        private void LateUpdate()
+        {
+            // Continuously ensure stat text is visible for board cards and during drag
+            bool isOnBoard = GetComponent<CardMoverP1>() != null || GetComponent<CardMoverP2>() != null;
+            bool isCurrentlyDragging = isDragging;
+            
+            // Also check CardMover drag state
+            if (!isCurrentlyDragging)
+            {
+                CardMoverP1 moverP1 = GetComponent<CardMoverP1>();
+                CardMoverP2 moverP2 = GetComponent<CardMoverP2>();
+                if (moverP1 != null)
+                {
+                    var isDraggingField = typeof(CardMoverP1).GetField("isDragging",
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (isDraggingField != null)
+                    {
+                        isCurrentlyDragging = (bool)isDraggingField.GetValue(moverP1);
+                    }
+                }
+                if (!isCurrentlyDragging && moverP2 != null)
+                {
+                    var isDraggingField = typeof(CardMoverP2).GetField("isDragging",
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (isDraggingField != null)
+                    {
+                        isCurrentlyDragging = (bool)isDraggingField.GetValue(moverP2);
+                    }
+                }
+            }
+            
+            if (isOnBoard || isCurrentlyDragging)
+            {
+                // Quick check - only ensure visibility if any stat text is missing
+                TextMeshProUGUI[] statTexts = { topStatText, rightStatText, downStatText, leftStatText };
+                bool needsUpdate = false;
+                foreach (var statText in statTexts)
+                {
+                    if (statText != null && (!statText.gameObject.activeSelf || !statText.enabled || statText.alpha < 0.9f || string.IsNullOrEmpty(statText.text)))
+                    {
+                        needsUpdate = true;
+                        break;
+                    }
+                }
+                
+                if (needsUpdate)
+                {
+                    EnsureStatTextVisible();
+                }
+            }
         }
         
         
@@ -882,7 +1364,7 @@ namespace CardGame.UI
                     backSpriteRenderer.transform.localScale = Vector3.one;
                 }
 
-                Debug.Log($"[NewCardUI] Assigned back sprite '{backSprite.name}' to '{gameObject.name}' (renderer={backSpriteRenderer.name})");
+                // Back sprite assigned - no log needed for successful initialization
             }
         }
 
@@ -913,7 +1395,7 @@ namespace CardGame.UI
         /// </summary>
         public void OnPointerEnter(PointerEventData eventData)
         {
-            Debug.Log($"[NewCardUI] OnPointerEnter for '{gameObject.name}'.");
+            // Hover event - no log needed (fires too frequently)
         }
         
         /// <summary>
@@ -921,13 +1403,12 @@ namespace CardGame.UI
         /// </summary>
         public void OnPointerExit(PointerEventData eventData)
         {
-            Debug.Log($"[NewCardUI] OnPointerExit for '{gameObject.name}'.");
+            // Hover event - no log needed (fires too frequently)
         }
         
         public void OnBeginDrag(PointerEventData eventData)
         {
-            // [CardFront] CardFront-style logging prefix - ALWAYS log to diagnose missing player card drags
-            Debug.Log($"[NewCardUI] OnBeginDrag CALLED for '{gameObject.name}'. allowDrag: {allowDrag}, card bound: {card != null}, Card property: {Card != null}, IsPlayerCard: {IsPlayerCard()}, IsOpponentCard: {IsOpponentCard()}");
+            // Drag interactions are primarily handled by CardMoverP1/P2 via mouse events
             
             // Prevent dragging prefab assets (not instantiated in scene)
             // [CardFront] CRITICAL: Cards are renamed from "NewCardPrefab(Clone)" to card names in Initialize()
@@ -1000,7 +1481,6 @@ namespace CardGame.UI
                if (cardMoverP2 != null)
                {
                    // CardMoverP2 handles opponent card dragging via OnMouseDown - don't interfere
-                   Debug.Log($"[NewCardUI] Opponent card '{gameObject.name}' drag handled by CardMoverP2 - skipping NewCardUI drag handling to prevent conflicts.");
                    return;
                }
                
@@ -1011,8 +1491,7 @@ namespace CardGame.UI
                
                if (!canOpponentAct)
                {
-                   // [CardFront] Block opponent cards when it's NOT the opponent's turn (expected behavior)
-                   Debug.Log($"[NewCardUI] Opponent card '{gameObject.name}' drag blocked - not opponent's turn (expected behavior).");
+                   // Block opponent cards when it's NOT the opponent's turn (expected behavior)
                    return;
                }
                else
@@ -1193,7 +1672,6 @@ namespace CardGame.UI
             }
             
             // [CardFront] All checks passed - start drag
-            Debug.Log($"[NewCardUI] Starting drag for card: {card.Data.cardName}");
             isDragging = true;
             
             // Set drag offset
@@ -1209,6 +1687,50 @@ namespace CardGame.UI
             
             // Move card to top of sibling index
             transform.SetAsLastSibling();
+            
+            // Ensure stat text is visible during drag
+            EnsureStatTextVisibleDuringDrag();
+        }
+        
+        /// <summary>
+        /// Ensures stat text is visible during drag operations
+        /// </summary>
+        private void EnsureStatTextVisibleDuringDrag()
+        {
+            // Update visuals first to ensure stat values are current
+            if (card != null && card.Data != null)
+            {
+                UpdateVisuals();
+            }
+            
+            // Ensure frontContainer is active during drag
+            if (frontContainer != null && !frontContainer.activeInHierarchy)
+            {
+                frontContainer.SetActive(true);
+            }
+            
+            // Ensure all stat text components are visible during drag
+            TextMeshProUGUI[] statTexts = { topStatText, rightStatText, downStatText, leftStatText };
+            foreach (var statText in statTexts)
+            {
+                if (statText != null)
+                {
+                    // Ensure parent is active
+                    if (statText.transform.parent != null)
+                    {
+                        statText.transform.parent.gameObject.SetActive(true);
+                    }
+                    
+                    statText.gameObject.SetActive(true);
+                    statText.enabled = true;
+                    statText.alpha = 1f;
+                    Color currentColor = statText.color;
+                    statText.color = new Color(currentColor.r, currentColor.g, currentColor.b, 1f);
+                    
+                    // Bring stat text to front
+                    statText.transform.SetAsLastSibling();
+                }
+            }
         }
         
         public void OnDrag(PointerEventData eventData)
@@ -1233,6 +1755,9 @@ namespace CardGame.UI
             {
                 rectTransform.position = canvas.transform.TransformPoint(localPointerPosition) - (Vector3)dragOffset;
             }
+            
+            // Continuously ensure stat text is visible during drag (no logging during drag to avoid spam)
+            EnsureStatTextVisibleDuringDrag();
         }
         
         public void OnEndDrag(PointerEventData eventData)
@@ -1805,7 +2330,6 @@ namespace CardGame.UI
             {
                 mover.SetCard(card);
                 syncCount++;
-                Debug.Log($"[NewCardUI] Synced card reference '{card.Data.cardName}' to CardMover on '{gameObject.name}'");
             }
             
             // Opponent mover on this GameObject (if present)
@@ -1813,7 +2337,6 @@ namespace CardGame.UI
             {
                 moverP2.SetCard(card);
                 syncCount++;
-                Debug.Log($"[NewCardUI] Synced card reference '{card.Data.cardName}' to CardMoverP2 on '{gameObject.name}'");
             }
             
             // Some prefabs nest CardMoverP1 (P1)/CardMoverP2 (P2) on children, so update them too
@@ -1825,7 +2348,6 @@ namespace CardGame.UI
                 
                 childMover.SetCard(card);
                 syncCount++;
-                Debug.Log($"[NewCardUI] Synced card reference '{card.Data.cardName}' to child CardMoverP1 (P1) on '{childMover.gameObject.name}'");
             }
             
             CardMoverP2[] childMoverP2s = GetComponentsInChildren<CardMoverP2>(true);
@@ -1836,7 +2358,6 @@ namespace CardGame.UI
                 
                 childMoverP2.SetCard(card);
                 syncCount++;
-                Debug.Log($"[NewCardUI] Synced card reference '{card.Data.cardName}' to child CardMoverP2 (P2) on '{childMoverP2.gameObject.name}'");
             }
             
             if (syncCount == 0)

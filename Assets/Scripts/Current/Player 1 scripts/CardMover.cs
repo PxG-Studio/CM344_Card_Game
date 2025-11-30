@@ -147,13 +147,13 @@ public class CardMoverP1 : MonoBehaviour
         // Don't allow dragging if card has been played or it's not the player's turn
         if (isPlayed)
         {
-            Debug.LogWarning($"[CardMover] Cannot drag '{gameObject.name}' - card has been played.");
+            // Debug.LogWarning($"[CardMover] Cannot drag '{gameObject.name}' - card has been played."); // Reduced verbosity
             return;
         }
         
         if (!CanInteract)
         {
-            Debug.LogWarning($"[CardMover] Cannot drag '{gameObject.name}' - not player's turn. CurrentFate: {(FateFlowController.Instance != null ? FateFlowController.Instance.CurrentFate.ToString() : "null")}");
+            // Debug.LogWarning($"[CardMover] Cannot drag '{gameObject.name}' - not player's turn. CurrentFate: {(FateFlowController.Instance != null ? FateFlowController.Instance.CurrentFate.ToString() : "null")}"); // Reduced verbosity
             return;
         }
         
@@ -169,6 +169,21 @@ public class CardMoverP1 : MonoBehaviour
         startDragPosition = transform.position;
         pointerStartPosition = GetMousePositionInWorldSpace();
         transform.position = GetMousePositionInWorldSpace();
+        
+        // Ensure stat text is visible during drag
+        NewCardUI cardUI = GetComponent<NewCardUI>();
+        if (cardUI == null) cardUI = GetComponentInChildren<NewCardUI>();
+        if (cardUI == null) cardUI = GetComponentInParent<NewCardUI>();
+        if (cardUI != null)
+        {
+            cardUI.EnsureStatTextVisible();
+            string cardName = card?.Data?.cardName ?? gameObject.name;
+            bool statsVisible = cardUI.AreStatsVisuallyVisible();
+            if (!statsVisible)
+            {
+                Debug.LogWarning($"[STATS] Dragging '{cardName}': Stats ❌ NOT VISIBLE - Fix required!");
+            }
+        }
     }
 
     private void OnMouseDrag()
@@ -186,6 +201,15 @@ public class CardMoverP1 : MonoBehaviour
             }
         }
         transform.position = currentPointer;
+        
+        // Continuously ensure stat text is visible during drag
+        NewCardUI cardUI = GetComponent<NewCardUI>();
+        if (cardUI == null) cardUI = GetComponentInChildren<NewCardUI>();
+        if (cardUI == null) cardUI = GetComponentInParent<NewCardUI>();
+        if (cardUI != null)
+        {
+            cardUI.EnsureStatTextVisible();
+        }
     }
     private void OnMouseUp()
     {
