@@ -76,7 +76,6 @@ namespace CardGame.UI
                 NewCard handCard = deckManager.Hand[index];
                 if (handCard != null)
                 {
-                    Debug.Log($"GetCardForUI: Found card by index matching: {handCard.Data?.cardName}");
                     return handCard;
                 }
             }
@@ -178,7 +177,6 @@ namespace CardGame.UI
         {
             if (card == null)
             {
-                Debug.LogError("NewHandP2UI.AddCardToHand: Cannot add null card to hand!");
                 return;
             }
             
@@ -191,14 +189,12 @@ namespace CardGame.UI
                 }
                 else
                 {
-                    Debug.LogError("[NewHandP2UI] AddCardToHand: CardPrefab is null and static cache is also null! Please ensure the prefab is assigned in the Inspector for the NewHandP2UI component.");
                     return;
                 }
             }
             
             if (cardContainer == null)
             {
-                Debug.LogError("NewHandP2UI.AddCardToHand: CardContainer is not assigned!");
                 return;
             }
             
@@ -214,14 +210,12 @@ namespace CardGame.UI
             
             if (cardUI == null)
             {
-                Debug.LogError($"NewHandP2UI.AddCardToHand: Failed to create card UI for '{card.Data?.cardName ?? "UNKNOWN"}'");
                 return;
             }
             
             // Verify card is bound (should always be true if CardFactory worked)
             if (cardUI.Card == null)
             {
-                Debug.LogError($"NewHandP2UI.AddCardToHand: Card UI was created but card is null for '{card.Data?.cardName ?? "UNKNOWN"}'. This should never happen with CardFactory.");
                 Destroy(cardUI.gameObject);
                 return;
             }
@@ -273,7 +267,6 @@ namespace CardGame.UI
                 foreach (var effect in card.Data.effects)
                 {
                     // Handle different effect types
-                    Debug.Log($"Applying effect: {effect.effectType} with value {effect.effectValue}");
                     // Add your effect handling logic here
                 }
             }

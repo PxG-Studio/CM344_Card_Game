@@ -105,14 +105,12 @@ namespace CardGame.UI
             if (col2D != null)
             {
                 Destroy(col2D);
-                Debug.LogWarning("CustomCursor: Removed unexpected Collider2D from CursorManager");
             }
             
             Collider col3D = managerObj.GetComponent<Collider>();
             if (col3D != null)
             {
                 Destroy(col3D);
-                Debug.LogWarning("CustomCursor: Removed unexpected Collider from CursorManager");
             }
             
             // Edge Case Guard 2: Remove any renderers (shouldn't have any, but safeguard)
@@ -120,7 +118,6 @@ namespace CardGame.UI
             if (renderer != null)
             {
                 Destroy(renderer);
-                Debug.LogWarning("CustomCursor: Removed unexpected Renderer from CursorManager");
             }
             
             // Edge Case Guard 3: Ensure on Ignore Raycast layer
@@ -128,7 +125,6 @@ namespace CardGame.UI
             if (ignoreLayer >= 0 && managerObj.layer != ignoreLayer)
             {
                 managerObj.layer = ignoreLayer;
-                Debug.Log("CustomCursor: Set CursorManager to 'Ignore Raycast' layer");
             }
             
             // Edge Case Guard 4: Disable any UI components that could block raycasts
@@ -174,13 +170,10 @@ namespace CardGame.UI
             // Only set cursor if we have a sprite
             if (cursorSprite != null)
             {
-                Debug.Log($"CustomCursor: Setting cursor with sprite '{cursorSprite.name}' (size: {cursorSprite.rect.width}x{cursorSprite.rect.height})");
                 SetCustomCursor();
             }
             else
             {
-                Debug.LogWarning("CustomCursor: No cursor sprite available. Custom cursor will not be set.");
-                Debug.LogWarning("CustomCursor: Check that HUDSetup found the cursor GameObject and sprite.");
             }
         }
         
@@ -358,7 +351,6 @@ namespace CardGame.UI
                     if (sr != null && sr.sprite != null)
                     {
                         cursorSprite = sr.sprite;
-                        Debug.Log($"CustomCursor: Auto-found cursor sprite from '{name}' GameObject (SpriteRenderer)");
                         
                         // CRITICAL: Ensure this GameObject can NEVER interfere with input
                         DisableInputOnGameObject(cursorObj);
@@ -378,7 +370,6 @@ namespace CardGame.UI
                     if (img != null && img.sprite != null)
                     {
                         cursorSprite = img.sprite;
-                        Debug.Log($"CustomCursor: Auto-found cursor sprite from '{name}' GameObject (Image)");
                         
                         // CRITICAL: Ensure this GameObject can NEVER interfere with input
                         DisableInputOnGameObject(cursorObj);
@@ -394,7 +385,6 @@ namespace CardGame.UI
                 }
             }
             
-            Debug.LogWarning("CustomCursor: Could not auto-find cursor sprite. Please assign manually in Inspector.");
         }
 
         private void UpdateVisualBaseOffset()
@@ -439,7 +429,6 @@ namespace CardGame.UI
         {
             if (useUICursorVisual)
             {
-                Debug.Log("CustomCursor: UI cursor visual active, skipping Cursor.SetCursor.");
                 return;
             }
             if (cursorSprite == null)
@@ -447,7 +436,6 @@ namespace CardGame.UI
                 cursorSprite = GenerateFallbackCursorSprite();
                 if (cursorSprite == null)
                 {
-                    Debug.LogWarning("CustomCursor: No cursor sprite available. Using system cursor.");
                     return;
                 }
             }
@@ -473,14 +461,12 @@ namespace CardGame.UI
             // Verify texture was created
             if (cursorTexture == null)
             {
-                Debug.LogError("CustomCursor: Failed to create cursor texture! Cursor will not be set.");
                 return;
             }
             
             // Set the cursor
             Cursor.SetCursor(cursorTexture, finalHotSpot, cursorMode);
             
-            Debug.Log($"CustomCursor: Cursor set successfully! Sprite: {cursorSprite.name}, Hot spot: {finalHotSpot}, Texture size: {cursorTexture.width}x{cursorTexture.height}");
         }
         
         /// <summary>
@@ -534,7 +520,6 @@ namespace CardGame.UI
                 spriteToUse = GenerateFallbackCursorSprite();
                 if (spriteToUse == null)
                 {
-                    Debug.LogWarning("CustomCursor: No sprite available for cursor!");
                     return;
                 }
             }
@@ -679,7 +664,6 @@ namespace CardGame.UI
                 originalPixels = ExtractSpriteRegionViaRenderTexture(diamondSprite);
                 if (originalPixels == null)
                 {
-                    Debug.LogError("CustomCursor: Failed to read sprite pixels for pointer creation.");
                     return null;
                 }
             }
@@ -745,7 +729,6 @@ namespace CardGame.UI
             );
             
             // Only log once when pointer is first created (not every frame)
-            Debug.Log($"CustomCursor: Created pointer shape from diamond sprite (cached for reuse)");
             return triangleSprite;
         }
         
@@ -801,7 +784,6 @@ namespace CardGame.UI
                 originalPixels = ReadSpritePixelsViaRenderTexture(sprite);
                 if (originalPixels == null)
                 {
-                    Debug.LogError("CustomCursor: Failed to read sprite pixels. Texture may not be readable.");
                     return null;
                 }
                 
@@ -1057,7 +1039,6 @@ namespace CardGame.UI
         {
             usePointerShape = !usePointerShape;
             SetCustomCursor();
-            Debug.Log($"CustomCursor: Switched to {(usePointerShape ? "pointer" : "diamond")} mode");
         }
         
         /// <summary>
@@ -1067,7 +1048,6 @@ namespace CardGame.UI
         {
             usePointerShape = usePointer;
             SetCustomCursor();
-            Debug.Log($"CustomCursor: Set to {(usePointer ? "pointer" : "diamond")} mode");
         }
         
         /// <summary>

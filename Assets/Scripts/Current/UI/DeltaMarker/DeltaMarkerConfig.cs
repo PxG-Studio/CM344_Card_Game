@@ -56,25 +56,21 @@ namespace CardGame.UI
             // Validation
             if (floatDistance < 0f)
             {
-                Debug.LogWarning($"[DeltaMarkerConfig] floatDistance should be positive. Clamping to 0.");
                 floatDistance = 0f;
             }
             
             if (duration <= 0f)
             {
-                Debug.LogWarning($"[DeltaMarkerConfig] duration must be positive. Setting to 1.0.");
                 duration = 1f;
             }
             
             if (scalePunchAmount < 1f)
             {
-                Debug.LogWarning($"[DeltaMarkerConfig] scalePunchAmount should be >= 1.0. Setting to 1.0.");
                 scalePunchAmount = 1f;
             }
             
             if (fontSize < 10)
             {
-                Debug.LogWarning($"[DeltaMarkerConfig] fontSize should be at least 10. Setting to 60.");
                 fontSize = 60;
             }
         }

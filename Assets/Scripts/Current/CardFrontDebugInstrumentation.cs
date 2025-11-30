@@ -19,11 +19,9 @@ namespace CardGame.Tests
             isInstrumenting = enable;
             if (enable)
             {
-                Debug.Log("[CardFrontDebugInstrumentation] Deep instrumentation mode ENABLED");
             }
             else
             {
-                Debug.Log("[CardFrontDebugInstrumentation] Deep instrumentation mode DISABLED");
             }
         }
 
@@ -31,16 +29,9 @@ namespace CardGame.Tests
         {
             if (!isInstrumenting) return;
             
-            Debug.Log($"[CardFrontDebugInstrumentation] {context} - Raycast Results: {results.Count} hits");
             for (int i = 0; i < results.Count; i++)
             {
                 RaycastResult result = results[i];
-                Debug.Log($"  [{i}] GameObject: {result.gameObject.name}, " +
-                         $"Layer: {LayerMask.LayerToName(result.gameObject.layer)}, " +
-                         $"Distance: {result.distance}, " +
-                         $"ScreenPos: {result.screenPosition}, " +
-                         $"WorldPos: {result.worldPosition}, " +
-                         $"Module: {result.module?.GetType().Name}");
             }
         }
 
@@ -48,18 +39,9 @@ namespace CardGame.Tests
         {
             if (!isInstrumenting) return;
             
-            Debug.Log($"[CardFrontDebugInstrumentation] {context} - Camera Info:");
-            Debug.Log($"  Main Camera: {(mainCamera != null ? mainCamera.name : "NULL")}");
-            Debug.Log($"  Total Cameras: {allCameras.Length}");
             
             foreach (Camera cam in allCameras)
             {
-                Debug.Log($"  Camera '{cam.name}': " +
-                         $"Enabled: {cam.enabled}, " +
-                         $"CullingMask: {cam.cullingMask}, " +
-                         $"Depth: {cam.depth}, " +
-                         $"Tag: {cam.tag}, " +
-                         $"IsMain: {cam == mainCamera}");
             }
         }
 
@@ -67,19 +49,13 @@ namespace CardGame.Tests
         {
             if (!isInstrumenting) return;
             
-            Debug.Log($"[CardFrontDebugInstrumentation] {context} - EventSystem Info:");
-            Debug.Log($"  EventSystem: {(eventSystem != null ? eventSystem.name : "NULL")}");
             
             if (eventSystem != null)
             {
-                Debug.Log($"  Enabled: {eventSystem.enabled}");
-                Debug.Log($"  Current Selected: {(eventSystem.currentSelectedGameObject != null ? eventSystem.currentSelectedGameObject.name : "NULL")}");
                 
                 var modules = eventSystem.GetComponents<BaseInputModule>();
-                Debug.Log($"  Input Modules: {modules.Length}");
                 foreach (var module in modules)
                 {
-                    Debug.Log($"    Module: {module.GetType().Name}, Enabled: {module.enabled}");
                 }
             }
         }
@@ -98,21 +74,12 @@ namespace CardGame.Tests
             Renderer renderer = obj.GetComponent<Renderer>();
             if (renderer != null)
             {
-                Debug.Log($"[CardFrontDebugInstrumentation] {context} - Sorting Layer:");
-                Debug.Log($"  GameObject: {obj.name}");
-                Debug.Log($"  Sorting Layer: {renderer.sortingLayerName} (ID: {renderer.sortingLayerID})");
-                Debug.Log($"  Sorting Order: {renderer.sortingOrder}");
             }
             else
             {
                 Canvas canvas = obj.GetComponentInParent<Canvas>();
                 if (canvas != null)
                 {
-                    Debug.Log($"[CardFrontDebugInstrumentation] {context} - Canvas Sorting:");
-                    Debug.Log($"  GameObject: {obj.name}");
-                    Debug.Log($"  Canvas Sorting Layer: {canvas.sortingLayerName} (ID: {canvas.sortingLayerID})");
-                    Debug.Log($"  Canvas Sorting Order: {canvas.sortingOrder}");
-                    Debug.Log($"  Override Sorting: {canvas.overrideSorting}");
                 }
             }
         }
@@ -121,28 +88,18 @@ namespace CardGame.Tests
         {
             if (!isInstrumenting) return;
             
-            Debug.Log($"[CardFrontDebugInstrumentation] {context} - Canvas Info:");
-            Debug.Log($"  Canvas: {canvas.name}");
-            Debug.Log($"  Render Mode: {canvas.renderMode}");
-            Debug.Log($"  Sorting Layer: {canvas.sortingLayerName} (ID: {canvas.sortingLayerID})");
-            Debug.Log($"  Sorting Order: {canvas.sortingOrder}");
-            Debug.Log($"  Override Sorting: {canvas.overrideSorting}");
-            Debug.Log($"  Pixel Perfect: {canvas.pixelPerfect}");
             
             GraphicRaycaster raycaster = canvas.GetComponent<GraphicRaycaster>();
             if (raycaster != null)
             {
-                Debug.Log($"  GraphicRaycaster: Enabled={raycaster.enabled}, BlockingObjects={raycaster.blockingObjects}, BlockingMask={raycaster.blockingMask}");
             }
             else
             {
-                Debug.LogWarning($"  GraphicRaycaster: MISSING!");
             }
             
             CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
             if (scaler != null)
             {
-                Debug.Log($"  CanvasScaler: Enabled={scaler.enabled}, ScaleMode={scaler.uiScaleMode}");
             }
         }
 
@@ -150,21 +107,15 @@ namespace CardGame.Tests
         {
             if (!isInstrumenting) return;
             
-            Debug.Log($"[CardFrontDebugInstrumentation] {context} - Hover State:");
-            Debug.Log($"  GameObject: {obj.name}");
-            Debug.Log($"  Layer: {LayerMask.LayerToName(obj.layer)}");
-            Debug.Log($"  Active: {obj.activeSelf}, ActiveInHierarchy: {obj.activeInHierarchy}");
             
             CanvasGroup canvasGroup = obj.GetComponent<CanvasGroup>();
             if (canvasGroup != null)
             {
-                Debug.Log($"  CanvasGroup: Interactable={canvasGroup.interactable}, BlocksRaycasts={canvasGroup.blocksRaycasts}, Alpha={canvasGroup.alpha}");
             }
             
             Graphic graphic = obj.GetComponent<Graphic>();
             if (graphic != null)
             {
-                Debug.Log($"  Graphic: RaycastTarget={graphic.raycastTarget}, Color={graphic.color}");
             }
         }
 
@@ -172,12 +123,8 @@ namespace CardGame.Tests
         {
             if (!isInstrumenting) return;
             
-            Debug.Log($"[CardFrontDebugInstrumentation] {context} - Position History:");
-            Debug.Log($"  GameObject: {obj.name}");
-            Debug.Log($"  Positions: {positions.Count}");
             for (int i = 0; i < positions.Count; i++)
             {
-                Debug.Log($"    [{i}] {positions[i]}");
             }
         }
 
@@ -185,26 +132,14 @@ namespace CardGame.Tests
         {
             if (!isInstrumenting) return;
             
-            Debug.Log($"[CardFrontDebugInstrumentation] {context} - Offset Info:");
-            Debug.Log($"  GameObject: {obj.name}");
-            Debug.Log($"  Initial Offset: {initialOffset}");
-            Debug.Log($"  New Offset: {newOffset}");
-            Debug.Log($"  Offset Difference: {Vector3.Distance(initialOffset, newOffset)}");
         }
 
         public void LogDropAttempt(GameObject card, GameObject dropArea, bool success, string context)
         {
             if (!isInstrumenting) return;
             
-            Debug.Log($"[CardFrontDebugInstrumentation] {context} - Drop Attempt:");
-            Debug.Log($"  Card: {card.name}");
-            Debug.Log($"  Drop Area: {(dropArea != null ? dropArea.name : "NULL")}");
-            Debug.Log($"  Success: {success}");
-            Debug.Log($"  Card Position: {card.transform.position}");
             if (dropArea != null)
             {
-                Debug.Log($"  Drop Area Position: {dropArea.transform.position}");
-                Debug.Log($"  Distance: {Vector3.Distance(card.transform.position, dropArea.transform.position)}");
             }
         }
 
@@ -212,10 +147,6 @@ namespace CardGame.Tests
         {
             if (!isInstrumenting) return;
             
-            Debug.Log($"[CardFrontDebugInstrumentation] {context} - Layer Comparison:");
-            Debug.Log($"  Player 1: {p1Obj.name}, Layer: {LayerMask.LayerToName(p1Obj.layer)} ({p1Obj.layer})");
-            Debug.Log($"  Player 2: {p2Obj.name}, Layer: {LayerMask.LayerToName(p2Obj.layer)} ({p2Obj.layer})");
-            Debug.Log($"  Match: {p1Obj.layer == p2Obj.layer}");
         }
 
         // InputTrace struct for parity comparison (duplicated from PlayerInteractionParityTest to avoid assembly dependency)
@@ -241,22 +172,7 @@ namespace CardGame.Tests
         {
             if (!isInstrumenting) return;
             
-            Debug.Log($"[CardFrontDebugInstrumentation] {context} - Input Parity Comparison:");
-            Debug.Log($"  Player 1 Trace:");
-            Debug.Log($"    Camera: {p1Trace.cameraName}");
-            Debug.Log($"    Layer: {p1Trace.layerName}");
-            Debug.Log($"    Canvas: {p1Trace.canvasName}");
-            Debug.Log($"    Sorting Layer: {p1Trace.sortingLayerName}");
-            Debug.Log($"    Raycast Target: {p1Trace.raycastTarget}");
-            Debug.Log($"    Collider: {p1Trace.hasCollider}");
             
-            Debug.Log($"  Player 2 Trace:");
-            Debug.Log($"    Camera: {p2Trace.cameraName}");
-            Debug.Log($"    Layer: {p2Trace.layerName}");
-            Debug.Log($"    Canvas: {p2Trace.canvasName}");
-            Debug.Log($"    Sorting Layer: {p2Trace.sortingLayerName}");
-            Debug.Log($"    Raycast Target: {p2Trace.raycastTarget}");
-            Debug.Log($"    Collider: {p2Trace.hasCollider}");
         }
     }
 }

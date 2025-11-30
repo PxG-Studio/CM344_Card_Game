@@ -51,7 +51,6 @@ namespace CardGame.Managers
                 gameEndUI = FindObjectOfType<CardGame.UI.GameEndUI>();
                 if (gameEndUI == null)
                 {
-                    Debug.LogWarning("[GameEndManager] GameEndUI not found in Start(). Will search again when game ends. HUDSetup should create it dynamically.");
                 }
             }
         }
@@ -63,7 +62,6 @@ namespace CardGame.Managers
         {
             if (isGameEnding)
             {
-                Debug.Log("[GameEndManager] CheckGameEnd called but game is already ending. Ignoring duplicate call.");
                 return;
             }
             
@@ -90,7 +88,6 @@ namespace CardGame.Managers
             }
             else
             {
-                Debug.LogWarning("[GameEndManager] PlayerDeckManager is NULL! Cannot check player hand.");
             }
             
             if (opponentDeckManager != null)
@@ -104,7 +101,6 @@ namespace CardGame.Managers
             }
             else
             {
-                Debug.LogWarning("[GameEndManager] OpponentDeckManager is NULL! Cannot check opponent hand.");
             }
             
             // Game ends when both hands are empty AND all 10 cards are on the board
@@ -164,7 +160,6 @@ namespace CardGame.Managers
         {
             if (ScoreManager.Instance == null)
             {
-                Debug.LogError("GameEndManager: ScoreManager not found!");
                 return;
             }
             
@@ -186,32 +181,26 @@ namespace CardGame.Managers
                 GameStatsTracker.Instance.RecordGameResult(p1Won, isTie, cardsPlayed, capturesMade, longestChain, scoreMargin);
             }
             
-            Debug.Log($"[GameEndManager] Final Scores - P1: {p1Score}, P2: {p2Score}, Margin: {scoreMargin}");
-            Debug.Log($"[GameEndManager] Statistics - Cards Played: {cardsPlayed}, Captures Made: {capturesMade}, Longest Chain: {longestChain}");
             
             if (GameManager.Instance == null)
             {
-                Debug.LogError("GameEndManager: GameManager not found!");
                 return;
             }
             
             // Determine winner based on scores
             if (p1Score > p2Score)
             {
-                Debug.Log("P1 wins!");
                 GameManager.Instance.ChangeState(GameState.Victory);
                 ShowWinnerUI(true, false, cardsPlayed, capturesMade, longestChain, scoreMargin);
             }
             else if (p2Score > p1Score)
             {
-                Debug.Log("Opponent wins!");
                 GameManager.Instance.ChangeState(GameState.Defeat);
                 ShowWinnerUI(false, false, cardsPlayed, capturesMade, longestChain, scoreMargin);
             }
             else
             {
                 // Tie - you may want to handle this differently
-                Debug.Log("It's a tie!");
                 // Default to player victory for ties, or you could add a Tie state
                 GameManager.Instance.ChangeState(GameState.Victory);
                 ShowWinnerUI(true, true, cardsPlayed, capturesMade, longestChain, scoreMargin);
@@ -226,23 +215,19 @@ namespace CardGame.Managers
                 gameEndUI = FindObjectOfType<CardGame.UI.GameEndUI>();
                 if (gameEndUI == null)
                 {
-                    Debug.LogError("GameEndManager: GameEndUI not found. Winner screen cannot be displayed. Please ensure HUDSetup has created the GameEndUI panel.");
                     return;
                 }
                 else
                 {
-                    Debug.Log("GameEndManager: Found GameEndUI after initial search. Proceeding with game end display.");
                 }
             }
             
             if (gameEndUI != null)
             {
-                Debug.Log($"[GameEndManager] Showing game end UI - Player Won: {playerWon}, Is Tie: {isTie}, Cards Played: {cardsPlayed}, Captures: {capturesMade}, Longest Chain: {longestChain}, Score Margin: {scoreMargin}");
                 gameEndUI.ShowGameEnd(playerWon, isTie, cardsPlayed, capturesMade, longestChain, scoreMargin);
             }
             else
             {
-                Debug.LogError("GameEndManager: GameEndUI is still null after search. Cannot display winner screen.");
             }
         }
         
@@ -253,11 +238,9 @@ namespace CardGame.Managers
         {
             if (playerDeckManager != null)
             {
-                Debug.Log($"Player - Hand Empty: {playerDeckManager.IsHandEmpty()}, Deck Empty: {playerDeckManager.IsDeckEmpty()}");
             }
             if (opponentDeckManager != null)
             {
-                Debug.Log($"Opponent - Hand Empty: {opponentDeckManager.IsHandEmpty()}, Deck Empty: {opponentDeckManager.IsDeckEmpty()}");
             }
         }
         

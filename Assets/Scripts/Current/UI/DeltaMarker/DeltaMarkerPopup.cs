@@ -61,7 +61,6 @@ namespace CardGame.UI
         {
             if (config == null)
             {
-                Debug.LogError("[DeltaMarkerPopup] Config is null! Cannot initialize popup.");
                 return;
             }
             
@@ -101,7 +100,6 @@ namespace CardGame.UI
         {
             if (config == null)
             {
-                Debug.LogError("[DeltaMarkerPopup] Config is null! Cannot play animation.");
                 return;
             }
             
@@ -294,7 +292,6 @@ namespace CardGame.UI
         {
             if (config == null)
             {
-                Debug.LogWarning("[DeltaMarkerPopup] No config assigned. Create a DeltaMarkerConfig asset first.");
                 return;
             }
             
@@ -306,7 +303,6 @@ namespace CardGame.UI
         {
             if (config == null)
             {
-                Debug.LogWarning("[DeltaMarkerPopup] No config assigned. Create a DeltaMarkerConfig asset first.");
                 return;
             }
             

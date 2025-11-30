@@ -54,8 +54,24 @@ namespace CardGame.UI
         // Discrete segments that represent each tile on the 4x4 board.
         private Image[] segments;
         private Color emptySegmentColor;
-        private Color p1SegmentColor;
-        private Color p2SegmentColor;
+        private Color p1SegmentColor = new Color(1f, 0.5f, 0f, 1f); // Default orange
+        private Color p2SegmentColor = new Color(0f, 0.8f, 0f, 1f); // Default green
+        
+        /// <summary>
+        /// Gets the P1 color used in the Battle Front Influence bar (orange).
+        /// Returns default orange if not yet initialized from UI.
+        /// </summary>
+        public Color P1Color => (p1SegmentColor != Color.clear && p1SegmentColor.a > 0f) 
+            ? p1SegmentColor 
+            : new Color(1f, 0.5f, 0f, 1f); // Fallback orange
+        
+        /// <summary>
+        /// Gets the P2 color used in the Battle Front Influence bar (green).
+        /// Returns default green if not yet initialized from UI.
+        /// </summary>
+        public Color P2Color => (p2SegmentColor != Color.clear && p2SegmentColor.a > 0f) 
+            ? p2SegmentColor 
+            : new Color(0f, 0.8f, 0f, 1f); // Fallback green
         
         private void Start()
         {

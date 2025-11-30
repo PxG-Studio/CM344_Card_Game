@@ -102,7 +102,6 @@ namespace CardGame.Editor
             EditorUtility.SetDirty(cardUI);
             SceneView.RepaintAll();
             
-            Debug.Log($"[NewCardUIPreview] Showing card back preview for {cardUI.name}");
         }
         
         private void ShowCardFront(NewCardUI cardUI)
@@ -135,7 +134,6 @@ namespace CardGame.Editor
             EditorUtility.SetDirty(cardUI);
             SceneView.RepaintAll();
             
-            Debug.Log($"[NewCardUIPreview] Showing card front for {cardUI.name}");
         }
         
         private void LoadDefaultCardBackSprite(NewCardUI cardUI)
@@ -164,7 +162,6 @@ namespace CardGame.Editor
                     Undo.RecordObject(cardUI, "Load Default Card Back Sprite");
                     field.SetValue(cardUI, defaultSprite);
                     EditorUtility.SetDirty(cardUI);
-                    Debug.Log($"[NewCardUIPreview] Loaded default card back sprite: {defaultSprite.name}");
                     EditorUtility.DisplayDialog("Success", 
                         $"Default card back sprite loaded:\n{defaultSprite.name}", 
                         "OK");

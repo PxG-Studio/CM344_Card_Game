@@ -31,7 +31,6 @@ public class ScoreUI : MonoBehaviour
         
         if (scoreManager == null)
         {
-            Debug.LogError("ScoreUI: ScoreManager not found in scene!");
             return;
         }
 

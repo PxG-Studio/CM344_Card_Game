@@ -32,7 +32,6 @@ namespace CardGame.Managers
             // CRITICAL: Ensure only one ScoreManager instance exists
             if (Instance != null && Instance != this)
             {
-                Debug.LogWarning($"[ScoreManager] Duplicate ScoreManager detected on '{gameObject.name}'. Destroying duplicate. Existing instance: '{Instance.gameObject.name}'");
                 // Use DestroyImmediate in editor to avoid play mode exit issues
                 #if UNITY_EDITOR
                 if (!Application.isPlaying)
@@ -124,7 +123,6 @@ namespace CardGame.Managers
             
             if (allDropAreas == null || allDropAreas.Length == 0)
             {
-                Debug.LogWarning("[ScoreManager] No CardDropArea instances found! Cannot calculate scores.");
                 OnScoreChanged?.Invoke(true, p1Score);
                 OnScoreChanged?.Invoke(false, p2Score);
                 OnScoreUpdated?.Invoke(p1Score, p2Score);
@@ -150,7 +148,6 @@ namespace CardGame.Managers
                 
                 if (occupyingCardField == null)
                 {
-                    Debug.LogWarning($"[ScoreManager] Could not access 'occupyingCard' field on CardDropArea '{dropArea.gameObject.name}'. Skipping.");
                     continue;
                 }
                 

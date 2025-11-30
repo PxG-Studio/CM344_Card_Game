@@ -73,9 +73,6 @@ namespace CardGame.Managers
             currentLongestChain = longestChain;
             currentScoreMargin = scoreMargin;
             
-            Debug.Log($"[GameStatsTracker] Game recorded - Result: {(isTie ? "Tie" : (playerWon ? "Win" : "Loss"))}, " +
-                     $"Stats: Cards={cardsPlayed}, Captures={capturesMade}, Chain={longestChain}, Margin={scoreMargin}. " +
-                     $"Session: {wins}W/{losses}L/{ties}T");
         }
         
         /// <summary>
@@ -99,7 +96,6 @@ namespace CardGame.Managers
             losses = 0;
             ties = 0;
             ResetCurrentGameStats();
-            Debug.Log("[GameStatsTracker] Session statistics reset");
         }
         
         /// <summary>

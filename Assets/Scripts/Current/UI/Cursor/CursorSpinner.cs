@@ -43,7 +43,6 @@ namespace CardGame.UI.CursorSystem
             
             if (visualRect == null || visualImage == null)
             {
-                Debug.LogError("[CursorSpinner] Missing visual references. Cursor will not animate.");
                 return;
             }
             

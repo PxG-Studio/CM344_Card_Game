@@ -47,7 +47,6 @@ namespace CardGame.UI
             }
             else
             {
-                Debug.LogWarning("HUDManager: ScoreManager not found in scene!");
             }
             
             SubscribeToFateFlow();
@@ -95,7 +94,6 @@ namespace CardGame.UI
             }
             else
             {
-                Debug.LogWarning("HUDManager: FateFlowController.Instance not found!");
             }
         }
 

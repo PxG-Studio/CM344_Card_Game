@@ -105,7 +105,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         gameCapturesMade = 0;
         gameLongestChain = 0;
         currentChainLength = 0;
-        Debug.Log("[CardDropArea] Game statistics reset");
     }
     
     /// <summary>
@@ -121,9 +120,15 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         cardsInCurrentChain.Clear();
         activeChainCount = 0;
         
+        // Reset tile color to default (white/neutral)
+        if (tileSpriteRenderer != null)
+        {
+            Debug.Log($"[TILE COLOR] ResetForNewGame: Resetting tile '{gameObject.name}' to white");
+            tileSpriteRenderer.color = Color.white;
+        }
+        
         if (debugBattles)
         {
-            Debug.Log($"[CardDropArea] Reset for new game - cleared occupying card and turn tracking on '{gameObject.name}'");
         }
     }
 
@@ -157,7 +162,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 BoxCollider2D boxCollider = gameObject.AddComponent<BoxCollider2D>();
                 boxCollider.size = tileSpriteRenderer.bounds.size;
                 boxCollider.isTrigger = true; // Allow physics detection but not collision blocking
-                Debug.Log($"[CardDropArea] Auto-added BoxCollider2D to '{gameObject.name}' (size: {boxCollider.size}, isTrigger: true)");
             }
             else
             {
@@ -165,16 +169,16 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 BoxCollider2D boxCollider = gameObject.AddComponent<BoxCollider2D>();
                 boxCollider.size = new Vector2(1f, 1f); // Default 1x1 unit size
                 boxCollider.isTrigger = true;
-                Debug.LogWarning($"[CardDropArea] Auto-added default BoxCollider2D to '{gameObject.name}' (no SpriteRenderer found for sizing). Size manually in Inspector if needed.");
             }
         }
+        
+        // Tile color will be updated when cards are placed
         else
         {
             // Collider exists - ensure it's enabled and set as trigger if needed
             if (!existingCollider.enabled)
             {
                 existingCollider.enabled = true;
-                Debug.Log($"[CardDropArea] Enabled existing Collider2D on '{gameObject.name}'");
             }
             
             // Ensure it's a trigger (doesn't block physics, but can be detected)
@@ -201,7 +205,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             deckManagerP1 = FindObjectOfType<NewDeckManagerP1>();
             if (deckManagerP1 == null)
             {
-                Debug.LogWarning("CardDropArea: NewDeckManagerP1 not found! Card play functionality will not work.");
             }
         }
         
@@ -211,7 +214,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             deckManagerP2 = FindObjectOfType<NewDeckManagerP2>();
             if (deckManagerP2 == null)
             {
-                Debug.LogWarning("CardDropArea: NewDeckManagerP2 not found! P2 card play functionality will not work.");
             }
         }
         
@@ -221,7 +223,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             scoreManager = FindObjectOfType<ScoreManager>();
             if (scoreManager == null)
             {
-                Debug.LogWarning("CardDropArea: ScoreManager not found! Scoring will not work.");
             }
         }
         
@@ -231,7 +232,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             gameEndManager = FindObjectOfType<GameEndManager>();
             if (gameEndManager == null)
             {
-                Debug.LogWarning("CardDropArea: GameEndManager not found! Game end detection will not work.");
             }
         }
     }
@@ -252,7 +252,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             cardTransform.localScale = cardScaleOnBoard;
             if (debugBattles)
             {
-                Debug.Log($"CardDropArea: Applied explicit scale override {cardScaleOnBoard} to {cardTransform.name}");
             }
             return;
         }
@@ -276,7 +275,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                     scaledViaRenderers = true;
                     if (debugBattles)
                     {
-                        Debug.Log($"CardDropArea: Scaled {cardTransform.name} via renderer bounds. Tile size: {tileSize:F2}, Card size: {cardSize:F2}, Multiplier: {scaleMultiplier:F2}, Final scale: {newScale}");
                     }
                 }
             }
@@ -291,7 +289,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             cardTransform.localScale = fallbackScale;
             if (debugBattles)
             {
-                Debug.Log($"CardDropArea: Applied fallback scale {fallbackScale} to {cardTransform.name} (tile lossy scale {transform.lossyScale})");
             }
         }
     }
@@ -312,7 +309,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
             if (debugBattles)
             {
-                Debug.Log("CardDropArea: Cannot play card - incorrect Fate Window.");
             }
             cardMover.ReturnToStartPosition();
             return;
@@ -322,7 +318,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
             if (debugBattles)
             {
-                Debug.Log("CardDropArea: Tile already occupied.");
             }
             cardMover.ReturnToStartPosition();
             return;
@@ -349,7 +344,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             // [CardFront] Ensure card reference is set before attempting placement (same logic as Flame Witch)
             if (card == null)
             {
-                Debug.Log($"[CardDropArea] Card reference is null for '{cardMover.gameObject.name}'. Attempting to find via FindCardReference()...");
                 cardMover.SendMessage("FindCardReference", SendMessageOptions.DontRequireReceiver);
                 card = cardMover.Card;
             }
@@ -380,6 +374,10 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 cardMover.SetPlayed(true);
                 cardsPlayedThisTurn.Add(cardMover.gameObject);
                 occupyingCard = cardMover.gameObject;
+                
+                // Update tile color to reflect P1 ownership (orange)
+                Debug.Log($"[TILE COLOR] OnCardDrop: Calling UpdateTileColor for P1 card '{cardMover.gameObject.name}' on tile '{gameObject.name}'");
+                UpdateTileColor();
                 
                 // Show alert marker for newly placed card
                 DeltaMarkerSystem.ShowAlert(cardMover.transform, "!");
@@ -442,7 +440,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                        bool statsVisible = cardUI.AreStatsVisuallyVisible();
                        if (!statsVisible)
                        {
-                           Debug.LogWarning($"[STATS] Card '{card.Data.cardName}' placed on board: Stats ❌ NOT VISIBLE - Fix required!");
                        }
                    }
 
@@ -451,18 +448,15 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             }
             else if (card == null)
             {
-                Debug.LogError($"[CardDropArea] Card reference is still null for '{cardMover.gameObject.name}' after all fallback attempts. Cannot play card. Ensure SyncCardReferenceToMovers() was called in NewCardUI.Initialize().");
                 cardMover.ReturnToStartPosition();
             }
             else if (!deckManagerP1.Hand.Contains(card))
             {
-                Debug.LogWarning($"[CardDropArea] Card '{card.Data.cardName}' is not in hand for '{cardMover.gameObject.name}'. Hand contains {deckManagerP1.Hand.Count} cards. Card may have already been played.");
                 cardMover.ReturnToStartPosition();
             }
         }
         else if (playCardOnDrop && deckManagerP1 == null)
         {
-            Debug.LogWarning("CardDropArea: Cannot play card - NewDeckManagerP1 not found!");
             cardMover.ReturnToStartPosition();
         }
         
@@ -702,11 +696,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                     Color c = flipAnim.LastCaptureColor;
                     if (debugBattles)
                     {
-                        Debug.Log(
-                            $"[IsPlayerCardDebug] Captured card '{capturedCardUI.Card?.Data?.cardName ?? cardObject.name}' " +
-                            $"WasCaptured={flipAnim.WasCaptured}, LastCaptureColor=({c.r:F2},{c.g:F2},{c.b:F2}), " +
-                            $"playerColor=({playerColor.r:F2},{playerColor.g:F2},{playerColor.b:F2}), " +
-                            $"p2Color=({p2Color.r:F2},{p2Color.g:F2},{p2Color.b:F2})");
                     }
                     if (Mathf.Abs(c.r - playerColor.r) < colorTolerance &&
                         Mathf.Abs(c.g - playerColor.g) < colorTolerance &&
@@ -762,10 +751,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
 
                     if (debugBattles)
                     {
-                        Debug.Log(
-                            $"[IsPlayerCardDebug] Fallback border color on '{capturedCardUI.Card?.Data?.cardName ?? cardObject.name}' " +
-                            $"borderColor=({borderColor.r:F2},{borderColor.g:F2},{borderColor.b:F2}) " +
-                            $"=> no capture-color match; defaulting to mover-based ownership.");
                     }
                     }
                 }
@@ -843,19 +828,91 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     /// <summary>
     /// Gets the player's capture color (orange)
     /// </summary>
+    // Cache colors to avoid repeated FindObjectOfType calls
+    private static Color? cachedP1Color = null;
+    private static Color? cachedP2Color = null;
+    
     private Color GetPlayerCaptureColor()
     {
-        // Orange color for player's captured cards (matches card border orange)
-        return new Color(1f, 0.5f, 0f, 1f);
+        // Use cached color if available
+        if (cachedP1Color.HasValue)
+        {
+            Debug.Log($"[TILE COLOR] GetPlayerCaptureColor: Using cached P1 color: {cachedP1Color.Value}");
+            return cachedP1Color.Value;
+        }
+        
+        // Try to get color from Battle Front Influence bar for consistency
+        CardFrontlineUI frontlineUI = FindObjectOfType<CardFrontlineUI>();
+        if (frontlineUI != null)
+        {
+            Color p1Color = frontlineUI.P1Color;
+            Debug.Log($"[TILE COLOR] GetPlayerCaptureColor: Retrieved from CardFrontlineUI: {p1Color}, Alpha: {p1Color.a}, IsWhite: {p1Color == Color.white}, IsClear: {p1Color == Color.clear}");
+            
+            // Validate color: must have alpha > 0 and not be white/clear
+            if (p1Color.a > 0f && p1Color != Color.white && p1Color != Color.clear)
+            {
+                cachedP1Color = p1Color;
+                Debug.Log($"[TILE COLOR] GetPlayerCaptureColor: ✅ Valid color cached: {p1Color}");
+                return p1Color;
+            }
+            else
+            {
+                Debug.LogWarning($"[TILE COLOR] GetPlayerCaptureColor: ⚠️ Invalid color from CardFrontlineUI, using fallback");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[TILE COLOR] GetPlayerCaptureColor: ⚠️ CardFrontlineUI not found, using fallback");
+        }
+        
+        // Fallback: Orange color for player's captured cards
+        Color fallbackColor = new Color(1f, 0.5f, 0f, 1f);
+        cachedP1Color = fallbackColor;
+        Debug.Log($"[TILE COLOR] GetPlayerCaptureColor: Using fallback orange: {fallbackColor}");
+        return fallbackColor;
     }
     
     /// <summary>
-    /// Gets P2's capture color (green)
+    /// Gets P2's capture color (green) - matches Battle Front Influence bar
     /// </summary>
     private Color GetP2CaptureColor()
     {
-        // Green color for P2's captured cards
-        return new Color(0f, 0.8f, 0f, 1f);
+        // Use cached color if available
+        if (cachedP2Color.HasValue)
+        {
+            Debug.Log($"[TILE COLOR] GetP2CaptureColor: Using cached P2 color: {cachedP2Color.Value}");
+            return cachedP2Color.Value;
+        }
+        
+        // Try to get color from Battle Front Influence bar for consistency
+        CardFrontlineUI frontlineUI = FindObjectOfType<CardFrontlineUI>();
+        if (frontlineUI != null)
+        {
+            Color p2Color = frontlineUI.P2Color;
+            Debug.Log($"[TILE COLOR] GetP2CaptureColor: Retrieved from CardFrontlineUI: {p2Color}, Alpha: {p2Color.a}, IsWhite: {p2Color == Color.white}, IsClear: {p2Color == Color.clear}");
+            
+            // Validate color: must have alpha > 0 and not be white/clear
+            if (p2Color.a > 0f && p2Color != Color.white && p2Color != Color.clear)
+            {
+                cachedP2Color = p2Color;
+                Debug.Log($"[TILE COLOR] GetP2CaptureColor: ✅ Valid color cached: {p2Color}");
+                return p2Color;
+            }
+            else
+            {
+                Debug.LogWarning($"[TILE COLOR] GetP2CaptureColor: ⚠️ Invalid color from CardFrontlineUI, using fallback");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[TILE COLOR] GetP2CaptureColor: ⚠️ CardFrontlineUI not found, using fallback");
+        }
+        
+        // Fallback: Green color for P2's captured cards
+        Color fallbackColor = new Color(0f, 0.8f, 0f, 1f);
+        cachedP2Color = fallbackColor;
+        Debug.Log($"[TILE COLOR] GetP2CaptureColor: Using fallback green: {fallbackColor}");
+        return fallbackColor;
     }
     
     /// <summary>
@@ -865,7 +922,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     {
         if (cardMover == null)
         {
-            Debug.LogWarning("FlipCard: cardMover is null!");
             return;
         }
 
@@ -889,7 +945,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
             if (debugBattles)
             {
-                Debug.Log("CardDropArea: Cannot play card - incorrect Fate Window.");
             }
             cardMoverP2.ReturnToStartPosition();
             return;
@@ -899,7 +954,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
             if (debugBattles)
             {
-                Debug.Log("CardDropArea: Tile already occupied.");
             }
             cardMoverP2.ReturnToStartPosition();
             return;
@@ -926,7 +980,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             // [CardFront] Ensure card reference is set before attempting placement (same logic as P1)
             if (card == null)
             {
-                Debug.Log($"[CardDropArea] Card reference is null for '{cardMoverP2.gameObject.name}'. Attempting to find via FindCardReference()...");
                 cardMoverP2.SendMessage("FindCardReference", SendMessageOptions.DontRequireReceiver);
                 card = cardMoverP2.Card;
             }
@@ -957,6 +1010,10 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 cardMoverP2.SetPlayed(true);
                 cardsPlayedThisTurn.Add(cardMoverP2.gameObject);
                 occupyingCard = cardMoverP2.gameObject;
+                
+                // Update tile color to reflect P2 ownership (green)
+                Debug.Log($"[TILE COLOR] OnCardDropP2: Calling UpdateTileColor for P2 card '{cardMoverP2.gameObject.name}' on tile '{gameObject.name}'");
+                UpdateTileColor();
                 
                 // Show alert marker for new opponent card
                 DeltaMarkerSystem.ShowAlert(cardMoverP2.transform, "!");
@@ -1019,7 +1076,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                        bool statsVisible = cardUI.AreStatsVisuallyVisible();
                        if (!statsVisible)
                        {
-                           Debug.LogWarning($"[STATS] Card '{card.Data.cardName}' placed on board: Stats ❌ NOT VISIBLE - Fix required!");
                        }
                    }
 
@@ -1028,18 +1084,15 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             }
             else if (card == null)
             {
-                Debug.LogError($"[CardDropArea] Card reference is still null for '{cardMoverP2.gameObject.name}' after all fallback attempts. Cannot play card. Ensure SyncCardReferenceToMovers() was called in NewCardUI.Initialize().");
                 cardMoverP2.ReturnToStartPosition();
             }
             else if (!deckManagerP2.Hand.Contains(card))
             {
-                Debug.LogWarning($"[CardDropArea] Card '{card.Data.cardName}' is not in hand for '{cardMoverP2.gameObject.name}'. Hand contains {deckManagerP2.Hand.Count} cards. Card may have already been played.");
                 cardMoverP2.ReturnToStartPosition();
             }
         }
         else if (playCardOnDrop && deckManagerP2 == null)
         {
-            Debug.LogWarning("CardDropArea: Cannot play card - NewDeckManagerP2 not found!");
             cardMoverP2.ReturnToStartPosition();
         }
         
@@ -1259,7 +1312,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 // This reduces log spam for routine rejections (like cards at z=90 in hands)
                 if (debugBattles || distance < 10f)
                 {
-                    Debug.Log($"[StrictAdjacency] AreCardsStrictlyAdjacent: REJECTED - Distance {distance:F3} exceeds tolerance {strictAdjacencyTolerance:F3}. Positions: A={posA}, B={posB}");
                 }
                 return false; // Too far apart - definitely not adjacent (e.g., 7.66 > 1.6 = false)
             }
@@ -1273,7 +1325,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // This is a double-check to ensure we never allow cards > 1.6f to be considered adjacent
         if (distance > strictAdjacencyTolerance)
         {
-            Debug.LogError($"[StrictAdjacency] CRITICAL ERROR: Distance {distance:F3} exceeded tolerance {strictAdjacencyTolerance:F3} but reached orthogonal check! Positions: A={posA}, B={posB}");
             return false; // Fail-safe: never allow cards beyond tolerance
         }
         
@@ -1289,14 +1340,12 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // CRITICAL: Final distance verification - NEVER allow cards beyond tolerance to be adjacent
         if (isAdjacent && distance > strictAdjacencyTolerance)
         {
-            Debug.LogError($"[StrictAdjacency] CRITICAL ERROR: Cards passed orthogonal check but distance {distance:F3} exceeds tolerance {strictAdjacencyTolerance:F3}! Rejecting. Positions: A={posA}, B={posB}");
             return false; // Fail-safe: reject even if orthogonal check passed
         }
         
         // Only log rejections when debugBattles is enabled or for interesting cases (distance < 10f to filter out cards in hands)
         if (!isAdjacent && (debugBattles || distance < 10f))
         {
-            Debug.Log($"[StrictAdjacency] AreCardsStrictlyAdjacent: REJECTED - Not orthogonal neighbor. Distance: {distance:F3}, deltaX: {deltaX:F3}, deltaY: {deltaY:F3}. Positions: A={posA}, B={posB}");
         }
         
         return isAdjacent;
@@ -1317,7 +1366,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
             if (debugBattles)
             {
-                Debug.Log($"CheckBattleBetweenCards: {placedCard.Data.cardName} and {otherCard.Data.cardName} belong to the same player, skipping battle");
             }
             return false; // Same player, no battle
         }
@@ -1328,7 +1376,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         if (!AreCardsStrictlyAdjacent(placedPos, otherPos, out totalDistance))
         {
             // Always log strict adjacency rejections to help debug test failures
-            Debug.Log($"[StrictAdjacency] CheckBattleBetweenCards: {placedCard.Data.cardName} vs {otherCard.Data.cardName} - REJECTED: Not strictly adjacent (distance: {totalDistance:F3})");
             return false; // Not strictly adjacent - reject immediately
         }
         
@@ -1338,7 +1385,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         
         if (debugBattles)
         {
-            Debug.Log($"CheckBattleBetweenCards: {placedCard.Data.cardName} vs {otherCard.Data.cardName} - Strict adjacency PASSED (distance: {totalDistance:F3})");
         }
         
         // Only check directly adjacent cards (orthogonal neighbors)
@@ -1394,7 +1440,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
             if (debugBattles)
             {
-                Debug.Log($"CheckBattleBetweenCards: {placedCard.Data.cardName} vs {otherCard.Data.cardName} - Not orthogonal neighbor (deltaX: {deltaX:F3}, deltaY: {deltaY:F3}, totalDistance: {totalDistance:F3}), skipping battle");
             }
             return false;
         }
@@ -1402,9 +1447,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // No need for additional distance check - strict adjacency check already validated this
         
         // CRITICAL LOGGING: Always log stat comparison to diagnose test failures
-        Debug.Log($"[CheckBattleBetweenCards] Stat comparison: {placedCard.Data.cardName} vs {otherCard.Data.cardName} in {directionName} direction. " +
-            $"Placed card stat ({directionName}): {placedCardStat}, Other card opposing stat: {otherCardStat}. " +
-            $"Comparison: {placedCardStat} > {otherCardStat} = {placedCardStat > otherCardStat}");
         
         // CRITICAL COMBAT RULE: Capture ONLY occurs when attacker's stat > defender's stat
         // placedCardStat = the stat of the card being placed (attacker)
@@ -1423,17 +1465,12 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             // - Defender strictly higher  → no flip (attacker fails, card stays)
             // - Equal stats               → no flip
             // - Only attackerWins (>)     → defender flips
-            Debug.Log($"[CheckBattleBetweenCards] ❌ NO CAPTURE: {placedCard.Data.cardName} ({placedCardStat}) <= {otherCard.Data.cardName} ({otherCardStat}). " +
-                $"Defender has equal or higher stat - placed card did NOT win and no one flips. " +
-                $"Rule: Only the attacking card can capture, never the defender.");
             
             return false; // No flip in basic rules when attacker does not win
         }
         
         // If placed card wins (attacker stat > defender stat), other card should flip
         // We've already validated that attackerWins == true (placedCardStat > otherCardStat)
-        Debug.Log($"[CheckBattleBetweenCards] ✅ Attacker wins: {placedCard.Data.cardName} ({placedCardStat}) > {otherCard.Data.cardName} ({otherCardStat}). " +
-            $"Will capture {otherCard.Data.cardName}.");
         
         // Placed card won - if using ripple effect, don't flip immediately (will be handled by ripple)
         // Only flip immediately if ripple effect is disabled
@@ -1463,14 +1500,12 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             }
             
             FlipCardGameObject(otherCardObject, otherCard, captureColor, flipDir);
-            Debug.Log($"✅ Card Battle: {placedCard.Data.cardName} ({placedCardStat}) > {otherCard.Data.cardName} ({otherCardStat}) in {directionName} direction. {otherCard.Data.cardName} captured with {captureColor}!");
         }
         else
         {
             // Using ripple effect - just log, don't flip (will be handled by ripple)
             if (debugBattles)
             {
-                Debug.Log($"  → {placedCard.Data.cardName} ({placedCardStat}) > {otherCard.Data.cardName} ({otherCardStat}) in {directionName} direction. Will be captured in ripple effect.");
             }
         }
         return false; // Placed card won, don't flip it
@@ -1525,7 +1560,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     {
         if (cardObject == null)
         {
-            Debug.LogWarning("FlipCardGameObject: cardObject is null!");
             return;
         }
 
@@ -1535,14 +1569,10 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // either player.
         if (IsFreshlyPlayedThisTurn(cardObject))
         {
-            Debug.Log($"[FlipCardGameObject] Skipping flip for {card?.Data?.cardName ?? cardObject.name} because it was just played this turn (or is a child of that card).");
             return;
         }
 
         // CRITICAL LOGGING: Always log when FlipCardGameObject is called to track score update path
-        Debug.Log($"[FlipCardGameObject] ENTRY for {card?.Data?.cardName ?? "unknown"}. " +
-            $"Capture color: ({captureColor.r:F2}, {captureColor.g:F2}, {captureColor.b:F2}, {captureColor.a:F2}). " +
-            $"Is white: {captureColor == Color.white}, Is clear: {captureColor == Color.clear}, Will update score: {captureColor != Color.white && captureColor != Color.clear}");
 
         NewCardUI cardUI = cardObject.GetComponent<NewCardUI>();
         if (cardUI == null)
@@ -1556,7 +1586,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
 
         if (cardUI == null)
         {
-            Debug.LogWarning($"FlipCardGameObject: Could not find NewCardUI on {cardObject.name} or its children/parents!");
             return;
         }
 
@@ -1576,24 +1605,23 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
 
         if (flipAnim == null)
         {
-            Debug.LogWarning($"FlipCardGameObject: Could not find CardFlipAnimation on {cardObject.name} or {cardUI.name}! Card cannot flip.");
             return;
         }
 
         if (!flipAnim.IsSetupValid())
         {
-            Debug.LogWarning($"FlipCardGameObject: CardFlipAnimation on {cardObject.name} is not set up correctly! Containers missing. Card cannot flip.");
             return;
         }
 
         flipAnim.CaptureCard(captureColor, direction);
-        Debug.Log($"✅ Captured card {card.Data.cardName} with border color {captureColor} (flip direction: {direction})");
         
         // [CardFront] Track captures for statistics (only if it's an actual capture, not initial placement)
         if (captureColor != Color.white && captureColor != Color.clear)
         {
             gameCapturesMade++;
-            Debug.Log($"[CardDropArea] Captures made count: {gameCapturesMade}");
+            
+            // Update tile color to reflect new ownership after capture
+            UpdateTileColorForCard(cardObject);
             
             // Show delta marker for territory influence change (+1 for conquer) with slight delay for sync
             StartCoroutine(ShowCaptureDelta(cardObject.transform, +1));
@@ -1633,7 +1661,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         if (!AreCardsStrictlyAdjacent(placedPos, otherPos, out totalDistance))
         {
             // Always log strict adjacency rejections to help debug test failures
-            Debug.Log($"[StrictAdjacency] CheckBattleBetweenCardsForRipple: {placedCard.Data.cardName} vs {otherCard.Data.cardName} - REJECTED: Not strictly adjacent (distance: {totalDistance:F3})");
             return null; // Not strictly adjacent - reject immediately
         }
         
@@ -1643,7 +1670,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         
         if (debugBattles)
         {
-            Debug.Log($"CheckBattleBetweenCardsForRipple: {placedCard.Data.cardName} vs {otherCard.Data.cardName} - Strict adjacency PASSED (distance: {totalDistance:F3})");
         }
         
         // Only check directly adjacent cards (orthogonal neighbors)
@@ -1653,8 +1679,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         int otherCardStat = 0;
         
         // CRITICAL LOGGING: Log delta values to diagnose orthogonal neighbor check failures
-        Debug.Log($"[CheckBattleBetweenCardsForRipple] Orthogonal neighbor check: {placedCard.Data.cardName} vs {otherCard.Data.cardName}. " +
-            $"deltaX: {deltaX:F3}, deltaY: {deltaY:F3}, delta.x: {delta.x:F3}, delta.y: {delta.y:F3}");
         
         // Check if cards are on the same row (Y/Z aligned) - horizontal neighbors
         // Must be aligned on Y-axis AND within adjacent distance on X-axis
@@ -1676,7 +1700,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 otherCardStat = otherCard.CurrentRightStat;
                 directionName = "left";
             }
-            Debug.Log($"[CheckBattleBetweenCardsForRipple] Horizontal neighbor detected ({directionName}): deltaY={deltaY:F3} < 0.5, deltaX={deltaX:F3} > 0.1");
         }
         // Check if cards are on the same column (X aligned) - vertical neighbors
         // Also verify total distance is still within acceptable range (double-check)
@@ -1697,28 +1720,20 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 otherCardStat = otherCard.CurrentTopStat;
                 directionName = "down";
             }
-            Debug.Log($"[CheckBattleBetweenCardsForRipple] Vertical neighbor detected ({directionName}): deltaX={deltaX:F3} < 0.5, deltaY={deltaY:F3} > 0.1. " +
-                $"delta.y={delta.y:F3} (positive=above, negative=below)");
         }
         else
         {
-            Debug.Log($"[CheckBattleBetweenCardsForRipple] ❌ Not orthogonal neighbor: deltaY={deltaY:F3} (need <0.5 for horizontal), deltaX={deltaX:F3} (need <0.5 for vertical), " +
-                $"deltaY check for vertical: {deltaY > 0.1f} (need >0.1)");
         }
         
         if (!isOrthogonalNeighbor)
         {
             if (debugBattles)
             {
-                Debug.Log($"CheckBattleBetweenCardsForRipple: {placedCard.Data.cardName} vs {otherCard.Data.cardName} - Not orthogonal neighbor (deltaX: {deltaX:F3}, deltaY: {deltaY:F3}, totalDistance: {totalDistance:F3}), skipping battle");
             }
             return null; // Not an orthogonal neighbor, no battle
         }
         
         // CRITICAL LOGGING: Always log stat comparison to diagnose test failures
-        Debug.Log($"[CheckBattleBetweenCardsForRipple] Stat comparison: {placedCard.Data.cardName} vs {otherCard.Data.cardName} in {directionName} direction. " +
-            $"Placed card stat ({directionName}): {placedCardStat}, Other card opposing stat: {otherCardStat}. " +
-            $"Will create flip target: {placedCardStat > otherCardStat}");
         
         // No need for additional distance check - strict adjacency check already validated this
         
@@ -1740,10 +1755,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             // rather than a "logic error" to avoid noisy warnings in normal play/tests.
             if (debugBattles)
             {
-                Debug.Log($"[CheckBattleBetweenCardsForRipple] No flip target: attacker did not win. " +
-                          $"Attacker ({placedCard.Data.cardName}) stat: {placedCardStat}, " +
-                          $"Defender ({otherCard.Data.cardName}) stat: {otherCardStat}. " +
-                          $"Capture requires attacker stat > defender stat.");
             }
             return null;
         }
@@ -1754,8 +1765,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         if (placedCardStat <= otherCardStat)
         {
             // This should theoretically never happen since we already checked above, but keeping as a safety net
-            Debug.LogWarning($"[CheckBattleBetweenCardsForRipple] ⚠️ Redundant safety check triggered: placedCardStat ({placedCardStat}) <= otherCardStat ({otherCardStat}) but passed earlier check. " +
-                $"This may indicate a logic inconsistency. Aborting flip target creation.");
             return null;
         }
         
@@ -1786,12 +1795,9 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             
             // Calculate distance for ripple effect timing
             float distance = Vector3.Distance(placedPos, otherPos);
-            Debug.Log($"[CheckBattleBetweenCardsForRipple] ✅ Creating flip target: {placedCard.Data.cardName} ({placedCardStat}) > {otherCard.Data.cardName} ({otherCardStat}). " +
-                $"Direction: {directionName}, Capture color: ({captureColor.r:F2}, {captureColor.g:F2}, {captureColor.b:F2})");
             return new FlipTarget(otherCardObject, otherCard, captureColor, flipDir, distance, otherPos);
         }
         
-        Debug.Log($"[CheckBattleBetweenCardsForRipple] ❌ No flip target created: {placedCard.Data.cardName} ({placedCardStat}) <= {otherCard.Data.cardName} ({otherCardStat}) in {directionName} direction");
         return null; // No flip needed
     }
     
@@ -1829,7 +1835,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         
         if (debugBattles)
         {
-            Debug.Log($"ExecuteRippleFlips: Starting ripple effect with {flipTargets.Count} cards. Base delay: {rippleBaseDelay}s, Delay per unit: {rippleDelayPerUnit}s");
         }
         
         // Wait for base delay before starting
@@ -1849,7 +1854,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             
             if (debugBattles)
             {
-                Debug.Log($"ExecuteRippleFlips: Wave {i + 1} flipping {waveTargets.Count} cards (bucket {orderedBuckets[i]}).");
             }
             
             // Trigger flips simultaneously for this wave
@@ -1876,8 +1880,10 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         
         if (debugBattles)
         {
-            Debug.Log($"ExecuteRippleFlips: Ripple effect complete!");
         }
+        
+        // Update all tile colors after ripple completes to ensure consistency
+        UpdateAllTileColors();
         
         // Update CardFrontlineUI after ripple completes
         UpdateFrontlineUI();
@@ -1922,7 +1928,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // Game ends when all 16 slots are filled (territory-based scoring)
         if (debugBattles && occupiedSpaces >= totalSpaces && totalSpaces > 0)
         {
-            Debug.Log($"[CardDropArea] Board is full! Occupied: {occupiedSpaces}/{totalSpaces}");
         }
     }
     
@@ -2122,6 +2127,193 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     }
     
     /// <summary>
+    /// Updates the tile color based on the occupying card's ownership.
+    /// P1 cards = orange, P2 cards = green (matches Battle Front Influence bar).
+    /// </summary>
+    private void UpdateTileColor()
+    {
+        string tileName = gameObject.name;
+        Color previousColor = tileSpriteRenderer != null ? tileSpriteRenderer.color : Color.clear;
+        
+        if (tileSpriteRenderer == null)
+        {
+            // Try to find tile sprite renderer if not set
+            tileSpriteRenderer = GetComponent<SpriteRenderer>();
+            if (tileSpriteRenderer == null)
+            {
+                Debug.LogWarning($"[TILE COLOR] UpdateTileColor: ❌ No SpriteRenderer found on '{tileName}'");
+                return;
+            }
+        }
+        
+        // Check if tile is occupied
+        bool isOccupied = IsOccupied;
+        GameObject card = GetOccupyingCard();
+        
+        // Additional check: if occupyingCard is null but there's a card visually present,
+        // try to find it by checking for CardMover components at this position
+        if (!isOccupied || card == null)
+        {
+            // Try to find a card at this position as a fallback
+            Collider2D hit = Physics2D.OverlapPoint(transform.position);
+            if (hit != null)
+            {
+                CardMoverP1 moverP1 = hit.GetComponent<CardMoverP1>();
+                CardMoverP2 moverP2 = hit.GetComponent<CardMoverP2>();
+                
+                if (moverP1 != null && moverP1.IsPlayed)
+                {
+                    card = moverP1.gameObject;
+                    isOccupied = true;
+                    Debug.Log($"[TILE COLOR] UpdateTileColor: '{tileName}' - Found P1 card via Physics2D: '{card.name}'");
+                }
+                else if (moverP2 != null && moverP2.IsPlayed)
+                {
+                    card = moverP2.gameObject;
+                    isOccupied = true;
+                    Debug.Log($"[TILE COLOR] UpdateTileColor: '{tileName}' - Found P2 card via Physics2D: '{card.name}'");
+                }
+            }
+        }
+        
+        if (!isOccupied)
+        {
+            // No card - reset to neutral white only if current color is not a valid ownership color
+            Color currentColor = tileSpriteRenderer.color;
+            bool isOwnershipColor = (currentColor != Color.white && currentColor != Color.clear && currentColor.a > 0.5f);
+            
+            if (isOwnershipColor)
+            {
+                Debug.LogWarning($"[TILE COLOR] UpdateTileColor: '{tileName}' - ⚠️ Not occupied but has ownership color {currentColor}, keeping it (card may be temporarily missing)");
+                return; // Keep current color - card might be temporarily missing
+            }
+            
+            Debug.Log($"[TILE COLOR] UpdateTileColor: '{tileName}' - Not occupied, setting to white (was {currentColor})");
+            tileSpriteRenderer.color = Color.white;
+            return;
+        }
+        
+        if (card == null)
+        {
+            // Card reference lost - keep current color if it's a valid ownership color
+            Color currentColor = tileSpriteRenderer.color;
+            bool isOwnershipColor = (currentColor != Color.white && currentColor != Color.clear && currentColor.a > 0.5f);
+            
+            if (isOwnershipColor)
+            {
+                Debug.LogWarning($"[TILE COLOR] UpdateTileColor: '{tileName}' - ⚠️ IsOccupied=true but card is null! Keeping current ownership color: {currentColor}");
+                return; // Keep current color - don't reset to white
+            }
+            
+            Debug.LogWarning($"[TILE COLOR] UpdateTileColor: '{tileName}' - ⚠️ IsOccupied=true but card is null! Current color: {currentColor}, resetting to white");
+            tileSpriteRenderer.color = Color.white;
+            return;
+        }
+        
+        string cardName = card.name;
+        bool isPlayerCard = IsPlayerCard(card);
+        Color tileColor;
+        
+        if (isPlayerCard)
+        {
+            // P1 ownership - orange color
+            tileColor = GetPlayerCaptureColor(); // Orange
+            Debug.Log($"[TILE COLOR] UpdateTileColor: '{tileName}' - P1 card '{cardName}', color: {tileColor}");
+        }
+        else
+        {
+            // P2 ownership - green color
+            tileColor = GetP2CaptureColor(); // Green
+            Debug.Log($"[TILE COLOR] UpdateTileColor: '{tileName}' - P2 card '{cardName}', color: {tileColor}");
+        }
+        
+        // Validate color before setting (ensure it's not white/clear)
+        if (tileColor.a > 0f && tileColor != Color.white && tileColor != Color.clear)
+        {
+            tileSpriteRenderer.color = tileColor;
+            Debug.Log($"[TILE COLOR] UpdateTileColor: '{tileName}' - ✅ Set color to {tileColor} (was {previousColor})");
+        }
+        else
+        {
+            // Fallback to default colors if retrieved color is invalid
+            Color fallbackColor = isPlayerCard 
+                ? new Color(1f, 0.5f, 0f, 1f) // Orange fallback
+                : new Color(0f, 0.8f, 0f, 1f); // Green fallback
+            
+            tileSpriteRenderer.color = fallbackColor;
+            Debug.LogWarning($"[TILE COLOR] UpdateTileColor: '{tileName}' - ⚠️ Invalid color {tileColor}, using fallback {fallbackColor}");
+        }
+    }
+    
+    /// <summary>
+    /// Updates the tile color for a specific card (used after capture).
+    /// Finds the CardDropArea that contains this card and updates its tile color.
+    /// </summary>
+    private void UpdateTileColorForCard(GameObject cardObject)
+    {
+        if (cardObject == null)
+        {
+            Debug.LogWarning($"[TILE COLOR] UpdateTileColorForCard: cardObject is null");
+            return;
+        }
+        
+        Debug.Log($"[TILE COLOR] UpdateTileColorForCard: Looking for tile containing card '{cardObject.name}'");
+        
+        // Find the CardDropArea that contains this card
+        CardDropArea[] allDropAreas = FindObjectsOfType<CardDropArea>();
+        bool found = false;
+        
+        foreach (CardDropArea dropArea in allDropAreas)
+        {
+            if (dropArea != null && dropArea.GetOccupyingCard() == cardObject)
+            {
+                Debug.Log($"[TILE COLOR] UpdateTileColorForCard: Found card '{cardObject.name}' on tile '{dropArea.gameObject.name}', updating color");
+                dropArea.UpdateTileColor();
+                found = true;
+                break;
+            }
+        }
+        
+        if (!found)
+        {
+            Debug.LogWarning($"[TILE COLOR] UpdateTileColorForCard: Card '{cardObject.name}' not found in any drop area");
+        }
+    }
+    
+    /// <summary>
+    /// Updates all tile colors on the board based on their occupying cards' ownership.
+    /// Called after ripple effects complete to ensure all tiles reflect current ownership.
+    /// </summary>
+    private static void UpdateAllTileColors()
+    {
+        Debug.Log($"[TILE COLOR] UpdateAllTileColors: Updating all tile colors after ripple effects");
+        CardDropArea[] allDropAreas = Object.FindObjectsOfType<CardDropArea>();
+        int updatedCount = 0;
+        int preservedCount = 0;
+        
+        foreach (CardDropArea dropArea in allDropAreas)
+        {
+            if (dropArea != null)
+            {
+                Color beforeColor = dropArea.tileSpriteRenderer != null ? dropArea.tileSpriteRenderer.color : Color.clear;
+                dropArea.UpdateTileColor();
+                Color afterColor = dropArea.tileSpriteRenderer != null ? dropArea.tileSpriteRenderer.color : Color.clear;
+                
+                if (beforeColor != afterColor)
+                {
+                    updatedCount++;
+                }
+                else if (afterColor != Color.white && afterColor != Color.clear)
+                {
+                    preservedCount++;
+                }
+            }
+        }
+        
+        Debug.Log($"[TILE COLOR] UpdateAllTileColors: Complete - {updatedCount} tiles updated, {preservedCount} tiles preserved");
+    }
+    
+    /// <summary>
     /// Checks if a newly captured card can capture adjacent cards (chain capture)
     /// </summary>
     private void CheckChainCapture(GameObject capturedCard, NewCard card)
@@ -2133,7 +2325,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
             if (debugBattles)
             {
-                Debug.Log($"CheckChainCapture: {card.Data.cardName} already in current chain, skipping");
             }
             return;
         }
@@ -2143,7 +2334,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
             if (debugBattles)
             {
-                Debug.Log($"CheckChainCapture: {card.Data.cardName} was played this turn, cannot be captured");
             }
             return;
         }
@@ -2236,7 +2426,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
             if (debugBattles)
             {
-                Debug.Log($"Chain capture triggered! {card.Data.cardName} can capture {chainFlipTargets.Count} adjacent cards");
             }
             
             // Increment active chain count
@@ -2275,7 +2464,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         
         if (debugBattles)
         {
-            Debug.Log($"ExecuteChainCaptureRipple: Starting chain capture ripple with {flipTargets.Count} cards");
         }
         
         // Execute each flip with ripple timing
@@ -2317,8 +2505,10 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         
         if (debugBattles)
         {
-            Debug.Log($"ExecuteChainCaptureRipple: Chain capture ripple complete!");
         }
+        
+        // Update all tile colors after chain capture completes
+        UpdateAllTileColors();
         
         // Update CardFrontlineUI after chain capture completes
         UpdateFrontlineUI();

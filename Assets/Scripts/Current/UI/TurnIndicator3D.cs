@@ -127,7 +127,6 @@ namespace CardGame.UI
             mat.color = inactiveColor;
             meshRenderer.material = mat;
             
-            Debug.Log($"TurnIndicator3D: Created inverted pyramid mesh on {gameObject.name}");
         }
     }
 }

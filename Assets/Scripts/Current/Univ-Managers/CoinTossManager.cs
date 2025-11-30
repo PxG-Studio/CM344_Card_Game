@@ -103,7 +103,6 @@ namespace CardGame.Managers
         {
             if (isCoinTossComplete)
             {
-                Debug.LogWarning("[CoinTossManager] Cannot change selection - coin toss already performed.");
                 return;
             }
 
@@ -120,13 +119,11 @@ namespace CardGame.Managers
         {
             if (isCoinTossComplete)
             {
-                Debug.LogWarning("[CoinTossManager] Coin toss already performed. Returning existing result.");
                 return coinTossResult.Value;
             }
 
             if (!playerSelection.HasValue)
             {
-                Debug.LogWarning("[CoinTossManager] No player selection made. Defaulting to random result.");
                 // Fallback: random selection if no player selection was made
                 bool isHeads = UnityEngine.Random.Range(0, 2) == 0;
                 coinTossResult = isHeads ? FateSide.Player : FateSide.P2;

@@ -97,7 +97,6 @@ namespace CardGame.UI
         {
             if (cutInRoot == null)
             {
-                Debug.LogWarning("VictoryCutInController: Missing cutInRoot reference.");
                 return;
             }
 

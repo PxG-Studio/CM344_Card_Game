@@ -92,7 +92,6 @@ namespace CardGame.UI
             
             if (parentCanvas == null)
             {
-                Debug.LogWarning("[DeltaMarkerEmitter] Could not locate a parent canvas. Popups will parent to emitter transform.");
             }
         }
         
@@ -108,7 +107,6 @@ namespace CardGame.UI
                 {
                     config = ScriptableObject.CreateInstance<DeltaMarkerConfig>();
                     config.name = "RuntimeDeltaMarkerConfig";
-                    Debug.LogWarning("[DeltaMarkerEmitter] No DeltaMarkerConfig found. Using runtime defaults.");
                 }
             }
             
@@ -124,7 +122,6 @@ namespace CardGame.UI
                     // Fall back silently to the runtime-built template; this is an expected
                     // code path in normal play, so we don't need a warning-level log.
                     deltaMarkerPrefab = BuildRuntimePopupTemplate();
-                    Debug.Log("[DeltaMarkerEmitter] No DeltaMarkerPopup prefab found. Using runtime template.");
                 }
             }
         }
@@ -171,7 +168,6 @@ namespace CardGame.UI
             
             if (config == null || deltaMarkerPrefab == null)
             {
-                Debug.LogWarning("[DeltaMarkerEmitter] Cannot spawn delta marker - config or prefab is missing!");
                 return;
             }
             
@@ -193,7 +189,6 @@ namespace CardGame.UI
                 }
                 else
                 {
-                    Debug.LogWarning("[DeltaMarkerEmitter] No camera found! Using world position directly.");
                     spawnPosition = worldPosition;
                 }
             }
@@ -239,7 +234,6 @@ namespace CardGame.UI
             }
             else
             {
-                Debug.LogError("[DeltaMarkerEmitter] DeltaMarkerPopup component not found on prefab! Ensure the prefab has DeltaMarkerPopup attached.");
                 Destroy(popupInstance);
             }
         }
@@ -255,7 +249,6 @@ namespace CardGame.UI
             
             if (config == null || deltaMarkerPrefab == null)
             {
-                Debug.LogWarning("[DeltaMarkerEmitter] Cannot spawn delta marker - config or prefab is missing!");
                 return;
             }
             
@@ -292,7 +285,6 @@ namespace CardGame.UI
             }
             else
             {
-                Debug.LogError("[DeltaMarkerEmitter] DeltaMarkerPopup component not found on prefab!");
                 Destroy(popupInstance);
             }
         }

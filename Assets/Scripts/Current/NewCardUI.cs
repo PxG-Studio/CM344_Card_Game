@@ -1271,13 +1271,11 @@ namespace CardGame.UI
                     tex.SetPixel(0, 0, Color.white);
                     tex.Apply();
                     runtimeDefaultBackSprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f));
-                    Debug.Log($"[CardBack_Default] CardBack_Default.png not found in Resources/Sprite/, created runtime default white sprite");
                 }
                 backSprite = runtimeDefaultBackSprite;
             }
             else
             {
-                Debug.Log($"[CardBack_Default] Loaded CardBack_Default.png from Resources/Sprite/");
             }
             
             if (backContainer != null && backSprite != null)
@@ -1309,7 +1307,6 @@ namespace CardGame.UI
                         backSpriteRenderer.sortingOrder = cardBackground.sortingOrder;
                     }
                     
-                    Debug.Log($"[CardBack_Default] '{cardName}': Created new CardBackSprite GameObject");
                 }
 
                 backSpriteRenderer.sprite = backSprite;
@@ -1326,23 +1323,19 @@ namespace CardGame.UI
                         float scaleY = bgSize.y / backSize.y;
                         float uniform = Mathf.Min(scaleX, scaleY);
                         backSpriteRenderer.transform.localScale = new Vector3(uniform, uniform, 1f);
-                        Debug.Log($"[CardBack_Default] '{cardName}': Assigned CardBack_Default sprite. Scale: {uniform:F2}, Background size: {bgSize}, Back size: {backSize}");
                     }
                     else
                     {
                         backSpriteRenderer.transform.localScale = Vector3.one;
-                        Debug.Log($"[CardBack_Default] '{cardName}': Assigned CardBack_Default sprite. Using default scale (back size invalid)");
                     }
                 }
                 else
                 {
                     backSpriteRenderer.transform.localScale = Vector3.one;
-                    Debug.Log($"[CardBack_Default] '{cardName}': Assigned CardBack_Default sprite. Using default scale (no card background)");
                 }
             }
             else
             {
-                Debug.LogWarning($"[CardBack_Default] '{cardName}': Cannot assign CardBack_Default - backContainer: {backContainer != null}, backSprite: {backSprite != null}");
             }
         }
 

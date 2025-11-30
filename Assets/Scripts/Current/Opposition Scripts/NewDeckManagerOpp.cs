@@ -65,14 +65,12 @@ namespace CardGame.Managers
             
             if (drawPile.Count == 0)
             {
-                Debug.LogWarning("No cards to draw!");
                 return;
             }
             
             // Check hand size limit (you may want to make this configurable)
             if (hand.Count >= 5) // Adjust max hand size as needed
             {
-                Debug.LogWarning("Hand is full!");
                 return;
             }
             
@@ -93,7 +91,6 @@ namespace CardGame.Managers
         {
             if (!hand.Contains(card))
             {
-                Debug.LogWarning("Card not in hand!");
                 return;
             }
             

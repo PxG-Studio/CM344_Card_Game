@@ -99,7 +99,6 @@ namespace CardGame.UI
             CreateMenuButton(buttonContainer.transform, "SETTINGS", "ComingSoon");
             CreateMenuButton(buttonContainer.transform, "QUIT", null);
 
-            Debug.Log("MainMenuSetup: Beautiful menu created!");
         }
 
         private void CreateBackgroundPanel(Transform parent)
@@ -269,7 +268,6 @@ namespace CardGame.UI
 
         private void ShowComingSoon(string featureName)
         {
-            Debug.Log($"{featureName} - Coming Soon!");
             
             // Create a "Coming Soon" popup
             Canvas canvas = FindObjectOfType<Canvas>();
@@ -385,13 +383,11 @@ namespace CardGame.UI
 
         private void LoadScene(string sceneName)
         {
-            Debug.Log($"Loading scene: {sceneName}");
             SceneManager.LoadScene(sceneName);
         }
 
         private void QuitGame()
         {
-            Debug.Log("Quitting game...");
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
 #else

@@ -123,7 +123,6 @@ namespace CardGame.UI
                 image.sprite = sprite;
             }
             
-            Debug.Log($"TurnIndicatorUI: Created diamond sprite for {gameObject.name}");
         }
     }
 }

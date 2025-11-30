@@ -142,13 +142,11 @@ public class CardMoverP2 : MonoBehaviour
             // Ensure the GameObject the collider is on is active
             if (col.gameObject != null && !col.gameObject.activeInHierarchy)
             {
-                Debug.LogWarning($"[CardMoverP2] Collider found on inactive GameObject '{col.gameObject.name}'. Ensuring it's active.");
                 col.gameObject.SetActive(true);
             }
         }
         else
         {
-            Debug.LogError($"[CardMoverP2] Failed to ensure collider on '{gameObject.name}'. This should not happen!");
         }
     }
     
@@ -218,7 +216,6 @@ public class CardMoverP2 : MonoBehaviour
         if (card == null && !gameObject.name.Contains("Prefab"))
         {
             // Suppress warning if this is a prefab instance that will be initialized later
-            Debug.LogWarning($"CardMoverP2 on {gameObject.name}: Could not find NewCard reference. Card will not be playable until reference is set. You can assign it manually in Inspector or ensure NewCardUI component exists.");
         }
         #endif
     }
@@ -236,13 +233,11 @@ public class CardMoverP2 : MonoBehaviour
         // Don't allow dragging if card has been played or it's not the opponent's turn
         if (isPlayed)
         {
-            Debug.LogWarning($"[CardMoverP2] Cannot drag '{gameObject.name}' - card has been played.");
             return;
         }
         
         if (!CanInteract)
         {
-            // Debug.LogWarning($"[CardMoverP2] Cannot drag '{gameObject.name}' - not opponent's turn. CurrentFate: {(FateFlowController.Instance != null ? FateFlowController.Instance.CurrentFate.ToString() : "null")}"); // Reduced verbosity
             return;
         }
         
@@ -250,7 +245,6 @@ public class CardMoverP2 : MonoBehaviour
         EnsureCollider();
         if (col == null)
         {
-            Debug.LogError($"[CardMoverP2] OnMouseDown called but no Collider2D found on '{gameObject.name}'. OnMouseDown requires a Collider2D component!");
             return;
         }
         
@@ -271,7 +265,6 @@ public class CardMoverP2 : MonoBehaviour
             bool statsVisible = cardUI.AreStatsVisuallyVisible();
             if (!statsVisible)
             {
-                Debug.LogWarning($"[STATS] Dragging '{cardName}': Stats ❌ NOT VISIBLE - Fix required!");
             }
         }
     }
@@ -369,7 +362,6 @@ public class CardMoverP2 : MonoBehaviour
         Camera camera = GetPlayer2Camera();
         if (camera == null)
         {
-            Debug.LogError("[CardMoverP2] No camera found for mouse position conversion!");
             return Vector3.zero;
         }
         
@@ -428,7 +420,6 @@ public class CardMoverP2 : MonoBehaviour
         // [CardFront] Enhanced drop detection with better logging and layer mask support
         if (col == null)
         {
-            Debug.LogError($"[CardMoverP2] AttemptDrop failed - no Collider2D on '{gameObject.name}' (EnsureCollider failed)");
             return false;
         }
 
@@ -469,7 +460,6 @@ public class CardMoverP2 : MonoBehaviour
             }
             else
             {
-                // Debug.LogWarning($"[CardMoverP2] AttemptDrop: Collider '{hitCollider.name}' found but no ICardDropArea component!"); // Reduced verbosity
             }
         }
 

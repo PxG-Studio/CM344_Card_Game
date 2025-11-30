@@ -25,19 +25,16 @@ namespace CardGame.Factories
         {
             if (card == null)
             {
-                Debug.LogError("CardFactory.CreateCardUI: Cannot create card UI with null card data!");
                 return null;
             }
             
             if (prefab == null)
             {
-                Debug.LogError("CardFactory.CreateCardUI: Cannot create card UI with null prefab!");
                 return null;
             }
             
             if (parent == null)
             {
-                Debug.LogError("CardFactory.CreateCardUI: Cannot create card UI with null parent!");
                 return null;
             }
             
@@ -51,7 +48,6 @@ namespace CardGame.Factories
             {
                 cardUI.gameObject.SetActive(true);
                 // Only log in Editor mode to reduce runtime warning spam
-                // Debug.Log($"[CardFactory] Activated cloned card '{cardUI.gameObject.name}' (was instantiated inactive). This is normal if prefab was in scene hierarchy."); // Reduced verbosity
             }
             
             // [CardFront] CRITICAL: Ensure cloned card CanvasGroup is INTERACTIVE
@@ -77,12 +73,10 @@ namespace CardGame.Factories
             // Verify initialization succeeded
             if (cardUI.Card == null)
             {
-                Debug.LogError($"CardFactory.CreateCardUI: Failed to initialize card UI for '{card.Data?.cardName ?? "UNKNOWN"}'. Card reference is null after Initialize().");
                 Object.Destroy(cardUI.gameObject);
                 return null;
             }
             
-            // Debug.Log($"CardFactory: Created and initialized card UI '{card.Data.cardName}' (InstanceID: {card.InstanceID})"); // Reduced verbosity
             
             return cardUI;
         }
@@ -99,7 +93,6 @@ namespace CardGame.Factories
         {
             if (card == null || prefab == null)
             {
-                Debug.LogError("CardFactory.CreateBoardCard: Cannot create board card with null card or prefab!");
                 return null;
             }
             
@@ -112,7 +105,6 @@ namespace CardGame.Factories
                 boardCard.SetActive(true);
                 // Only log in Editor mode to reduce runtime warning spam
                 #if UNITY_EDITOR
-                Debug.Log($"[CardFactory] Activated board card '{boardCard.name}' (was instantiated inactive). This is normal if prefab was in scene hierarchy.");
                 #endif
             }
             
@@ -129,7 +121,6 @@ namespace CardGame.Factories
                 // P2 card - use CardMoverP2
                 cardMoverP2.SetCard(card);
                 cardMoverP2.RefreshHomePosition();
-                Debug.Log($"[CardFactory] Created board card '{card.Data.cardName}' with CardMoverP2 (P2 card)");
             }
             else
             {
@@ -144,12 +135,10 @@ namespace CardGame.Factories
                 {
                     cardMover.SetCard(card);
                     cardMover.RefreshHomePosition();
-                    Debug.Log($"[CardFactory] Created board card '{card.Data.cardName}' with CardMoverP1 (P1 card)");
                 }
                 else
                 {
                     // Neither component found - log warning
-                    Debug.LogWarning($"[CardFactory] Board card prefab '{prefab.name}' has neither CardMoverP1 (P1) nor CardMoverP2 (P2) component. Card may not be draggable. Please add the appropriate mover component to the prefab.");
                 }
             }
             

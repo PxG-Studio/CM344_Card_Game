@@ -127,7 +127,6 @@ namespace CardGame.UI
                 {
                     // Keep this message aligned with play mode tests that expect a
                     // one-time diagnostic when serialized button fields are null in Awake.
-                    Debug.LogError("[CoinTossUI] headsButton is NULL! Button must be assigned in Inspector.");
                 }
             }
 
@@ -176,7 +175,6 @@ namespace CardGame.UI
                 {
                     // Keep this message aligned with play mode tests that expect a
                     // one-time diagnostic when serialized button fields are null in Awake.
-                    Debug.LogError("[CoinTossUI] tailsButton is NULL! Button must be assigned in Inspector.");
                 }
             }
             
@@ -325,7 +323,6 @@ namespace CardGame.UI
             Transform parent = transform.parent;
             while (parent != null && !parent.gameObject.activeInHierarchy)
             {
-                Debug.LogWarning($"[CoinTossUI] Parent '{parent.name}' is inactive. Activating...");
                 parent.gameObject.SetActive(true);
                 parent = parent.parent;
             }
@@ -337,7 +334,6 @@ namespace CardGame.UI
             // Update coinTossPanel reference to match gameObject (they should be the same)
             if (coinTossPanel != gameObject)
             {
-                Debug.LogWarning($"[CoinTossUI] coinTossPanel field ({coinTossPanel?.name}) != gameObject ({gameObject.name}). Updating reference.");
                 coinTossPanel = gameObject;
             }
             
@@ -408,12 +404,10 @@ namespace CardGame.UI
             
             if (headsButton == null)
             {
-                Debug.LogError("[CoinTossUI] headsButton is NULL! Button must be assigned in Inspector.");
             }
             
             if (tailsButton == null)
             {
-                Debug.LogError("[CoinTossUI] tailsButton is NULL! Button must be assigned in Inspector.");
             }
         }
         
@@ -487,7 +481,6 @@ namespace CardGame.UI
             
             if (!activeSelf)
             {
-                Debug.LogWarning($"[CoinTossUI] GameObject is not active (activeSelf: false). Activating now...");
                 gameObject.SetActive(true);
                 activeSelf = gameObject.activeSelf;
                 activeInHierarchy = gameObject.activeInHierarchy;
@@ -496,7 +489,6 @@ namespace CardGame.UI
             // If still not active, we can't start the coroutine
             if (!activeSelf)
             {
-                Debug.LogError($"[CoinTossUI] GameObject activation failed! Cannot start animation.");
                 return;
             }
             
@@ -504,7 +496,6 @@ namespace CardGame.UI
             // The coroutine will start if the GameObject itself is active
             if (!enabled)
             {
-                Debug.LogError($"[CoinTossUI] Cannot start coin toss animation - component is not enabled!");
                 return;
             }
             
@@ -533,7 +524,6 @@ namespace CardGame.UI
                 }
                 catch (System.Exception e)
                 {
-                    Debug.LogError($"[CoinTossUI] Failed to start coin toss animation coroutine: {e.Message}");
                 }
             }
             else if (coinTossManager != null && coinTossManager.IsComplete)
@@ -543,7 +533,6 @@ namespace CardGame.UI
             }
             else
             {
-                Debug.LogError("[CoinTossUI] CoinTossManager is null! Cannot perform coin toss.");
             }
         }
 
@@ -807,7 +796,6 @@ namespace CardGame.UI
         {
             if (coinImage == null || headsSprite == null || tailsSprite == null)
             {
-                Debug.LogWarning("[CoinTossUI] Cannot initialize random coin side - coinImage or sprites are null.");
                 return;
             }
             

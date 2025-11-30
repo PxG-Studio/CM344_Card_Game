@@ -66,7 +66,6 @@ namespace CardGame.Testing
             
             if (coinTossManager == null)
             {
-                Debug.LogWarning("[NewCardSystemP2] CoinTossManager not found after wait. Proceeding with card draw anyway.");
                 yield return new WaitForSeconds(0.5f);
                 DrawInitialCards();
                 yield break;
@@ -83,7 +82,6 @@ namespace CardGame.Testing
                 
                 if (coinTossManager == null)
                 {
-                    Debug.LogWarning("[NewCardSystemP2] CoinTossManager became null during wait. Proceeding with card draw.");
                     break;
                 }
                 
@@ -107,7 +105,6 @@ namespace CardGame.Testing
         {
             if (deckManager == null)
             {
-                Debug.LogError("NewCardSystemTester: DeckManager not found!");
                 return;
             }
             
@@ -118,19 +115,16 @@ namespace CardGame.Testing
         {
             if (deckManager == null)
             {
-                Debug.LogError("NewCardSystemTester: DeckManager not found!");
                 return;
             }
             
             deckManager.DrawCards(cardsToDraw);
-            // Debug.Log($"Drew {cardsToDraw} cards!"); // Reduced verbosity
         }
         
         public void DrawOneCard()
         {
             if (deckManager == null)
             {
-                Debug.LogError("NewCardSystemTester: DeckManager not found!");
                 return;
             }
             
@@ -141,7 +135,6 @@ namespace CardGame.Testing
         {
             if (deckManager == null)
             {
-                Debug.LogError("NewCardSystemTester: DeckManager not found!");
                 return;
             }
             
@@ -152,7 +145,6 @@ namespace CardGame.Testing
         {
             if (handUI == null)
             {
-                Debug.LogError("NewCardSystemTester: HandUI not found!");
                 return;
             }
             
@@ -168,7 +160,6 @@ namespace CardGame.Testing
                 }
             }
             
-            Debug.Log("Hand and board cleared!");
         }
         
         // [CardFront] Debug GUI - Editor-only, disabled in builds

@@ -51,7 +51,6 @@ namespace CardGame.Managers
         {
             if (Instance != null && Instance != this)
             {
-                Debug.LogWarning($"[GameManager] Duplicate GameManager detected on '{gameObject.name}'. Destroying duplicate. Existing instance: '{Instance.gameObject.name}'");
                 // Use DestroyImmediate in editor to avoid play mode exit issues
                 #if UNITY_EDITOR
                 if (!Application.isPlaying)
@@ -182,7 +181,6 @@ namespace CardGame.Managers
             CoinTossManager coinTossManager = CoinTossManager.Instance;
             if (coinTossManager == null)
             {
-                Debug.LogWarning("[GameManager] CoinTossManager not found. Creating...");
                 GameObject coinTossObj = new GameObject("CoinTossManager");
                 coinTossObj.AddComponent<CoinTossManager>();
                 coinTossManager = CoinTossManager.Instance;
@@ -197,7 +195,6 @@ namespace CardGame.Managers
             
             while (coinTossUI == null && retryCount < maxRetries)
             {
-                Debug.LogWarning($"[GameManager] CoinTossUI not found (attempt {retryCount + 1}/{maxRetries}). Waiting for HUDSetup to create it...");
                 yield return new WaitForSeconds(0.5f);
                 coinTossUI = FindObjectOfType<CoinTossUI>(true); // Search inactive objects too
                 retryCount++;
@@ -205,7 +202,6 @@ namespace CardGame.Managers
             
             if (coinTossUI == null)
             {
-                Debug.LogError("[GameManager] CoinTossUI still not found after waiting. HUDSetup may not have created it.");
             }
             
             // Trigger coin toss animation through UI
@@ -217,7 +213,6 @@ namespace CardGame.Managers
             else
             {
                 // Fallback: Perform coin toss without UI
-                Debug.LogWarning("[GameManager] CoinTossUI not found. Performing coin toss without animation.");
                 FateSide fallbackStartingSide = coinTossManager.PerformCoinToss();
                 if (FateFlowController.Instance != null)
                 {
@@ -251,7 +246,6 @@ namespace CardGame.Managers
             }
             else
             {
-                Debug.LogError("[GameManager] FateFlowController.Instance is null! Cannot set starting player.");
             }
             
             // Wait for coin toss UI animation to complete (additional buffer)
@@ -268,7 +262,6 @@ namespace CardGame.Managers
         {
             if (coinTossUI == null)
             {
-                Debug.LogError("[GameManager] CoinTossUI is null! Cannot start coin toss.");
                 yield break;
             }
             
@@ -285,7 +278,6 @@ namespace CardGame.Managers
             // Verify GameObject is active before starting animation
             if (coinTossUI == null || coinTossUI.gameObject == null)
             {
-                Debug.LogError("[GameManager] CoinTossUI or its GameObject became null after activation!");
                 yield break;
             }
             
@@ -305,7 +297,6 @@ namespace CardGame.Managers
                 if (!activeSelf)
                 {
                     // This is a normal recovery path in some initialization orders; log at info level
-                    // Debug.Log("[GameManager] CoinTossUI GameObject is still inactive. Activating again and waiting..."); // Reduced verbosity
                     coinTossObj.SetActive(true);
                     yield return new WaitForEndOfFrame();
                     yield return null;
@@ -316,12 +307,10 @@ namespace CardGame.Managers
                     }
                     else
                     {
-                        Debug.LogError($"[GameManager] Failed to activate CoinTossUI GameObject! activeSelf: {coinTossObj.activeSelf}, enabled: {coinTossUI.enabled}");
                     }
                 }
                 else
                 {
-                    Debug.LogError($"[GameManager] CoinTossUI GameObject activation failed! activeSelf: {activeSelf}, activeInHierarchy: {activeInHierarchy}, enabled: {coinTossUI.enabled}");
                 }
             }
         }
@@ -409,7 +398,6 @@ namespace CardGame.Managers
             }
             else
             {
-                Debug.LogWarning("[GameManager] GameStatsTracker.Instance is null. Statistics may not reset properly.");
             }
             
             // Reset statistics in CardDropArea
@@ -519,7 +507,6 @@ namespace CardGame.Managers
             
             if (tester == null || oppTester == null)
             {
-                Debug.LogWarning("[GameManager] Deck tester components not found. Decks may not be initialized correctly.");
             }
             else
             {

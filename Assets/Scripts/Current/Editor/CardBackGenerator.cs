@@ -114,15 +114,12 @@ namespace CardGame.Editor
                     AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
                     AssetDatabase.SaveAssets();
                     
-                    Debug.Log($"✅ Card back sprite import settings configured for: {path}");
                 }
                 else
                 {
-                    Debug.LogWarning($"CardBackGenerator: Could not get TextureImporter. Please manually reimport: Right-click {path} → Reimport");
                 }
             };
             
-            Debug.Log($"✅ Card back generated at: {path} ({size}x{size})");
             EditorUtility.DisplayDialog("Success", $"Card back generated at:\n{path}\n\n({size}x{size} pixels)", "OK");
         }
         

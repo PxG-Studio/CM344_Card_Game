@@ -66,7 +66,6 @@ namespace CardGame.UI
             GameObject hudCanvas = GameObject.Find("HUDOverlayCanvas");
             if (hudCanvas == null)
             {
-                Debug.LogError("HUDSetup: Could not find HUDOverlayCanvas!");
                 return;
             }
             
@@ -258,7 +257,6 @@ namespace CardGame.UI
             
             if (fixedCount > 0)
             {
-                Debug.Log($"[HUDSetup] Cleaned up {fixedCount} missing script reference(s) from CardBackVisual scene instances");
             }
             #endif
         }
@@ -866,7 +864,6 @@ namespace CardGame.UI
             }
             else
             {
-                Debug.LogWarning($"HUDSetup: Could not find field '{fieldName}' in {type.Name}");
             }
         }
         
@@ -1256,14 +1253,12 @@ namespace CardGame.UI
         {
             if (hudRoot == null)
             {
-                Debug.LogError("HUDSetup: SetupCoinTossUI called with null hudRoot!");
                 return;
             }
             
             // Verify parent is active (inactive parents can hide children in hierarchy)
             if (!hudRoot.gameObject.activeInHierarchy)
             {
-                Debug.LogWarning($"HUDSetup: HUD root '{hudRoot.name}' is inactive. Activating to ensure CoinTossPanel is visible.");
                 hudRoot.gameObject.SetActive(true);
             }
             
@@ -1494,13 +1489,11 @@ namespace CardGame.UI
             // Verify the panel was created and parented correctly
             if (coinTossPanel.transform.parent != hudRoot)
             {
-                Debug.LogError($"HUDSetup: CoinTossPanel parent mismatch! Expected '{hudRoot.name}', got '{coinTossPanel.transform.parent?.name}'");
             }
             
             // Verify the GameObject exists in the scene
             if (coinTossPanel == null || coinTossPanel.GetInstanceID() == 0)
             {
-                Debug.LogError("HUDSetup: CoinTossPanel GameObject is invalid after creation!");
             }
             else
             {
@@ -1529,7 +1522,6 @@ namespace CardGame.UI
             }
             else
             {
-                Debug.LogWarning("[HUDSetup] Could not load custom coin heads sprite. Please assign manually.");
             }
             
             if (tailsSprite != null)
@@ -1538,7 +1530,6 @@ namespace CardGame.UI
             }
             else
             {
-                Debug.LogWarning("[HUDSetup] Could not load custom coin tails sprite. Please assign manually.");
             }
         }
         
@@ -1561,7 +1552,6 @@ namespace CardGame.UI
             GameObject dropAreas = GameObject.Find("Drop Areas");
             if (dropAreas == null)
             {
-                Debug.LogWarning("HUDSetup: Could not find 'Drop Areas' for CardFrontlineUI positioning.");
                 return;
             }
             
@@ -1744,7 +1734,6 @@ namespace CardGame.UI
             GameObject dropAreasRoot = GameObject.Find("Drop Areas");
             if (dropAreasRoot == null)
             {
-                Debug.LogWarning("HUDSetup: Cannot create battleground backdrop because 'Drop Areas' was not found.");
                 return;
             }
 
@@ -1778,7 +1767,6 @@ namespace CardGame.UI
             Sprite sprite = LoadBattlegroundSprite();
             if (sprite == null)
             {
-                Debug.LogWarning("[HUDSetup] Battle_Grounds sprite not found. Background will stay default.");
                 return;
             }
 

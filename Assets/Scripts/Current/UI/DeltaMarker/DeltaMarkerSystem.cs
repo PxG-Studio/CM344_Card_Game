@@ -22,11 +22,9 @@ namespace CardGame.UI
         {
             if (targetTransform == null)
             {
-                Debug.LogWarning("[DeltaMarkerSystem] Target transform is null! Cannot show delta marker.");
                 return;
             }
             
-            Debug.Log($"[DeltaMarkerSystem] ShowDelta called: delta={deltaValue}, target={targetTransform.name}, position={targetTransform.position}");
             ShowDeltaAtPosition(deltaValue, targetTransform.position);
         }
         
@@ -41,12 +39,9 @@ namespace CardGame.UI
             DeltaMarkerEmitter emitter = GetEmitter();
             if (emitter == null)
             {
-                Debug.LogWarning("[DeltaMarkerSystem] DeltaMarkerEmitter not found in scene! Delta marker will not be shown. " +
-                    "Please add a DeltaMarkerEmitter component to a GameObject in your scene.");
                 return;
             }
             
-            Debug.Log($"[DeltaMarkerSystem] Spawning delta marker: delta={deltaValue}, position={worldPosition}, emitter={emitter.name}");
             emitter.SpawnDelta(deltaValue, worldPosition);
         }
         
@@ -60,7 +55,6 @@ namespace CardGame.UI
             DeltaMarkerEmitter emitter = GetEmitter();
             if (emitter == null)
             {
-                Debug.LogWarning("[DeltaMarkerSystem] DeltaMarkerEmitter not found in scene! Delta marker will not be shown.");
                 return;
             }
             
@@ -74,14 +68,12 @@ namespace CardGame.UI
         {
             if (targetTransform == null)
             {
-                Debug.LogWarning("[DeltaMarkerSystem] Target transform is null! Cannot show alert marker.");
                 return;
             }
             
             DeltaMarkerEmitter emitter = GetEmitter();
             if (emitter == null)
             {
-                Debug.LogWarning("[DeltaMarkerSystem] DeltaMarkerEmitter not found in scene! Alert marker will not be shown.");
                 return;
             }
             
@@ -112,7 +104,6 @@ namespace CardGame.UI
             
             if (cachedEmitter == null)
             {
-                Debug.LogWarning("[DeltaMarkerSystem] No DeltaMarkerEmitter found in scene. Creating runtime emitter.");
                 GameObject emitterObj = new GameObject("DeltaMarkerEmitter_Runtime");
                 cachedEmitter = emitterObj.AddComponent<DeltaMarkerEmitter>();
             }
@@ -122,7 +113,6 @@ namespace CardGame.UI
             if (cachedEmitter != null)
             {
                 cachedEmitter.EnsureReady();
-                // Debug.Log($"[DeltaMarkerSystem] Using DeltaMarkerEmitter '{cachedEmitter.gameObject.name}'"); // Reduced verbosity
             }
             
             return cachedEmitter;

@@ -115,11 +115,9 @@ namespace CardGame.UI
         /// <param name="scoreMargin">Score margin (positive = player leads)</param>
         public void ShowGameEnd(bool playerWon, bool isTie, int cardsPlayed, int capturesMade, int longestChain, int scoreMargin)
         {
-            Debug.Log($"[GameEndUI] ShowGameEnd called - Player Won: {playerWon}, Is Tie: {isTie}, Cards Played: {cardsPlayed}, Captures: {capturesMade}, Longest Chain: {longestChain}, Margin: {scoreMargin}");
             
             if (endGamePanel == null)
             {
-                Debug.LogError("[GameEndUI] endGamePanel is null! Cannot show game end screen.");
                 return;
             }
             
@@ -282,7 +280,6 @@ namespace CardGame.UI
             }
             else
             {
-                Debug.LogWarning("[GameEndUI] Statistics text is null. Statistics will not be displayed.");
             }
             
             // Update win/loss record (with null safety)
@@ -295,12 +292,10 @@ namespace CardGame.UI
                 else
                 {
                     winLossRecordText.text = "Wins: 0 | Losses: 0";
-                    Debug.LogWarning("[GameEndUI] GameStatsTracker.Instance is null. Win/loss record will show default values.");
                 }
             }
             else
             {
-                Debug.LogWarning("[GameEndUI] Win/loss record text is null. Win/loss record will not be displayed.");
             }
             
             // Update contextual message (with null safety)
@@ -310,7 +305,6 @@ namespace CardGame.UI
             }
             else
             {
-                Debug.LogWarning("[GameEndUI] Contextual message text is null. Contextual message will not be displayed.");
             }
             
             TriggerCutIn(playerWon, isTie);
@@ -358,7 +352,6 @@ namespace CardGame.UI
         
         private void OnRestartClicked()
         {
-            Debug.Log("[GameEndUI] Rematch button clicked");
             Rematch();
         }
         
@@ -373,7 +366,6 @@ namespace CardGame.UI
             }
             else
             {
-                Debug.LogError("[GameEndUI] GameManager.Instance is null! Cannot rematch.");
                 // Fallback: reload scene
                 UnityEngine.SceneManagement.SceneManager.LoadScene(
                     UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
@@ -383,7 +375,6 @@ namespace CardGame.UI
         
         private void OnQuitClicked()
         {
-            Debug.Log("Quit button clicked");
             #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
             #else

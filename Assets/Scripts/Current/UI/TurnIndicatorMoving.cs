@@ -109,7 +109,6 @@ namespace CardGame.UI
             }
             else
             {
-                Debug.LogWarning("TurnIndicatorMoving: Could not find P1Panel or P2Panel! Will retry in Update.");
             }
         }
         
