@@ -154,37 +154,13 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         cardsInCurrentChain.Clear();
         activeChainCount = 0;
         
-        // Ensure game object is active
-        if (!gameObject.activeInHierarchy)
-        {
-            gameObject.SetActive(true);
-        }
-        
-        // Reset tile color to default (white/neutral)
-        // Ensure sprite renderer is found and enabled
-        if (tileSpriteRenderer == null)
-        {
-            tileSpriteRenderer = GetComponent<SpriteRenderer>();
-        }
-        
-        if (tileSpriteRenderer != null)
-        {
-            // Ensure sprite renderer is enabled
-            if (!tileSpriteRenderer.enabled)
-            {
-                tileSpriteRenderer.enabled = true;
-            }
-            
-            // Reset color to white
-            tileSpriteRenderer.color = Color.white;
-        }
-        else
-        {
-            Debug.LogWarning($"[BOARD RESET] CardDropArea at {transform.position} has no SpriteRenderer component");
-        }
+        // Note: Tile colors are updated via UpdateAllTileColors() called from GameManager.ClearBoard()
+        // This allows tiles to maintain their original appearance or be updated based on current state
+        // rather than being forced to white, giving a "fresh start" appearance (from prototype-3)
         
         if (debugBattles)
         {
+            Debug.Log($"[CardDropArea] Reset for new game - cleared occupying card and turn tracking on '{gameObject.name}'");
         }
     }
 
