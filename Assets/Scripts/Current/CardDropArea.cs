@@ -3126,12 +3126,13 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             // For chain captures, also check lenient adjacency (3.0f) to catch cases where
             // a weak card tries to chain capture a stronger card that's leniently but not strictly adjacent
             bool isLenientlyAdjacent = false;
+            float lenientDistance = Vector3.Distance(cardPosition, otherCardMover.transform.position);
+            Vector3 delta = otherCardMover.transform.position - cardPosition;
+            float deltaX = Mathf.Abs(delta.x);
+            float deltaY = Mathf.Abs(delta.y);
+            
             if (!isStrictlyAdjacent)
             {
-                float lenientDistance = Vector3.Distance(cardPosition, otherCardMover.transform.position);
-                Vector3 delta = otherCardMover.transform.position - cardPosition;
-                float deltaX = Mathf.Abs(delta.x);
-                float deltaY = Mathf.Abs(delta.y);
                 bool isOrthogonal = (deltaY < 0.5f && deltaX > 0.1f) || (deltaX < 0.5f && deltaY > 0.1f);
                 isLenientlyAdjacent = isOrthogonal && lenientDistance <= 3.0f;
                 
@@ -3143,6 +3144,12 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                              $"Orthogonal: {isOrthogonal}, deltaX: {deltaX}, deltaY: {deltaY}");
                 }
                 #endif
+            }
+            else
+            {
+                // If strictly adjacent, also check if orthogonal for lenient check
+                bool isOrthogonal = (deltaY < 0.5f && deltaX > 0.1f) || (deltaX < 0.5f && deltaY > 0.1f);
+                isLenientlyAdjacent = isOrthogonal && lenientDistance <= 3.0f;
             }
             
             if (!isStrictlyAdjacent && !isLenientlyAdjacent)
