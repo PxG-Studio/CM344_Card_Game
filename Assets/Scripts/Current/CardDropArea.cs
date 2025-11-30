@@ -2305,12 +2305,55 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         {
         }
         
-        if (!isOrthogonalNeighbor)
+        // For chain captures with lenient adjacency, allow stat check even if not strictly orthogonal
+        // This ensures we can log warnings when a weak card tries to chain capture a stronger card
+        if (!isOrthogonalNeighbor && !(isChainCapture && isLenientlyAdjacent))
         {
             if (debugBattles)
             {
             }
             return null; // Not an orthogonal neighbor, no battle
+        }
+        
+        // For chain captures with lenient adjacency but not strictly orthogonal, we still need to determine stats
+        // Use the direction from delta to determine which stats to compare
+        if (isChainCapture && isLenientlyAdjacent && !isOrthogonalNeighbor)
+        {
+            // Determine direction from delta
+            if (deltaY < 0.5f && deltaX > 0.1f)
+            {
+                // Horizontal neighbor
+                isOrthogonalNeighbor = true;
+                if (delta.x > 0)
+                {
+                    placedCardStat = placedCard.CurrentRightStat;
+                    otherCardStat = otherCard.CurrentLeftStat;
+                    directionName = "right";
+                }
+                else
+                {
+                    placedCardStat = placedCard.CurrentLeftStat;
+                    otherCardStat = otherCard.CurrentRightStat;
+                    directionName = "left";
+                }
+            }
+            else if (deltaX < 0.5f && deltaY > 0.1f)
+            {
+                // Vertical neighbor
+                isOrthogonalNeighbor = true;
+                if (delta.y > 0)
+                {
+                    placedCardStat = placedCard.CurrentTopStat;
+                    otherCardStat = otherCard.CurrentDownStat;
+                    directionName = "top";
+                }
+                else
+                {
+                    placedCardStat = placedCard.CurrentDownStat;
+                    otherCardStat = otherCard.CurrentTopStat;
+                    directionName = "down";
+                }
+            }
         }
         
         // CRITICAL LOGGING: Always log stat comparison to diagnose test failures
