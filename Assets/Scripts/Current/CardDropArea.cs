@@ -2215,14 +2215,9 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         if (Application.isEditor)
         {
             Debug.Log($"[CheckBattleBetweenCardsForRipple] placedCardIsPlayer={placedCardIsPlayer}, otherCardIsPlayer={otherCardIsPlayer}, " +
-                      $"placedCardObject={placedCardObject?.name}, otherCardObject={otherCardObject?.name}");
+                      $"placedCardObject={placedCardObject?.name}, otherCardObject={otherCardObject?.name}, isChainCapture={isChainCapture}");
         }
         #endif
-        
-        if (placedCardIsPlayer == otherCardIsPlayer)
-        {
-            return null; // Same player, no battle
-        }
         
         // STRICT ADJACENCY CHECK FIRST - This is the primary gatekeeper
         // Use strict tolerance to ensure cards 7.66 units apart are NEVER compared
@@ -2335,6 +2330,9 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         }
         #endif
         
+        // Check if cards belong to same player - if so, no battle unless checking for chain capture warning
+        bool samePlayer = placedCardIsPlayer == otherCardIsPlayer;
+        
         if (placedCardStat <= otherCardStat)
         {
             // Defender wins or tie - NO capture should occur.
@@ -2358,6 +2356,12 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             }
             #endif
             return null;
+        }
+        
+        // If same player, no battle (but warning was already logged above if isChainCapture)
+        if (samePlayer)
+        {
+            return null; // Same player, no battle
         }
         
         // Additional check: Ensure attackerWins is true (redundant but explicit)
