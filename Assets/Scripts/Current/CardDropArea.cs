@@ -3087,12 +3087,27 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             if (cardsInCurrentChain.Contains(otherCardMover.gameObject)) continue;
             if (cardsPlayedThisTurn.Contains(otherCardMover.gameObject)) continue;
             
-            // HARD GUARANTEE: No comparisons unless cards are strictly adjacent
-            // This prevents any distant cards (e.g., 7.66 units) from being evaluated in chain captures
+            // For chain captures, check both strict and lenient adjacency
+            // This allows us to check stats and log warnings even for leniently adjacent cards
             float testDistance;
-            if (!AreCardsStrictlyAdjacent(cardPosition, otherCardMover.transform.position, out testDistance, useLenientForOrthogonal: true))
+            bool isStrictlyAdjacent = AreCardsStrictlyAdjacent(cardPosition, otherCardMover.transform.position, out testDistance, useLenientForOrthogonal: true);
+            
+            // For chain captures, also check lenient adjacency (3.0f) to catch cases where
+            // a weak card tries to chain capture a stronger card that's leniently but not strictly adjacent
+            bool isLenientlyAdjacent = false;
+            if (!isStrictlyAdjacent)
             {
-                // Skip this card - not adjacent, don't even check battle
+                float lenientDistance = Vector3.Distance(cardPosition, otherCardMover.transform.position);
+                Vector3 delta = otherCardMover.transform.position - cardPosition;
+                float deltaX = Mathf.Abs(delta.x);
+                float deltaY = Mathf.Abs(delta.y);
+                bool isOrthogonal = (deltaY < 0.5f && deltaX > 0.1f) || (deltaX < 0.5f && deltaY > 0.1f);
+                isLenientlyAdjacent = isOrthogonal && lenientDistance <= 3.0f;
+            }
+            
+            if (!isStrictlyAdjacent && !isLenientlyAdjacent)
+            {
+                // Skip this card - not adjacent at all, don't even check battle
                 continue;
             }
             
@@ -3106,9 +3121,11 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             if (capturedCardIsPlayer == otherCardIsPlayer)
             {
                 #if UNITY_EDITOR
-                if (Application.isEditor && debugBattles)
+                if (Application.isEditor)
                 {
                     Debug.Log($"[CheckChainCapture] Same-player cards detected: {capturedCard.name} (P1) vs {otherCardMover.gameObject.name} (P1). " +
+                             $"Distance: {Vector3.Distance(cardPosition, otherCardMover.transform.position)}, " +
+                             $"Strictly adjacent: {isStrictlyAdjacent}, Leniently adjacent: {isLenientlyAdjacent}. " +
                              $"Still checking battle for warning log.");
                 }
                 #endif
@@ -3144,12 +3161,27 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             if (cardsInCurrentChain.Contains(otherCardMoverP2.gameObject)) continue;
             if (cardsPlayedThisTurn.Contains(otherCardMoverP2.gameObject)) continue;
             
-            // HARD GUARANTEE: No comparisons unless cards are strictly adjacent
-            // This prevents any distant cards (e.g., 7.66 units) from being evaluated in chain captures
+            // For chain captures, check both strict and lenient adjacency
+            // This allows us to check stats and log warnings even for leniently adjacent cards
             float testDistance;
-            if (!AreCardsStrictlyAdjacent(cardPosition, otherCardMoverP2.transform.position, out testDistance, useLenientForOrthogonal: true))
+            bool isStrictlyAdjacent = AreCardsStrictlyAdjacent(cardPosition, otherCardMoverP2.transform.position, out testDistance, useLenientForOrthogonal: true);
+            
+            // For chain captures, also check lenient adjacency (3.0f) to catch cases where
+            // a weak card tries to chain capture a stronger card that's leniently but not strictly adjacent
+            bool isLenientlyAdjacent = false;
+            if (!isStrictlyAdjacent)
             {
-                // Skip this card - not adjacent, don't even check battle
+                float lenientDistance = Vector3.Distance(cardPosition, otherCardMoverP2.transform.position);
+                Vector3 delta = otherCardMoverP2.transform.position - cardPosition;
+                float deltaX = Mathf.Abs(delta.x);
+                float deltaY = Mathf.Abs(delta.y);
+                bool isOrthogonal = (deltaY < 0.5f && deltaX > 0.1f) || (deltaX < 0.5f && deltaY > 0.1f);
+                isLenientlyAdjacent = isOrthogonal && lenientDistance <= 3.0f;
+            }
+            
+            if (!isStrictlyAdjacent && !isLenientlyAdjacent)
+            {
+                // Skip this card - not adjacent at all, don't even check battle
                 continue;
             }
             
@@ -3163,9 +3195,11 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             if (capturedCardIsPlayer == otherCardIsPlayer)
             {
                 #if UNITY_EDITOR
-                if (Application.isEditor && debugBattles)
+                if (Application.isEditor)
                 {
                     Debug.Log($"[CheckChainCapture] Same-player cards detected: {capturedCard.name} (P1) vs {otherCardMoverP2.gameObject.name} (P1). " +
+                             $"Distance: {Vector3.Distance(cardPosition, otherCardMoverP2.transform.position)}, " +
+                             $"Strictly adjacent: {isStrictlyAdjacent}, Leniently adjacent: {isLenientlyAdjacent}. " +
                              $"Still checking battle for warning log.");
                 }
                 #endif
