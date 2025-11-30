@@ -3224,9 +3224,23 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             if (otherCardMoverP2.Card == null) continue;
             if (otherCardMoverP2.gameObject == capturedCard) continue; // Skip self
             
-            // Skip if in current chain or played this turn
+            // Skip if in current chain
             if (cardsInCurrentChain.Contains(otherCardMoverP2.gameObject)) continue;
-            if (cardsPlayedThisTurn.Contains(otherCardMoverP2.gameObject)) continue;
+            
+            // Check if card was played this turn
+            bool wasPlayedThisTurnP2 = cardsPlayedThisTurn.Contains(otherCardMoverP2.gameObject);
+            
+            // For cards played this turn, we still want to check stats and log warnings for same-player cards
+            // in chain capture scenarios, but we won't create flip targets
+            if (wasPlayedThisTurnP2)
+            {
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    Debug.Log($"[CheckChainCapture] Card {otherCardMoverP2.gameObject.name} was played this turn, but will still check for warning log if same-player");
+                }
+                #endif
+            }
             
             // For chain captures, check both strict and lenient adjacency
             // This allows us to check stats and log warnings even for leniently adjacent cards
@@ -3259,6 +3273,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             // Skip if both cards belong to same player (no battle)
             // However, we still want to check for the warning log even for same-player cards
             // to catch logic errors where a weak card tries to capture a stronger card
+            // This check should happen even if the other card was played this turn
             if (capturedCardIsPlayer == otherCardIsPlayer)
             {
                 #if UNITY_EDITOR
@@ -3266,7 +3281,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 {
                     Debug.Log($"[CheckChainCapture] Same-player cards detected: {capturedCard.name} (P1) vs {otherCardMoverP2.gameObject.name} (P1). " +
                              $"Distance: {Vector3.Distance(cardPosition, otherCardMoverP2.transform.position)}, " +
-                             $"Strictly adjacent: {isStrictlyAdjacent}, Leniently adjacent: {isLenientlyAdjacent}. " +
+                             $"Strictly adjacent: {isStrictlyAdjacent}, Leniently adjacent: {isLenientlyAdjacent}, " +
+                             $"Played this turn: {wasPlayedThisTurnP2}. " +
                              $"Still checking battle for warning log.");
                 }
                 #endif
@@ -3278,6 +3294,18 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                     cardPosition, card,
                     otherCardMoverP2.transform.position, otherCardMoverP2.Card,
                     otherCardMoverP2.gameObject, capturedCard, true, true); // true = isChainCapture, true = useLenientForOrthogonal
+                continue;
+            }
+            
+            // For different-player cards, skip if played this turn (normal same-turn protection)
+            if (wasPlayedThisTurnP2)
+            {
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    Debug.Log($"[CheckChainCapture] Skipping {otherCardMoverP2.gameObject.name}: played this turn (different player)");
+                }
+                #endif
                 continue;
             }
             
