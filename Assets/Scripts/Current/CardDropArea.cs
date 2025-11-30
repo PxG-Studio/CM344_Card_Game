@@ -483,8 +483,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 // Update tile color to reflect P1 ownership (orange)
                 UpdateTileColor();
                 
-                // Show alert marker for newly placed card
-                DeltaMarkerSystem.ShowAlert(cardMover.transform, "!");
+                // Show alert marker for newly placed card (disabled - markers removed from board)
+                // DeltaMarkerSystem.ShowAlert(cardMover.transform, "!");
                 
                 // NOTE: PlayCard() already calls DrawCard() if DrawPileCount > 0, so we don't need to call it here
                 // This prevents drawing two cards (one from PlayCard, one from OnCardDrop)
@@ -585,7 +585,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                     cardMover.SetPlayed(true);
                     cardsPlayedThisTurn.Add(cardMover.gameObject);
                     UpdateTileColor();
-                    DeltaMarkerSystem.ShowAlert(cardMover.transform, "!");
+                    // DeltaMarkerSystem.ShowAlert(cardMover.transform, "!"); // Disabled - markers removed from board
                     if (deckManagerP1.DrawPileCount > 0)
                     {
                         deckManagerP1.DrawCard();
@@ -1376,8 +1376,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 // Update tile color to reflect P2 ownership (green)
                 UpdateTileColor();
                 
-                // Show alert marker for new opponent card
-                DeltaMarkerSystem.ShowAlert(cardMoverP2.transform, "!");
+                // Show alert marker for new opponent card (disabled - markers removed from board)
+                // DeltaMarkerSystem.ShowAlert(cardMoverP2.transform, "!");
                 
                 // NOTE: PlayCard() already calls DrawCard() if DrawPileCount > 0, so we don't need to call it here
                 // This prevents drawing two cards (one from PlayCard, one from OnCardDropP2)
