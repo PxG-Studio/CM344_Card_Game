@@ -765,14 +765,52 @@ namespace CardGame.UI
         /// </summary>
         public void CaptureCard(Color captureColor, FlipDirection direction)
         {
+            #if UNITY_EDITOR
+            if (Application.isEditor)
+            {
+                if (!IsSetupValid())
+                {
+                    Debug.LogWarning($"[CardFlipAnimation.CaptureCard] IsSetupValid() returned false for {gameObject.name}. " +
+                                    $"frontContainer={frontContainer != null}, backContainer={backContainer != null}. " +
+                                    $"Cannot capture card.");
+                    return;
+                }
+            }
+            else
+            {
+                if (!IsSetupValid()) return;
+            }
+            #else
             if (!IsSetupValid()) return;
-            if (isAnimating) return;
+            #endif
+            
+            // Stop any running animation first, then clear the coroutine reference
+            // This will automatically make isAnimating return false (since it checks currentFlipCoroutine != null)
             if (currentFlipCoroutine != null)
             {
                 StopCoroutine(currentFlipCoroutine);
+                currentFlipCoroutine = null;
+                
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    Debug.LogWarning($"[CardFlipAnimation.CaptureCard] Stopped previous animation for {gameObject.name}. " +
+                                    $"Proceeding with capture.");
+                }
+                #endif
             }
-            // Store capture color
+            
+            // Store capture color BEFORE starting the coroutine
+            // This ensures the color is set even if the coroutine fails to start
             lastCaptureColor = captureColor;
+            
+            #if UNITY_EDITOR
+            if (Application.isEditor)
+            {
+                Debug.Log($"[CardFlipAnimation.CaptureCard] Setting lastCaptureColor={captureColor} for {gameObject.name}");
+            }
+            #endif
+            
             currentFlipCoroutine = StartCoroutine(CaptureCardCoroutine(captureColor, direction));
         }
 

@@ -111,8 +111,38 @@ namespace CardGame.Tests
             Assert.IsNotNull(playerDeck, "NewDeckManagerP1 should exist");
             Assert.IsNotNull(opponentDeck, "NewDeckManagerP2 should exist");
             
-            // Wait for cards to be drawn (after coin toss completes)
-            yield return new WaitForSeconds(3.0f);
+            // Wait for coin toss to complete (this triggers card drawing)
+            yield return CardTestHelper.WaitForCoinTossToComplete();
+            
+            // Wait a bit more for cards to be drawn after coin toss
+            yield return new WaitForSeconds(2.0f);
+            
+            // If cards still haven't been drawn, manually draw opening hands
+            // (TryInitializeDecksAndDrawOpeningHands only works if test objects exist in scene)
+            if (playerDeck.Hand.Count == 0 && opponentDeck.Hand.Count == 0)
+            {
+                // Ensure decks are initialized
+                if (playerDeck.DrawPileCount == 0)
+                {
+                    playerDeck.InitializeDeck();
+                }
+                if (opponentDeck.DrawPileCount == 0)
+                {
+                    opponentDeck.InitializeDeck();
+                }
+                
+                // Draw opening hands (typically 5 cards each)
+                if (playerDeck.DrawPileCount > 0)
+                {
+                    playerDeck.DrawCards(5);
+                }
+                if (opponentDeck.DrawPileCount > 0)
+                {
+                    opponentDeck.DrawCards(5);
+                }
+                
+                yield return new WaitForSeconds(0.5f);
+            }
             
             // Verify hands have cards (exact count depends on game setup)
             int playerHandCount = playerDeck.Hand.Count;

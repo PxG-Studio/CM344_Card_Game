@@ -127,6 +127,7 @@ namespace CardGame.UI
                 {
                     // Keep this message aligned with play mode tests that expect a
                     // one-time diagnostic when serialized button fields are null in Awake.
+                    Debug.LogError("[CoinTossUI] headsButton is NULL! Button not found in scene hierarchy.");
                 }
             }
 
@@ -175,6 +176,7 @@ namespace CardGame.UI
                 {
                     // Keep this message aligned with play mode tests that expect a
                     // one-time diagnostic when serialized button fields are null in Awake.
+                    Debug.LogError("[CoinTossUI] tailsButton is NULL! Button not found in scene hierarchy.");
                 }
             }
             
@@ -499,6 +501,15 @@ namespace CardGame.UI
                 return;
             }
             
+            // CRITICAL: Check if coin toss is already complete FIRST (e.g., via SetForcedResult)
+            // If it's complete, show result immediately without requiring a selection
+            if (coinTossManager != null && coinTossManager.IsComplete)
+            {
+                // Coin toss already performed, show result immediately
+                HandleCoinTossComplete(coinTossManager.GetStartingPlayer());
+                return;
+            }
+            
             // Check if player has made a selection
             if (coinTossManager != null && !coinTossManager.HasSelection)
             {
@@ -526,14 +537,6 @@ namespace CardGame.UI
                 {
                     // Exception caught and ignored
                 }
-            }
-            else if (coinTossManager != null && coinTossManager.IsComplete)
-            {
-                // Coin toss already performed, show result immediately
-                HandleCoinTossComplete(coinTossManager.GetStartingPlayer());
-            }
-            else
-            {
             }
         }
 

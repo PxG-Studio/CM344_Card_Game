@@ -314,23 +314,49 @@ namespace CardGame.Tests
                 CardMoverP1 extraMover = FindCardMoverInHand(handP1, extraCard);
                 Assert.IsNotNull(extraMover, "Extra card should have CardMoverP1");
                 
-                // Try to place on any area (all should be occupied)
-                bool placed = false;
-                foreach (CardDropArea area in dropAreas)
-                {
-                    if (area != null && area.IsOccupied)
-                    {
-                        placed = CardTestHelper.PlaceP1CardOnDropArea(extraMover, area);
-                        if (placed) break;
-                    }
-                }
+                // Store the original position of the card
+                Vector3 originalPosition = extraMover.transform.position;
                 
-                Assert.IsFalse(placed, "Should NOT be able to place card when board is full");
+                // Try to place on the first area (should be occupied, so placement should fail)
+                CardDropArea firstArea = dropAreas[0];
+                Assert.IsNotNull(firstArea, "First area should exist");
+                Assert.IsTrue(firstArea.IsOccupied, "First area should be occupied (board is full)");
+                
+                // Store the original occupying card
+                GameObject originalOccupyingCard = firstArea.GetOccupyingCard();
+                Assert.IsNotNull(originalOccupyingCard, "First area should have an occupying card");
+                
+                // Attempt placement
+                bool placementReturnedTrue = CardTestHelper.PlaceP1CardOnDropArea(extraMover, firstArea);
+                
+                // Wait a moment for the placement attempt to complete
+                yield return new WaitForSeconds(0.5f);
+                
+                // Verify the card was NOT actually placed:
+                // 1. The area should still be occupied by the original card (not the new one)
+                Assert.IsTrue(firstArea.IsOccupied, "Area should still be occupied after failed placement attempt");
+                GameObject currentOccupyingCard = firstArea.GetOccupyingCard();
+                Assert.AreEqual(originalOccupyingCard, currentOccupyingCard, 
+                    "Area should still be occupied by the original card, not the new one");
+                
+                // 2. The card should have been returned to start position (or not moved to the area)
+                // Note: PlaceP1CardOnDropArea might return true even if placement failed,
+                // because AttemptDrop returns true if it finds a drop area, regardless of whether OnCardDrop actually places the card
+                // So we verify by checking if the area is still occupied by the original card
                 
                 // Verify board is still full
                 int occupiedCountAfter = CountOccupiedSlots(dropAreas);
                 Assert.AreEqual(16, occupiedCountAfter, 
                     "Board should still be full after failed placement attempt");
+                
+                // The placement method might return true, but the card should not actually be placed
+                // We verify this by checking that the area is still occupied by the original card
+                if (placementReturnedTrue)
+                {
+                    // If placement returned true, verify the card was actually rejected
+                    Assert.AreNotEqual(extraMover.gameObject, currentOccupyingCard,
+                        "Even if placement returned true, the card should not actually occupy the area");
+                }
             }
         }
 
@@ -449,7 +475,8 @@ namespace CardGame.Tests
             CardMoverP1 mover = FindCardMoverInHand(handUI, testCard);
             Assert.IsNotNull(mover, "Card should have CardMoverP1");
             
-            CardTestHelper.PlaceP1CardOnDropArea(mover, targetArea);
+            bool placed = CardTestHelper.PlaceP1CardOnDropArea(mover, targetArea);
+            Assert.IsTrue(placed, "Card placement should succeed");
             yield return new WaitForSeconds(0.5f);
             
             Assert.IsTrue(targetArea.IsOccupied, "Area should be occupied");
@@ -559,9 +586,9 @@ namespace CardGame.Tests
         {
             int cardsPlaced = 0;
             int consecutiveFailures = 0;
-            int maxConsecutiveFailures = 20; // Increased from 10
+            int maxConsecutiveFailures = 50; // Increased to allow more retries
             int totalAttempts = 0;
-            int maxTotalAttempts = 200; // Absolute limit
+            int maxTotalAttempts = 500; // Increased absolute limit
             
             while (cardsPlaced < 16 && consecutiveFailures < maxConsecutiveFailures && totalAttempts < maxTotalAttempts)
             {
@@ -573,41 +600,115 @@ namespace CardGame.Tests
                 
                 bool placedThisRound = false;
                 
-                // Try to place a card
-                for (int i = 0; i < dropAreas.Length && cardsPlaced < 16; i++)
+                // Try to place a card - iterate through all areas to find an empty one
+                bool placedThisIteration = false;
+                for (int i = 0; i < dropAreas.Length && cardsPlaced < 16 && !placedThisIteration; i++)
                 {
                     CardDropArea area = dropAreas[i];
                     if (area == null || area.IsOccupied) continue;
                     
                     bool placed = false;
                     
-                    // Alternate between P1 and P2
-                    if (cardsPlaced % 2 == 0 && deckP1 != null && deckP1.Hand.Count > 0)
+                    // Try P1 first if it's their turn (alternating), otherwise try P2
+                    // If one player has no cards, try the other player
+                    bool tryP1 = (cardsPlaced % 2 == 0);
+                    bool tryP2 = !tryP1;
+                    
+                    // If the preferred player has no cards, try the other player
+                    if (tryP1 && (deckP1 == null || deckP1.Hand.Count == 0))
+                    {
+                        tryP1 = false;
+                        tryP2 = true;
+                    }
+                    else if (tryP2 && (deckP2 == null || deckP2.Hand.Count == 0))
+                    {
+                        tryP2 = false;
+                        tryP1 = true;
+                    }
+                    
+                    // If both players have no cards, we can't place any more
+                    if ((tryP1 && (deckP1 == null || deckP1.Hand.Count == 0)) &&
+                        (tryP2 && (deckP2 == null || deckP2.Hand.Count == 0)))
+                    {
+                        Debug.LogWarning($"[FillBoardCompletely] Both players have no cards. Placed {cardsPlaced}/16 cards.");
+                        break;
+                    }
+                    
+                    if (tryP1 && deckP1 != null && deckP1.Hand.Count > 0)
                     {
                         NewCard card = deckP1.Hand[0];
                         CardMoverP1 mover = FindCardMoverInHand(handP1, card);
                         if (mover != null && !mover.IsPlayed)
                         {
                             placed = CardTestHelper.PlaceP1CardOnDropArea(mover, area);
+                            if (placed)
+                            {
+                                // Wait for placement to complete
+                                yield return new WaitForSeconds(0.25f);
+                                // Verify the area is actually occupied now
+                                if (area.IsOccupied)
+                                {
+                                    placedThisIteration = true;
+                                }
+                                else
+                                {
+                                    // Placement returned true but area is not occupied - might be a timing issue
+                                    Debug.LogWarning($"[FillBoardCompletely] Placement returned true but area is not occupied. Waiting longer...");
+                                    yield return new WaitForSeconds(0.5f);
+                                    if (area.IsOccupied)
+                                    {
+                                        placedThisIteration = true;
+                                    }
+                                    else
+                                    {
+                                        placed = false; // Mark as failed for this iteration
+                                    }
+                                }
+                            }
                         }
                     }
-                    else if (deckP2 != null && deckP2.Hand.Count > 0)
+                    
+                    if (!placed && !placedThisIteration && tryP2 && deckP2 != null && deckP2.Hand.Count > 0)
                     {
                         NewCard card = deckP2.Hand[0];
                         CardMoverP2 mover = FindCardMoverInHand(handP2, card);
                         if (mover != null && !mover.IsPlayed)
                         {
                             placed = CardTestHelper.PlaceP2CardOnDropArea(mover, area);
+                            if (placed)
+                            {
+                                // Wait for placement to complete
+                                yield return new WaitForSeconds(0.25f);
+                                // Verify the area is actually occupied now
+                                if (area.IsOccupied)
+                                {
+                                    placedThisIteration = true;
+                                }
+                                else
+                                {
+                                    // Placement returned true but area is not occupied - might be a timing issue
+                                    Debug.LogWarning($"[FillBoardCompletely] Placement returned true but area is not occupied. Waiting longer...");
+                                    yield return new WaitForSeconds(0.5f);
+                                    if (area.IsOccupied)
+                                    {
+                                        placedThisIteration = true;
+                                    }
+                                    else
+                                    {
+                                        placed = false; // Mark as failed for this iteration
+                                    }
+                                }
+                            }
                         }
                     }
                     
-                    if (placed)
+                    if (placed && placedThisIteration)
                     {
                         cardsPlaced++;
                         placedThisRound = true;
                         consecutiveFailures = 0;
                         yield return new WaitForSeconds(0.15f); // Slightly longer wait
-                        break; // Break to restart loop
+                        break; // Break to restart outer loop and recheck all areas
                     }
                 }
                 
