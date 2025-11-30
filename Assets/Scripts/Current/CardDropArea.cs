@@ -44,6 +44,9 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     
     // Public property to access tileSpriteRenderer for debugging
     public SpriteRenderer TileSpriteRenderer => tileSpriteRenderer;
+    
+    // Store original tile color to restore on rematch
+    private Color originalTileColor = Color.white;
     // Note: Adjacency is now handled by hardcoded values:
     // - 1.6f for strict battle adjacency (AreCardsStrictlyAdjacent)
     // - 3.0f for lenient adjacency (GetAdjacentDropArea)
@@ -154,14 +157,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         cardsInCurrentChain.Clear();
         activeChainCount = 0;
         
-        // Ensure game object is active
-        if (!gameObject.activeInHierarchy)
-        {
-            gameObject.SetActive(true);
-        }
-        
-        // Reset tile color to default (white/neutral)
-        // Ensure sprite renderer is found and enabled
+        // Reset tile to original appearance (checked blue 4x4 pattern)
+        // This ensures tiles return to their default state after rematch
         if (tileSpriteRenderer == null)
         {
             tileSpriteRenderer = GetComponent<SpriteRenderer>();
@@ -175,16 +172,13 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 tileSpriteRenderer.enabled = true;
             }
             
-            // Reset color to white
-            tileSpriteRenderer.color = Color.white;
-        }
-        else
-        {
-            Debug.LogWarning($"[BOARD RESET] CardDropArea at {transform.position} has no SpriteRenderer component");
+            // Reset to original color (restores checked blue 4x4 pattern)
+            tileSpriteRenderer.color = originalTileColor;
         }
         
         if (debugBattles)
         {
+            Debug.Log($"[CardDropArea] Reset for new game - cleared occupying card and turn tracking on '{gameObject.name}'");
         }
     }
 
@@ -253,6 +247,12 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         if (tileSpriteRenderer == null)
         {
             tileSpriteRenderer = GetComponent<SpriteRenderer>();
+        }
+        
+        // Store original tile color for rematch reset
+        if (tileSpriteRenderer != null)
+        {
+            originalTileColor = tileSpriteRenderer.color;
         }
         
         // Auto-find NewDeckManagerP1 if not assigned
@@ -824,10 +824,11 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             #endif
             
             // Primary check: placed P1 card attacks P2 card
+            // Use lenient mode for orthogonal neighbors (matches the adjacency check above)
             FlipTarget target = CheckBattleBetweenCardsForRipple(
                 placedPosition, placedCard,
                 otherCardMoverP2.transform.position, otherCardMoverP2.Card,
-                otherCardMoverP2.gameObject, placedCardMover.gameObject);
+                otherCardMoverP2.gameObject, placedCardMover.gameObject, false, true);
             
             #if UNITY_EDITOR
             if (Application.isEditor)
@@ -839,12 +840,13 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             
             // Secondary symmetric check: allow existing P2 card to capture the newly placed P1 card
             // when P2's stat is higher.
+            // Use lenient mode for orthogonal neighbors (matches the adjacency check above)
             if (target == null)
             {
                 target = CheckBattleBetweenCardsForRipple(
                     otherCardMoverP2.transform.position, otherCardMoverP2.Card,
                     placedPosition, placedCard,
-                    placedCardMover.gameObject, otherCardMoverP2.gameObject);
+                    placedCardMover.gameObject, otherCardMoverP2.gameObject, false, true);
                 
                 #if UNITY_EDITOR
                 if (Application.isEditor)
@@ -2202,7 +2204,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     /// Used for ripple effect - collects flip targets instead of flipping immediately
     /// Only checks orthogonal neighbors (top, bottom, left, right)
     /// </summary>
-    private FlipTarget CheckBattleBetweenCardsForRipple(Vector3 placedPos, NewCard placedCard, Vector3 otherPos, NewCard otherCard, GameObject otherCardObject, GameObject placedCardObject, bool isChainCapture = false)
+    private FlipTarget CheckBattleBetweenCardsForRipple(Vector3 placedPos, NewCard placedCard, Vector3 otherPos, NewCard otherCard, GameObject otherCardObject, GameObject placedCardObject, bool isChainCapture = false, bool useLenientForOrthogonal = false)
     {
         // Don't battle cards that belong to the same player
         bool placedCardIsPlayer = IsPlayerCard(placedCardObject);
@@ -2224,8 +2226,9 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         
         // STRICT ADJACENCY CHECK FIRST - This is the primary gatekeeper
         // Use strict tolerance to ensure cards 7.66 units apart are NEVER compared
+        // But allow lenient mode for orthogonal neighbors when requested (e.g., from CheckCardBattlesP1)
         float totalDistance;
-        if (!AreCardsStrictlyAdjacent(placedPos, otherPos, out totalDistance))
+        if (!AreCardsStrictlyAdjacent(placedPos, otherPos, out totalDistance, useLenientForOrthogonal))
         {
             // Always log strict adjacency rejections to help debug test failures
             return null; // Not strictly adjacent - reject immediately
@@ -3047,17 +3050,19 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 
                 // Still call CheckBattleBetweenCardsForRipple to trigger warning if needed
                 // but don't add the target since same-player cards can't battle
+                // Use lenient mode for orthogonal neighbors (matches the adjacency check above)
                 CheckBattleBetweenCardsForRipple(
                     cardPosition, card,
                     otherCardMover.transform.position, otherCardMover.Card,
-                    otherCardMover.gameObject, capturedCard, true); // true = isChainCapture
+                    otherCardMover.gameObject, capturedCard, true, true); // true = isChainCapture, true = useLenientForOrthogonal
                 continue;
             }
             
+            // Use lenient mode for orthogonal neighbors (matches the adjacency check above)
             FlipTarget target = CheckBattleBetweenCardsForRipple(
                 cardPosition, card,
                 otherCardMover.transform.position, otherCardMover.Card,
-                otherCardMover.gameObject, capturedCard, true); // true = isChainCapture
+                otherCardMover.gameObject, capturedCard, true, true); // true = isChainCapture, true = useLenientForOrthogonal
             
             if (target != null)
             {
@@ -3102,17 +3107,19 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 
                 // Still call CheckBattleBetweenCardsForRipple to trigger warning if needed
                 // but don't add the target since same-player cards can't battle
+                // Use lenient mode for orthogonal neighbors (matches the adjacency check above)
                 CheckBattleBetweenCardsForRipple(
                     cardPosition, card,
                     otherCardMoverP2.transform.position, otherCardMoverP2.Card,
-                    otherCardMoverP2.gameObject, capturedCard, true); // true = isChainCapture
+                    otherCardMoverP2.gameObject, capturedCard, true, true); // true = isChainCapture, true = useLenientForOrthogonal
                 continue;
             }
             
+            // Use lenient mode for orthogonal neighbors (matches the adjacency check above)
             FlipTarget target = CheckBattleBetweenCardsForRipple(
                 cardPosition, card,
                 otherCardMoverP2.transform.position, otherCardMoverP2.Card,
-                otherCardMoverP2.gameObject, capturedCard, true); // true = isChainCapture
+                otherCardMoverP2.gameObject, capturedCard, true, true); // true = isChainCapture, true = useLenientForOrthogonal
             
             if (target != null)
             {
