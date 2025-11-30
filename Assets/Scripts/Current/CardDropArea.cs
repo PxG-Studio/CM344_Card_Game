@@ -2222,22 +2222,37 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // STRICT ADJACENCY CHECK FIRST - This is the primary gatekeeper
         // Use strict tolerance to ensure cards 7.66 units apart are NEVER compared
         // But allow lenient mode for orthogonal neighbors when requested (e.g., from CheckCardBattlesP1)
+        // EXCEPTION: For chain captures, we still want to check stats and log warnings even if not strictly adjacent
+        // (but only if they're leniently adjacent, to avoid checking cards that are truly far apart)
         float totalDistance;
-        if (!AreCardsStrictlyAdjacent(placedPos, otherPos, out totalDistance, useLenientForOrthogonal))
-        {
-            // Always log strict adjacency rejections to help debug test failures
-            return null; // Not strictly adjacent - reject immediately
-        }
+        bool isStrictlyAdjacent = AreCardsStrictlyAdjacent(placedPos, otherPos, out totalDistance, useLenientForOrthogonal);
         
         Vector3 delta = otherPos - placedPos;
         float deltaX = Mathf.Abs(delta.x);
-        float deltaY = Mathf.Abs(delta.y); // Y is vertical (up/down)
+        float deltaY = Mathf.Abs(delta.y);
         
-        if (debugBattles)
+        // For chain captures, also check lenient adjacency (3.0f tolerance) to catch cases where
+        // a weak card tries to chain capture a stronger card that's leniently but not strictly adjacent
+        bool isLenientlyAdjacent = false;
+        if (isChainCapture && !isStrictlyAdjacent)
         {
+            // Check if cards are within lenient tolerance (3.0f) for orthogonal neighbors
+            float lenientDistance = Vector3.Distance(placedPos, otherPos);
+            bool isOrthogonal = (deltaY < 0.5f && deltaX > 0.1f) || (deltaX < 0.5f && deltaY > 0.1f);
+            isLenientlyAdjacent = isOrthogonal && lenientDistance <= 3.0f;
         }
         
+        if (!isStrictlyAdjacent && !isLenientlyAdjacent)
+        {
+            // Not adjacent at all - reject immediately
+            return null;
+        }
+        
+        // If we're here and isChainCapture is true but not strictly adjacent, we'll continue
+        // to check stats and log the warning, but won't create a flip target
+        
         // Only check directly adjacent cards (orthogonal neighbors)
+        // For chain captures with lenient adjacency, we still need to check if they're orthogonal
         bool isOrthogonalNeighbor = false;
         string directionName = "";
         int placedCardStat = 0;
@@ -2344,6 +2359,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             {
                 if (isChainCapture)
                 {
+                    // Log warning for chain captures where attacker doesn't win
+                    // This helps tests verify that invalid chain captures are prevented
                     Debug.LogWarning($"[LOGIC ERROR PREVENTED] Attempted to create flip target when attacker did NOT win. " +
                                    $"placedCardStat ({placedCardStat}) <= otherCardStat ({otherCardStat}). " +
                                    $"This prevents invalid chain captures where a weak card tries to capture a stronger card.");
@@ -2355,6 +2372,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 }
             }
             #endif
+            // For chain captures, we still return null (no flip target), but the warning was logged above
             return null;
         }
         
