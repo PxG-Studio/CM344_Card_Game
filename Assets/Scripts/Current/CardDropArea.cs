@@ -3083,9 +3083,35 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             if (otherCardMover.Card == null) continue;
             if (otherCardMover.gameObject == capturedCard) continue; // Skip self
             
+            #if UNITY_EDITOR
+            if (Application.isEditor)
+            {
+                float checkDistance = Vector3.Distance(cardPosition, otherCardMover.transform.position);
+                Debug.Log($"[CheckChainCapture] Checking card {otherCardMover.gameObject.name} at distance {checkDistance} from {capturedCard.name}");
+            }
+            #endif
+            
             // Skip if in current chain or played this turn
-            if (cardsInCurrentChain.Contains(otherCardMover.gameObject)) continue;
-            if (cardsPlayedThisTurn.Contains(otherCardMover.gameObject)) continue;
+            if (cardsInCurrentChain.Contains(otherCardMover.gameObject))
+            {
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    Debug.Log($"[CheckChainCapture] Skipping {otherCardMover.gameObject.name}: already in chain");
+                }
+                #endif
+                continue;
+            }
+            if (cardsPlayedThisTurn.Contains(otherCardMover.gameObject))
+            {
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    Debug.Log($"[CheckChainCapture] Skipping {otherCardMover.gameObject.name}: played this turn");
+                }
+                #endif
+                continue;
+            }
             
             // For chain captures, check both strict and lenient adjacency
             // This allows us to check stats and log warnings even for leniently adjacent cards
@@ -3103,17 +3129,39 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 float deltaY = Mathf.Abs(delta.y);
                 bool isOrthogonal = (deltaY < 0.5f && deltaX > 0.1f) || (deltaX < 0.5f && deltaY > 0.1f);
                 isLenientlyAdjacent = isOrthogonal && lenientDistance <= 3.0f;
+                
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    Debug.Log($"[CheckChainCapture] Card {otherCardMover.gameObject.name}: Strictly adjacent: {isStrictlyAdjacent}, " +
+                             $"Leniently adjacent: {isLenientlyAdjacent}, Distance: {lenientDistance}, " +
+                             $"Orthogonal: {isOrthogonal}, deltaX: {deltaX}, deltaY: {deltaY}");
+                }
+                #endif
             }
             
             if (!isStrictlyAdjacent && !isLenientlyAdjacent)
             {
                 // Skip this card - not adjacent at all, don't even check battle
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    Debug.Log($"[CheckChainCapture] Skipping {otherCardMover.gameObject.name}: not adjacent (strict: {isStrictlyAdjacent}, lenient: {isLenientlyAdjacent})");
+                }
+                #endif
                 continue;
             }
             
             // Only check battles if cards belong to different players (after capture)
             bool capturedCardIsPlayer = IsPlayerCard(capturedCard);
             bool otherCardIsPlayer = IsPlayerCard(otherCardMover.gameObject);
+            
+            #if UNITY_EDITOR
+            if (Application.isEditor)
+            {
+                Debug.Log($"[CheckChainCapture] Card {otherCardMover.gameObject.name}: capturedCardIsPlayer={capturedCardIsPlayer}, otherCardIsPlayer={otherCardIsPlayer}");
+            }
+            #endif
             
             // Skip if both cards belong to same player (no battle)
             // However, we still want to check for the warning log even for same-player cards
