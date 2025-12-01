@@ -34,11 +34,27 @@ namespace CardGame.UI
             HidePausePanel();
         }
 
+        /// <summary>
+        /// Quit to main menu / title screen from the pause menu.
+        /// In editor/WebGL this behaves like "Return to Title" rather than closing the app.
+        /// </summary>
         private void QuitMenu()
         {
-            Application.Quit();
+            // Ensure the game is unpaused before leaving the scene
+            isPaused = false;
+            Time.timeScale = 1f;
+            HidePausePanel();
 
+            // If a GameManager exists, allow it to clean up state if needed
+            if (GameManager.Instance != null)
+            {
+                // We don't force a specific state here; GameManager will be re‑initialized
+                // when the title/menu scene loads.
+            }
 
+            // Return to the title / main menu scene defined in build settings
+            // (TitleCard is the configured entry scene).
+            SceneManager.LoadScene("TitleCard");
         }
 
         private void Update()
@@ -82,19 +98,39 @@ namespace CardGame.UI
                 pausePanel.SetActive(false);
         }
 
+        /// <summary>
+        /// Fully quit the game application.
+        /// In the editor this stops play mode; in a build it closes the app.
+        /// </summary>
         private void QuitGame()
         {
-            #if UNITY_EDITOR
-                UnityEditor.EditorApplication.isPlaying = false;
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
 #else
-                Application.Quit();
-#endif
             Application.Quit();
+#endif
         }
 
+        /// <summary>
+        /// Restart the current battle from the pause menu.
+        /// </summary>
         public void RestartGame()
         {
+            // Clear pause state
+            isPaused = false;
+            Time.timeScale = 1f;
+            HidePausePanel();
 
+            // Prefer the GameManager's rematch/reset logic if available
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.ResetGameState();
+            }
+            else
+            {
+                // Fallback: reload the active scene
+                SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            }
         }
         public void GoToScene(string sceneName)
         {
