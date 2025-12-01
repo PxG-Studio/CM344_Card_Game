@@ -44,6 +44,11 @@ namespace CardGame.UI
         // Reference to NewCardUI for captured color
         private NewCardUI cardUI;
         
+        // Track capture state and color
+        private Color lastCaptureColor = Color.clear;
+        public bool WasCaptured => lastCaptureColor != Color.clear;
+        public Color LastCaptureColor => lastCaptureColor;
+        
         /// <summary>
         /// Set container references (called from NewCardUI if not set in Inspector)
         /// </summary>
@@ -73,6 +78,18 @@ namespace CardGame.UI
                 StopCoroutine(currentFlipCoroutine);
             }
             StopAllCoroutines();
+        }
+        
+        /// <summary>
+        /// Stops the current flip animation if one is running
+        /// </summary>
+        public void StopFlipAnimation()
+        {
+            if (currentFlipCoroutine != null)
+            {
+                StopCoroutine(currentFlipCoroutine);
+                currentFlipCoroutine = null;
+            }
         }
         
         public bool ValidateSetup()
@@ -122,6 +139,290 @@ namespace CardGame.UI
         public bool IsSetupValid()
         {
             return frontContainer != null && backContainer != null;
+        }
+        
+        /// <summary>
+        /// Ensures the card back sprite renderer stays white so the CardBack_Default image shows properly
+        /// </summary>
+        private void EnsureBackSpriteIsWhite()
+        {
+            if (backContainer == null) return;
+            
+            // Find the card back sprite renderer
+            SpriteRenderer backSpriteRenderer = backContainer.GetComponentInChildren<SpriteRenderer>();
+            if (backSpriteRenderer != null && (backSpriteRenderer.gameObject.name == "CardBackSprite" || 
+                                               backSpriteRenderer.gameObject.name.Contains("CardBack")))
+            {
+                // Keep the back sprite white so the CardBack_Default image shows properly
+                backSpriteRenderer.color = new Color(1f, 1f, 1f, 1f);
+            }
+        }
+        
+        /// <summary>
+        /// Hides card background, border, and all text elements when showing the back
+        /// </summary>
+        private void HideCardFrontElements()
+        {
+            if (cardUI == null) return;
+            
+            // Get cardBackground using reflection
+            var cardBackgroundField = typeof(NewCardUI).GetField("cardBackground",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (cardBackgroundField != null)
+            {
+                var cardBackground = cardBackgroundField.GetValue(cardUI);
+                if (cardBackground != null)
+                {
+                    SpriteRenderer bgSR = cardBackground as SpriteRenderer;
+                    UnityEngine.UI.Image bgImg = cardBackground as UnityEngine.UI.Image;
+                    
+                    if (bgSR != null) bgSR.enabled = false;
+                    if (bgImg != null) bgImg.enabled = false;
+                }
+            }
+            
+            // Get borderOverlayRenderer using reflection
+            var borderOverlayField = typeof(NewCardUI).GetField("borderOverlayRenderer",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (borderOverlayField != null)
+            {
+                var borderOverlay = borderOverlayField.GetValue(cardUI);
+                if (borderOverlay != null)
+                {
+                    SpriteRenderer borderSR = borderOverlay as SpriteRenderer;
+                    if (borderSR != null) borderSR.enabled = false;
+                }
+            }
+            
+            // Hide all text elements
+            HideTextElements(cardUI, true);
+        }
+        
+        /// <summary>
+        /// Hides or shows all text elements on the card
+        /// </summary>
+        private void HideTextElements(NewCardUI cardUI, bool hide)
+        {
+            if (cardUI == null) return;
+            
+            // Check if this is a board card or being dragged
+            bool isOnBoard = cardUI.GetComponent<CardMoverP1>() != null || cardUI.GetComponent<CardMoverP2>() != null;
+            bool isBeingDragged = false;
+            
+            // Check if card is being dragged using reflection (isDragging is private)
+            var isDraggingField = typeof(NewCardUI).GetField("isDragging",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (isDraggingField != null)
+            {
+                isBeingDragged = (bool)isDraggingField.GetValue(cardUI);
+            }
+            
+            // Get all text fields using reflection
+            string[] textFieldNames = {
+                "cardNameText",
+                "descriptionText",
+                "topStatText",
+                "rightStatText",
+                "downStatText",
+                "leftStatText",
+                "cardTypeText"
+            };
+            
+            foreach (string fieldName in textFieldNames)
+            {
+                var textField = typeof(NewCardUI).GetField(fieldName,
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (textField != null)
+                {
+                    var textComponent = textField.GetValue(cardUI);
+                    if (textComponent != null)
+                    {
+                        TMPro.TextMeshProUGUI tmpText = textComponent as TMPro.TextMeshProUGUI;
+                        if (tmpText != null)
+                        {
+                            // Stat text should always be visible for board cards or cards being dragged
+                            if (fieldName.Contains("Stat") && (isOnBoard || isBeingDragged || !hide))
+                            {
+                                tmpText.enabled = true; // Force stat text to be visible
+                                tmpText.alpha = 1f;
+                                tmpText.gameObject.SetActive(true);
+                            }
+                            else
+                            {
+                                tmpText.enabled = !hide;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Also hide any other TextMeshProUGUI elements that might be children
+            if (frontContainer != null)
+            {
+                TMPro.TextMeshProUGUI[] allTexts = frontContainer.GetComponentsInChildren<TMPro.TextMeshProUGUI>(true);
+                foreach (var text in allTexts)
+                {
+                    if (text != null)
+                    {
+                        bool isStatText = text.name.Contains("Stat") || text.name.Contains("Top") || text.name.Contains("Right") || text.name.Contains("Down") || text.name.Contains("Left");
+                        
+                        // Stat text should always be visible for board cards or cards being dragged
+                        if (isStatText && (isOnBoard || isBeingDragged || !hide))
+                        {
+                            // Always keep stat text visible for board cards or during drag
+                            text.enabled = true;
+                            text.alpha = 1f;
+                            text.gameObject.SetActive(true);
+                        }
+                        else
+                        {
+                            text.enabled = !hide;
+                        }
+                    }
+                }
+            }
+            
+            // Hide text elements at root level too (in case they're not in frontContainer)
+            TMPro.TextMeshProUGUI[] rootTexts = cardUI.GetComponentsInChildren<TMPro.TextMeshProUGUI>(true);
+            foreach (var text in rootTexts)
+            {
+                if (text != null && !text.transform.IsChildOf(backContainer != null ? backContainer.transform : null))
+                {
+                    bool isStatText = text.name.Contains("Stat") || text.name.Contains("Top") || text.name.Contains("Right") || text.name.Contains("Down") || text.name.Contains("Left");
+                    
+                    // Stat text should always be visible for board cards or cards being dragged
+                    if (isStatText && (isOnBoard || isBeingDragged || !hide))
+                    {
+                        text.enabled = true; // Force stat text to be visible
+                        text.alpha = 1f;
+                        text.gameObject.SetActive(true);
+                    }
+                    else
+                    {
+                        text.enabled = !hide;
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Shows card background, border, and all text elements when showing the front
+        /// </summary>
+        private void ShowCardFrontElements()
+        {
+            if (cardUI == null) return;
+            
+            // Get cardBackground using reflection
+            var cardBackgroundField = typeof(NewCardUI).GetField("cardBackground",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (cardBackgroundField != null)
+            {
+                var cardBackground = cardBackgroundField.GetValue(cardUI);
+                if (cardBackground != null)
+                {
+                    SpriteRenderer bgSR = cardBackground as SpriteRenderer;
+                    UnityEngine.UI.Image bgImg = cardBackground as UnityEngine.UI.Image;
+                    
+                    if (bgSR != null) bgSR.enabled = true;
+                    if (bgImg != null) bgImg.enabled = true;
+                }
+            }
+            
+            // Get borderOverlayRenderer using reflection
+            var borderOverlayField = typeof(NewCardUI).GetField("borderOverlayRenderer",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (borderOverlayField != null)
+            {
+                var borderOverlay = borderOverlayField.GetValue(cardUI);
+                if (borderOverlay != null)
+                {
+                    SpriteRenderer borderSR = borderOverlay as SpriteRenderer;
+                    if (borderSR != null) borderSR.enabled = true;
+                }
+            }
+            
+            // Show all text elements
+            HideTextElements(cardUI, false);
+        }
+        
+        /// <summary>
+        /// Scales the back sprite to match the card background size
+        /// This ensures the back sprite is properly sized during the flip animation
+        /// </summary>
+        private void ScaleBackSprite()
+        {
+            if (backContainer == null || cardUI == null) return;
+            
+            // Find the back sprite renderer
+            SpriteRenderer backSpriteRenderer = backContainer.GetComponentInChildren<SpriteRenderer>();
+            if (backSpriteRenderer == null || backSpriteRenderer.sprite == null) return;
+            
+            // Get cardBackground from NewCardUI using reflection
+            var cardBackgroundField = typeof(NewCardUI).GetField("cardBackground",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (cardBackgroundField == null) return;
+            
+            var cardBackground = cardBackgroundField.GetValue(cardUI);
+            if (cardBackground == null) return;
+            
+            SpriteRenderer bgSR = cardBackground as SpriteRenderer;
+            UnityEngine.UI.Image bgImg = cardBackground as UnityEngine.UI.Image;
+            
+            if (bgSR == null && bgImg == null) return;
+            
+            // Get sprite from either SpriteRenderer or Image
+            Sprite bgSprite = null;
+            if (bgSR != null && bgSR.sprite != null)
+            {
+                bgSprite = bgSR.sprite;
+            }
+            else if (bgImg != null && bgImg.sprite != null)
+            {
+                bgSprite = bgImg.sprite;
+            }
+            
+            if (bgSprite == null) return;
+            
+            // Get the cardBackground's actual visual size
+            // Need to account for all scales in the hierarchy (frontContainer + cardBackground)
+            Transform bgTransform = bgSR != null ? bgSR.transform : bgImg.transform;
+            Vector3 bgScale = bgTransform.localScale;
+            Vector3 frontContainerScale = Vector3.one;
+            
+            // If cardBackground is inside frontContainer, account for frontContainer's scale too
+            if (frontContainer != null && bgTransform.IsChildOf(frontContainer.transform))
+            {
+                frontContainerScale = frontContainer.transform.localScale;
+            }
+            
+            Vector2 bgSpriteSize = bgSprite.bounds.size;
+            // Multiply by all scales in hierarchy
+            Vector2 bgActualSize = new Vector2(
+                bgSpriteSize.x * bgScale.x * frontContainerScale.x,
+                bgSpriteSize.y * bgScale.y * frontContainerScale.y
+            );
+            
+            Vector2 backSize = backSpriteRenderer.sprite.bounds.size;
+            if (backSize.x > 0.0001f && backSize.y > 0.0001f)
+            {
+                // Calculate scale to match the cardBackground's actual visual size
+                float scaleX = bgActualSize.x / backSize.x;
+                float scaleY = bgActualSize.y / backSize.y;
+                float uniform = Mathf.Min(scaleX, scaleY);
+                backSpriteRenderer.transform.localScale = new Vector3(uniform, uniform, 1f);
+            }
+            else
+            {
+                backSpriteRenderer.transform.localScale = Vector3.one;
+            }
+            
+            // Ensure the sprite renderer is visible after scaling
+            backSpriteRenderer.enabled = true;
+            backSpriteRenderer.color = new Color(1f, 1f, 1f, 1f); // Ensure full opacity
+            if (backSpriteRenderer.gameObject != null)
+            {
+                backSpriteRenderer.gameObject.SetActive(true);
+            }
         }
         
         /// <summary>
@@ -219,13 +520,23 @@ namespace CardGame.UI
             }
             
             // Apply to back container sprites and images (visible when flipped)
+            // BUT exclude the card back sprite renderer - it should always stay white to show the CardBack_Default image
             if (backSprites != null)
             {
                 foreach (SpriteRenderer sr in backSprites)
                 {
                     if (sr != null)
                     {
-                        // Preserve alpha but set RGB to gray
+                        // Skip the card back sprite - it should always remain white
+                        // The card back sprite is named "CardBackSprite" and should show the CardBack_Default image
+                        if (sr.gameObject.name == "CardBackSprite" || sr.gameObject.name.Contains("CardBack"))
+                        {
+                            // Keep the back sprite white so the CardBack_Default image shows properly
+                            sr.color = new Color(1f, 1f, 1f, 1f);
+                            continue;
+                        }
+                        
+                        // Preserve alpha but set RGB to gray for other sprites
                         Color grayColor = capturedColor;
                         grayColor.a = sr.color.a; // Preserve current alpha
                         sr.color = grayColor;
@@ -301,8 +612,13 @@ namespace CardGame.UI
             }
             
             // Ensure containers are in correct initial state
+            // Start with back visible (card is flipped to back)
             if (frontContainer != null) frontContainer.SetActive(false);
-            if (backContainer != null) backContainer.SetActive(true);
+            if (backContainer != null) 
+            {
+                backContainer.SetActive(true);
+                ScaleBackSprite(); // Scale back sprite when it becomes visible
+            }
             
             while (elapsed < flipDuration)
             {
@@ -315,12 +631,16 @@ namespace CardGame.UI
                 transform.localRotation = Quaternion.Euler(0, currentRotationY, 0);
                 
                 // At midpoint (90 degrees), swap containers and restore original colors
+                // This ensures only one container is visible at a time
                 if (t >= 0.5f && frontContainer != null && !frontContainer.activeSelf)
                 {
+                    // Hide back before showing front to prevent overlap
+                    if (backContainer != null) backContainer.SetActive(false);
                     frontContainer.SetActive(true);
-                    backContainer.SetActive(false);
                     // Restore original colors when flipping back to front
                     RestoreOriginalColors(originalColor);
+                    // Show card background and border when showing front
+                    ShowCardFrontElements();
                 }
                 
                 yield return null;
@@ -331,6 +651,7 @@ namespace CardGame.UI
             if (frontContainer != null) frontContainer.SetActive(true);
             if (backContainer != null) backContainer.SetActive(false);
             RestoreOriginalColors(originalColor); // Ensure colors are restored
+            // Note: Back sprite scaling not needed here since back is hidden
             
             isFlipped = true;
             currentFlipCoroutine = null;
@@ -380,6 +701,7 @@ namespace CardGame.UI
             }
             
             // Ensure containers are in correct initial state
+            // Start with front visible (card is face up)
             if (frontContainer != null) frontContainer.SetActive(true);
             if (backContainer != null) backContainer.SetActive(false);
             
@@ -394,11 +716,18 @@ namespace CardGame.UI
                 transform.localRotation = Quaternion.Euler(0, currentRotationY, 0);
                 
                 // At midpoint (90 degrees), swap containers and apply captured color
+                // This ensures only one container is visible at a time
                 if (t >= 0.5f && backContainer != null && !backContainer.activeSelf)
                 {
-                    frontContainer.SetActive(false);
+                    // Hide front before showing back to prevent overlap
+                    if (frontContainer != null) frontContainer.SetActive(false);
                     backContainer.SetActive(true);
+                    ScaleBackSprite(); // Scale back sprite when it becomes visible
                     ApplyCapturedColor(capturedColor);
+                    // Ensure back sprite stays white after applying captured color
+                    EnsureBackSpriteIsWhite();
+                    // Hide card background and border when showing back
+                    HideCardFrontElements();
                 }
                 
                 yield return null;
@@ -407,8 +736,16 @@ namespace CardGame.UI
             // Ensure final state
             transform.localRotation = Quaternion.Euler(0, 180, 0);
             if (frontContainer != null) frontContainer.SetActive(false);
-            if (backContainer != null) backContainer.SetActive(true);
+            if (backContainer != null) 
+            {
+                backContainer.SetActive(true);
+                ScaleBackSprite(); // Ensure back sprite is properly scaled
+            }
             ApplyCapturedColor(capturedColor); // Ensure color is applied
+            // Ensure back sprite stays white after applying captured color
+            EnsureBackSpriteIsWhite();
+            // Hide card background and border when showing back
+            HideCardFrontElements();
             
             isFlipped = false;
             currentFlipCoroutine = null;
@@ -425,6 +762,14 @@ namespace CardGame.UI
                 FlipToFront();
             }
         }
+        
+        /// <summary>
+        /// Flips the card (toggles between front and back)
+        /// </summary>
+        public void FlipCard()
+        {
+            FlipToggle();
+        }
 
         /// <summary>
         /// Captures a card: flips it (animation) and changes only the border/background color to capture color
@@ -440,12 +785,52 @@ namespace CardGame.UI
         /// </summary>
         public void CaptureCard(Color captureColor, FlipDirection direction)
         {
+            #if UNITY_EDITOR
+            if (Application.isEditor)
+            {
+                if (!IsSetupValid())
+                {
+                    Debug.LogWarning($"[CardFlipAnimation.CaptureCard] IsSetupValid() returned false for {gameObject.name}. " +
+                                    $"frontContainer={frontContainer != null}, backContainer={backContainer != null}. " +
+                                    $"Cannot capture card.");
+                    return;
+                }
+            }
+            else
+            {
+                if (!IsSetupValid()) return;
+            }
+            #else
             if (!IsSetupValid()) return;
-            if (isAnimating) return;
+            #endif
+            
+            // Stop any running animation first, then clear the coroutine reference
+            // This will automatically make isAnimating return false (since it checks currentFlipCoroutine != null)
             if (currentFlipCoroutine != null)
             {
                 StopCoroutine(currentFlipCoroutine);
+                currentFlipCoroutine = null;
+                
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    Debug.LogWarning($"[CardFlipAnimation.CaptureCard] Stopped previous animation for {gameObject.name}. " +
+                                    $"Proceeding with capture.");
+                }
+                #endif
             }
+            
+            // Store capture color BEFORE starting the coroutine
+            // This ensures the color is set even if the coroutine fails to start
+            lastCaptureColor = captureColor;
+            
+            #if UNITY_EDITOR
+            if (Application.isEditor)
+            {
+                // Debug logging removed for capture mechanics isolation
+            }
+            #endif
+            
             currentFlipCoroutine = StartCoroutine(CaptureCardCoroutine(captureColor, direction));
         }
 
@@ -514,10 +899,13 @@ namespace CardGame.UI
                 }
 
                 // At midpoint (90 degrees), swap containers
+                // This ensures only one container is visible at a time
                 if (t >= 0.5f && backContainer != null && !backContainer.activeSelf)
                 {
-                    frontContainer.SetActive(false);
+                    // Hide front before showing back to prevent overlap
+                    if (frontContainer != null) frontContainer.SetActive(false);
                     backContainer.SetActive(true);
+                    ScaleBackSprite(); // Scale back sprite when it becomes visible
                 }
 
                 yield return null;
@@ -549,10 +937,14 @@ namespace CardGame.UI
                 }
 
                 // At midpoint (90 degrees), swap containers back
+                // This ensures only one container is visible at a time
                 if (t >= 0.5f && frontContainer != null && !frontContainer.activeSelf)
                 {
-                    backContainer.SetActive(false);
+                    // Hide back before showing front to prevent overlap
+                    if (backContainer != null) backContainer.SetActive(false);
                     frontContainer.SetActive(true);
+                    // Show card background and border when showing front
+                    ShowCardFrontElements();
                 }
 
                 yield return null;
@@ -562,7 +954,9 @@ namespace CardGame.UI
             transform.localRotation = Quaternion.Euler(0, 0, 0);
             if (frontContainer != null) frontContainer.SetActive(true);
             if (backContainer != null) backContainer.SetActive(false);
-
+            // Show card background and border when showing front
+            ShowCardFrontElements();
+            
             isFlipped = true; // Card is face up (front showing)
             currentFlipCoroutine = null;
         }
@@ -614,23 +1008,23 @@ namespace CardGame.UI
             // Check if card is in player's hand or was played by player
             if (cardUI != null && cardUI.Card != null)
             {
-                NewDeckManager playerDeckManager = FindObjectOfType<NewDeckManager>();
+                NewDeckManagerP1 playerDeckManager = FindObjectOfType<NewDeckManagerP1>();
                 if (playerDeckManager != null && playerDeckManager.Hand.Contains(cardUI.Card))
                 {
                     return true; // Card is in player's hand
                 }
                 
-                // Check if it's a CardMover (player card) vs CardMoverOpp (opponent card)
+                // Check if it's a CardMover (P1) vs CardMoverP2 (P2)
                 //CardMover cardMover = GetComponent<CardMover>();
                
                 //if (cardMover != null)
                 if (frontContainer.CompareTag("p1"))
                 {
-                    return true; // Player card
+                    return true; // P1 card
                 }
                 
-                //CardMoverOpp cardMoverOpp = GetComponent<CardMoverOpp>();
-                //if (cardMoverOpp != null)
+                //CardMoverP2 cardMoverP2 = GetComponent<CardMoverP2>();
+                //if (cardMoverP2 != null)
                 if (frontContainer.CompareTag("p2"))
                 {
                     return false; // Opponent card
@@ -685,13 +1079,20 @@ namespace CardGame.UI
                 transform.localRotation = Quaternion.Euler(0, 0, 0);
                 if (frontContainer != null) frontContainer.SetActive(true);
                 if (backContainer != null) backContainer.SetActive(false);
+                ShowCardFrontElements(); // Show card background and border
             }
             else
             {
                 transform.localRotation = Quaternion.Euler(0, 180, 0);
                 if (frontContainer != null) frontContainer.SetActive(false);
-                if (backContainer != null) backContainer.SetActive(true);
+                if (backContainer != null) 
+                {
+                    backContainer.SetActive(true);
+                    ScaleBackSprite(); // Scale back sprite when showing back
+                }
                 ApplyCapturedColor(capturedColor);
+                EnsureBackSpriteIsWhite(); // Ensure back sprite is white
+                HideCardFrontElements(); // Hide card background and border
             }
             
             isFlipped = showFront;

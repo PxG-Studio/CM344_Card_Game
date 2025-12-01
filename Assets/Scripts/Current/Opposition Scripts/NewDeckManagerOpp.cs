@@ -6,9 +6,9 @@ using NewCardData;
 namespace CardGame.Managers
 {
     /// <summary>
-    /// Manages the player's deck, hand, and discard pile for NewCard system
+    /// Manages P2's deck, hand, and discard pile for NewCard system
     /// </summary>
-    public class NewDeckManagerOpp : MonoBehaviour
+    public class NewDeckManagerP2 : MonoBehaviour
     {
         [Header("Deck Configuration")]
         [SerializeField] private List<NewCardData.NewCardData> startingDeck = new List<NewCardData.NewCardData>();
@@ -47,14 +47,12 @@ namespace CardGame.Managers
             // Shuffle the deck
             ShuffleDeck();
             
-            Debug.Log($"NewDeck initialized: {drawPile.Count} cards in draw pile");
         }
         
         public void ShuffleDeck()
         {
             drawPile.Shuffle();
             OnDeckShuffled?.Invoke();
-            Debug.Log("NewDeck shuffled");
         }
         
         public void DrawCard()
@@ -67,22 +65,18 @@ namespace CardGame.Managers
             
             if (drawPile.Count == 0)
             {
-                Debug.LogWarning("No cards to draw!");
                 return;
             }
             
             // Check hand size limit (you may want to make this configurable)
             if (hand.Count >= 5) // Adjust max hand size as needed
             {
-                Debug.LogWarning("Hand is full!");
                 return;
             }
             
             NewCard card = drawPile.DrawCard();
             hand.AddCard(card);
             OnCardDrawn?.Invoke(card);
-            
-            Debug.Log($"Drew card: {card.Data.cardName}");
         }
         
         public void DrawCards(int count)
@@ -97,7 +91,6 @@ namespace CardGame.Managers
         {
             if (!hand.Contains(card))
             {
-                Debug.LogWarning("Card not in hand!");
                 return;
             }
             
@@ -107,7 +100,8 @@ namespace CardGame.Managers
             // Move to discard pile
             DiscardCard(card);
             
-            Debug.Log($"Played card: {card.Data.cardName}");
+            if (DrawPileCount != 0)
+            { DrawCard();}
         }
         
         public void DiscardCard(NewCard card)
@@ -132,8 +126,6 @@ namespace CardGame.Managers
         
         private void ReshuffleDiscardPile()
         {
-            Debug.Log("Reshuffling discard pile into draw pile");
-            
             foreach (NewCard card in discardPile.Cards)
             {
                 card.ResetToBaseStats();
