@@ -661,13 +661,27 @@ namespace CardGame.UI
             yield return new WaitForSeconds(0.2f);
 
             // NOW display result text - only after animation is completely done
+            // Disabled - result text hidden from coin toss display
+            // if (resultText != null)
+            // {
+            //     string flipResultString = isHeads ? "HEADS" : "TAILS";
+            //     string startingPlayerString = startingPlayer == FateSide.Player ? "Player 1" : "Player 2";
+            //     string resultString = $"{flipResultString}!\n{startingPlayerString} Goes First";
+            //     resultText.text = resultString;
+            //     resultText.gameObject.SetActive(true);
+            // }
+            
+            // Hide result text instead of showing it
             if (resultText != null)
             {
-                string flipResultString = isHeads ? "HEADS" : "TAILS";
-                string startingPlayerString = startingPlayer == FateSide.Player ? "Player 1" : "Player 2";
-                string resultString = $"{flipResultString}!\n{startingPlayerString} Goes First";
-                resultText.text = resultString;
-                resultText.gameObject.SetActive(true);
+                resultText.text = string.Empty;
+                resultText.gameObject.SetActive(false);
+            }
+            
+            // Hide coin image after animation completes
+            if (coinImage != null)
+            {
+                coinImage.gameObject.SetActive(false);
             }
 
             hasShownResult = true;
@@ -709,13 +723,27 @@ namespace CardGame.UI
 
             // Only show result text if animation is NOT running (fallback for edge cases)
             // Normally, the animation coroutine will handle showing the result
+            // Disabled - result text hidden from coin toss display
+            // if (resultText != null && !isAnimating)
+            // {
+            //     string flipResultString = isHeads ? "HEADS" : "TAILS";
+            //     string startingPlayerString = startingSide == FateSide.Player ? "Player 1" : "Player 2";
+            //     string resultString = $"{flipResultString}!\n{startingPlayerString} Goes First";
+            //     resultText.text = resultString;
+            //     resultText.gameObject.SetActive(true);
+            // }
+            
+            // Hide result text instead of showing it
             if (resultText != null && !isAnimating)
             {
-                string flipResultString = isHeads ? "HEADS" : "TAILS";
-                string startingPlayerString = startingSide == FateSide.Player ? "Player 1" : "Player 2";
-                string resultString = $"{flipResultString}!\n{startingPlayerString} Goes First";
-                resultText.text = resultString;
-                resultText.gameObject.SetActive(true);
+                resultText.text = string.Empty;
+                resultText.gameObject.SetActive(false);
+            }
+            
+            // Hide coin image when result is shown
+            if (coinImage != null && !isAnimating)
+            {
+                coinImage.gameObject.SetActive(false);
             }
 
             hasShownResult = true;
