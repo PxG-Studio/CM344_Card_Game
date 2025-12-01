@@ -80,6 +80,18 @@ namespace CardGame.UI
             StopAllCoroutines();
         }
         
+        /// <summary>
+        /// Stops the current flip animation if one is running
+        /// </summary>
+        public void StopFlipAnimation()
+        {
+            if (currentFlipCoroutine != null)
+            {
+                StopCoroutine(currentFlipCoroutine);
+                currentFlipCoroutine = null;
+            }
+        }
+        
         public bool ValidateSetup()
         {
             bool isValid = true;
@@ -750,6 +762,14 @@ namespace CardGame.UI
                 FlipToFront();
             }
         }
+        
+        /// <summary>
+        /// Flips the card (toggles between front and back)
+        /// </summary>
+        public void FlipCard()
+        {
+            FlipToggle();
+        }
 
         /// <summary>
         /// Captures a card: flips it (animation) and changes only the border/background color to capture color
@@ -807,7 +827,7 @@ namespace CardGame.UI
             #if UNITY_EDITOR
             if (Application.isEditor)
             {
-                Debug.Log($"[CardFlipAnimation.CaptureCard] Setting lastCaptureColor={captureColor} for {gameObject.name}");
+                // Debug logging removed for capture mechanics isolation
             }
             #endif
             

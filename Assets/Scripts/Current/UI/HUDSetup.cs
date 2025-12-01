@@ -1751,44 +1751,8 @@ namespace CardGame.UI
             // Add ScoreUI component
             ScoreUI scoreUI = scoreUIObj.AddComponent<ScoreUI>();
             
-            // Create Player1Score text
-            GameObject p1ScoreObj = new GameObject("Player1Score");
-            p1ScoreObj.transform.SetParent(scoreUIObj.transform, false);
-            RectTransform p1ScoreRect = p1ScoreObj.AddComponent<RectTransform>();
-            p1ScoreRect.anchorMin = new Vector2(0.5f, 1f);
-            p1ScoreRect.anchorMax = new Vector2(0.5f, 1f);
-            p1ScoreRect.pivot = new Vector2(0.5f, 1f);
-            p1ScoreRect.sizeDelta = new Vector2(100f, 30f);
-            p1ScoreRect.anchoredPosition = new Vector2(-60f, -20f);
-            
-            TextMeshProUGUI p1ScoreText = p1ScoreObj.AddComponent<TextMeshProUGUI>();
-            p1ScoreText.text = "0";
-            p1ScoreText.fontSize = 24;
-            p1ScoreText.fontStyle = FontStyles.Bold;
-            p1ScoreText.alignment = TextAlignmentOptions.Center;
-            p1ScoreText.color = new Color(1f, 0.62f, 0.27f, 1f); // Orange for P1
-            
-            // Create Player2Score text
-            GameObject p2ScoreObj = new GameObject("Player2Score");
-            p2ScoreObj.transform.SetParent(scoreUIObj.transform, false);
-            RectTransform p2ScoreRect = p2ScoreObj.AddComponent<RectTransform>();
-            p2ScoreRect.anchorMin = new Vector2(0.5f, 1f);
-            p2ScoreRect.anchorMax = new Vector2(0.5f, 1f);
-            p2ScoreRect.pivot = new Vector2(0.5f, 1f);
-            p2ScoreRect.sizeDelta = new Vector2(100f, 30f);
-            p2ScoreRect.anchoredPosition = new Vector2(60f, -20f);
-            
-            TextMeshProUGUI p2ScoreText = p2ScoreObj.AddComponent<TextMeshProUGUI>();
-            p2ScoreText.text = "0";
-            p2ScoreText.fontSize = 24;
-            p2ScoreText.fontStyle = FontStyles.Bold;
-            p2ScoreText.alignment = TextAlignmentOptions.Center;
-            p2ScoreText.color = new Color(0.43f, 1f, 0.55f, 1f); // Green for P2
-            
-            // Wire up references using reflection
-            System.Type scoreUIType = typeof(ScoreUI);
-            SetPrivateField(scoreUI, scoreUIType, "player1Score", p1ScoreText);
-            SetPrivateField(scoreUI, scoreUIType, "player2Score", p2ScoreText);
+            // Note: Player1Score and Player2Score labels are no longer created
+            // ScoreUI component will handle null references gracefully
         }
         
         private void SetupBoardBackdrop()

@@ -360,7 +360,7 @@ namespace CardGame.UI
         /// </summary>
         private void Rematch()
         {
-            Debug.Log("[REMATCH] Rematch button clicked - starting game reset");
+            // Debug logging removed for capture mechanics isolation
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.ResetGameState();

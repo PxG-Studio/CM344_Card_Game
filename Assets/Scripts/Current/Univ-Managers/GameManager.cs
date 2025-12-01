@@ -66,7 +66,7 @@ namespace CardGame.Managers
         
         private void Initialize()
         {
-            Debug.Log("GameManager Initialized");
+            // Debug logging removed for capture mechanics isolation
             ChangeState(GameState.Menu);
         }
         
@@ -75,7 +75,7 @@ namespace CardGame.Managers
             if (currentState == newState)
                 return;
                 
-            Debug.Log($"Game State: {currentState} -> {newState}");
+            // Debug logging removed for capture mechanics isolation
             currentState = newState;
             OnGameStateChanged?.Invoke(newState);
             
@@ -119,7 +119,7 @@ namespace CardGame.Managers
         
         private void PrepareGame()
         {
-            Debug.Log("Preparing game...");
+            // Debug logging removed for capture mechanics isolation
             
             // [CardFront] Reset statistics for new game (if not already reset by ResetGameState)
             if (CardDropArea.GetCardsPlayed() > 0)
@@ -201,15 +201,12 @@ namespace CardGame.Managers
                     // This handles the case where RecalculateScores() was called on an empty board
                     if (boardIsEmpty && (ScoreManager.Instance.P1Score != 0 || ScoreManager.Instance.P2Score != 0))
                     {
-                        Debug.Log($"[DelayedScoreReset] Resetting scores at {delay}s delay. " +
-                            $"P1: {ScoreManager.Instance.P1Score}, P2: {ScoreManager.Instance.P2Score}, " +
-                            $"Occupied tiles: {occupiedCount}");
+                        // Debug logging removed for capture mechanics isolation
                         ScoreManager.Instance.ResetScores();
                     }
                     else if (!boardIsEmpty)
                     {
-                        Debug.Log($"[DelayedScoreReset] Board not empty at {delay}s delay. " +
-                            $"Occupied tiles: {occupiedCount}, P1: {ScoreManager.Instance.P1Score}, P2: {ScoreManager.Instance.P2Score}");
+                        // Debug logging removed for capture mechanics isolation
                     }
                 }
             }
@@ -255,7 +252,7 @@ namespace CardGame.Managers
             {
                 // Start the coin toss from GameManager (always active) to ensure coroutine can start
                 StartCoroutine(StartCoinTossFromManager(coinTossUI));
-                Debug.Log("[GameManager] Coin toss animation started via CoinTossUI.");
+                // Debug logging removed for capture mechanics isolation
             }
             else
             {
@@ -287,12 +284,12 @@ namespace CardGame.Managers
             
             // Get coin toss result and set starting player
             FateSide startingSide = coinTossManager.GetStartingPlayer();
-            Debug.Log($"[GameManager] Coin toss result from CoinTossManager: {startingSide} ({(startingSide == FateSide.Player ? "Player 1" : "Player 2")})");
+            // Debug logging removed for capture mechanics isolation
             
             if (FateFlowController.Instance != null)
             {
                 FateFlowController.Instance.SetFate(startingSide);
-                Debug.Log($"[GameManager] SetFate called with: {startingSide} ({(startingSide == FateSide.Player ? "Player 1" : "Player 2")}). CurrentFate in FateFlowController: {FateFlowController.Instance.CurrentFate} ({(FateFlowController.Instance.CurrentFate == FateSide.Player ? "Player 1" : "Player 2")})");
+                // Debug logging removed for capture mechanics isolation
             }
             else
             {
@@ -338,13 +335,13 @@ namespace CardGame.Managers
             bool activeSelf = coinTossObj.activeSelf;
             bool activeInHierarchy = coinTossObj.activeInHierarchy;
             
-            Debug.Log($"[GameManager] CoinTossUI GameObject state after activation - activeSelf: {activeSelf}, activeInHierarchy: {activeInHierarchy}, enabled: {coinTossUI.enabled}");
+            // Debug logging removed for capture mechanics isolation
             
             // Now start the animation on the active GameObject
             if (activeSelf && coinTossUI.enabled)
             {
                 coinTossUI.StartCoinTossAnimation();
-                Debug.Log("[GameManager] Coin toss animation started successfully.");
+                // Debug logging removed for capture mechanics isolation
             }
             else
             {
@@ -359,7 +356,7 @@ namespace CardGame.Managers
                     if (coinTossObj.activeSelf && coinTossUI.enabled)
                     {
                         coinTossUI.StartCoinTossAnimation();
-                        Debug.Log("[GameManager] Coin toss animation started after second activation.");
+                        // Debug logging removed for capture mechanics isolation
                     }
                     else
                     {
@@ -401,36 +398,36 @@ namespace CardGame.Managers
         
         private void StartPlayerTurn()
         {
-            Debug.Log("Player Turn Started");
+            // Debug logging removed for capture mechanics isolation
             OnTurnStarted?.Invoke();
         }
         
         public void EndPlayerTurn()
         {
-            Debug.Log("Player Turn Ended");
+            // Debug logging removed for capture mechanics isolation
             OnTurnEnded?.Invoke();
             ChangeState(GameState.EnemyTurn);
         }
         
     private void StartEnemyTurn()
     {
-        Debug.Log("Enemy Turn Started");
+        // Debug logging removed for capture mechanics isolation
     }
     
     public void EndEnemyTurn()
         {
-            Debug.Log("Enemy Turn Ended");
+            // Debug logging removed for capture mechanics isolation
             ChangeState(GameState.PlayerTurn);
         }
         
         private void HandleVictory()
         {
-            Debug.Log("Victory!");
+            // Debug logging removed for capture mechanics isolation
         }
         
         private void HandleDefeat()
         {
-            Debug.Log("Defeat!");
+            // Debug logging removed for capture mechanics isolation
         }
         
         public void CheckWinCondition()
@@ -456,10 +453,10 @@ namespace CardGame.Managers
         /// </summary>
         private IEnumerator ResetGameStateCoroutine()
         {
-            Debug.Log("[REMATCH] ResetGameState called - reusing initial game setup flow");
+            // Debug logging removed for capture mechanics isolation
             
             // Step 1: Hide game end UI first (before resetting other systems)
-            Debug.Log("[REMATCH] Step 1: Hiding game end UI");
+            // Debug logging removed for capture mechanics isolation
             CardGame.UI.GameEndUI gameEndUI = FindObjectOfType<CardGame.UI.GameEndUI>();
             if (gameEndUI != null)
             {
@@ -468,7 +465,7 @@ namespace CardGame.Managers
             
             // Step 2: Clear board - remove all cards from CardDropArea instances
             // This also resets all CardDropArea instances (clears occupying card references and turn tracking)
-            Debug.Log("[REMATCH] Step 2: Clearing board (destroying all cards and resetting tiles)");
+            // Debug logging removed for capture mechanics isolation
             ClearBoard();
             
             // CRITICAL: Wait a frame to ensure Destroy() calls complete in PlayMode
@@ -495,12 +492,12 @@ namespace CardGame.Managers
             }
             
             // Step 3: Clear hands (both UI and deck manager hand lists)
-            Debug.Log("[REMATCH] Step 3: Clearing player hands (UI and deck manager lists)");
+            // Debug logging removed for capture mechanics isolation
             ClearHands();
             yield return null; // Wait for hand clearing to complete
             
             // Step 4: Reinitialize decks (this will clear everything and rebuild from starting deck)
-            Debug.Log("[REMATCH] Step 4: Reinitializing deck managers");
+            // Debug logging removed for capture mechanics isolation
             NewDeckManagerP1 playerDeck = FindObjectOfType<NewDeckManagerP1>();
             if (playerDeck != null)
             {
@@ -516,7 +513,7 @@ namespace CardGame.Managers
             
             // Step 5: Reset scores immediately (before showing coin toss UI)
             // This ensures scores are reset right away, before PrepareGame() runs
-            Debug.Log("[REMATCH] Step 5: Resetting scores immediately");
+            // Debug logging removed for capture mechanics isolation
             if (ScoreManager.Instance != null)
             {
                 ScoreManager.Instance.ResetScores();
@@ -549,7 +546,7 @@ namespace CardGame.Managers
             }
             
             // Step 6: Show coin toss UI (same as initial game start)
-            Debug.Log("[REMATCH] Step 6: Showing coin toss UI for new game");
+            // Debug logging removed for capture mechanics isolation
             // Reset coin toss for rematch
             if (CoinTossManager.Instance != null)
             {
@@ -571,7 +568,7 @@ namespace CardGame.Managers
             // - Resetting coin toss
             // - Performing coin toss and starting game (including card drawing)
             // This reuses the exact same flow as StartGame() for consistency
-            Debug.Log("[REMATCH] Step 7: Changing to Preparing state (will trigger normal game initialization flow)");
+            // Debug logging removed for capture mechanics isolation
             ChangeState(GameState.Preparing);
             yield return null; // Allow state change to process
             
@@ -579,7 +576,7 @@ namespace CardGame.Managers
             // The PrepareGame() method will handle initial setup, but we also need to draw cards
             StartCoroutine(TriggerInitialCardDrawAfterReset());
             
-            Debug.Log("[REMATCH] ResetGameState completed - game will initialize through PrepareGame() just like a fresh start");
+            // Debug logging removed for capture mechanics isolation
         }
         
         /// <summary>
@@ -604,7 +601,7 @@ namespace CardGame.Managers
                 oppTester.DrawInitialCards();
             }
             
-            Debug.Log("[GameManager] Initial cards drawn for rematch");
+            // Debug logging removed for capture mechanics isolation
         }
 
         /// <summary>
@@ -631,7 +628,7 @@ namespace CardGame.Managers
             }
             else
             {
-                Debug.Log("[GameManager] Deck systems detected (P1/P2). Initialization and opening draws are handled by testers.");
+                // Debug logging removed for capture mechanics isolation
             }
         }
         
@@ -697,7 +694,7 @@ namespace CardGame.Managers
             // CRITICAL: First, reset all CardDropArea instances BEFORE destroying cards
             // This clears occupying card references immediately so IsOccupied returns false
             // This must happen BEFORE destroying cards to prevent stale references
-            Debug.Log($"[BOARD RESET] Resetting {allDropAreas.Length} CardDropArea instances before destroying cards");
+            // Debug logging removed for capture mechanics isolation
             foreach (CardDropArea dropArea in allDropAreas)
             {
                 if (dropArea != null)
@@ -711,7 +708,7 @@ namespace CardGame.Managers
             
             // Now destroy all collected cards
             // Use Destroy() in PlayMode (proper cleanup) and DestroyImmediate in EditMode
-            Debug.Log($"[BOARD RESET] Destroying {cardsToDestroy.Count} cards from board");
+            // Debug logging removed for capture mechanics isolation
             foreach (GameObject cardToDestroy in cardsToDestroy)
             {
                 if (cardToDestroy != null)
@@ -821,7 +818,7 @@ namespace CardGame.Managers
             }
             else
             {
-                Debug.Log($"[BOARD RESET] Board successfully cleared - all {allDropAreas.Length} CardDropArea instances are now empty");
+                // Debug logging removed for capture mechanics isolation
             }
         }
         
@@ -843,7 +840,7 @@ namespace CardGame.Managers
                 opponentHand.ClearHand();
             }
             
-            Debug.Log("[GameManager] Cleared hands");
+            // Debug logging removed for capture mechanics isolation
         }
         
         /// <summary>
@@ -863,7 +860,7 @@ namespace CardGame.Managers
                 }
             }
             
-            Debug.Log($"[GameManager] Reset {resetCount} CardDropArea instance(s) for new game");
+            // Debug logging removed for capture mechanics isolation
         }
     }
     
