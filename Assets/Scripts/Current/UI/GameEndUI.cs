@@ -307,7 +307,8 @@ namespace CardGame.UI
             {
             }
             
-            TriggerCutIn(playerWon, isTie);
+            // Glitch-style victory cut-in is disabled for a cleaner end screen.
+            // If you want to re-enable it later, call TriggerCutIn(playerWon, isTie) here.
         }
         
         /// <summary>
