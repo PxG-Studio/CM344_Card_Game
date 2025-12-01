@@ -687,12 +687,25 @@ namespace CardGame.UI
             hasShownResult = true;
             isAnimating = false;
 
-            // Show continue button after a brief delay
+            // Hide the entire coin toss panel after animation completes
+            // This prevents the coin and result from remaining visible on the board
             yield return new WaitForSeconds(0.5f);
-            if (continueButton != null)
+            
+            // Hide panel automatically instead of showing continue button
+            if (coinTossPanel != null)
             {
-                continueButton.gameObject.SetActive(true);
+                coinTossPanel.SetActive(false);
             }
+            else
+            {
+                gameObject.SetActive(false);
+            }
+            
+            // Keep continue button hidden since we're auto-hiding the panel
+            // if (continueButton != null)
+            // {
+            //     continueButton.gameObject.SetActive(true);
+            // }
         }
 
         /// <summary>
