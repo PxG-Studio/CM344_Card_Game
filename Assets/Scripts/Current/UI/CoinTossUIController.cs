@@ -117,6 +117,14 @@ namespace CardGame.UI
         }
 
         /// <summary>
+        /// Starts the coin toss intro animation. Can be called externally to trigger the intro.
+        /// </summary>
+        public void StartCoinToss()
+        {
+            PlayIntro();
+        }
+
+        /// <summary>
         /// Exposed so HUDSetup can wire the references if a prefab isn't used.
         /// </summary>
         public void InjectDependencies(CanvasGroup canvasGroup, RectTransform panel, Image image,
