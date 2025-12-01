@@ -26,6 +26,11 @@ namespace CardGame.Managers
         
         // Event for UI updates (both scores at once)
         public System.Action<int, int> OnScoreUpdated; // (p1Score, p2Score)
+
+        // Cache capture colors so we stay consistent with the Battle Front Influence bar
+        // and CardDropArea without repeatedly doing scene lookups.
+        private static Color? cachedP1Color = null;
+        private static Color? cachedP2Color = null;
         
         private void Awake()
         {
@@ -224,8 +229,8 @@ namespace CardGame.Managers
                     }
                     
                     // Check if it's a capture color (not default white/transparent)
-                    Color playerColor = new Color(1f, 0.5f, 0f, 1f); // Orange
-                    Color p2Color = new Color(0f, 0.8f, 0f, 1f); // P2 capture color (green)
+                    Color playerColor = GetP1CaptureColor();
+                    Color p2Color = GetP2CaptureColor();
                     
                     float colorTolerance = 0.1f;
                     if ((Mathf.Abs(borderColor.r - playerColor.r) < colorTolerance &&
@@ -294,8 +299,8 @@ namespace CardGame.Managers
                         }
                     }
                     
-                    Color playerColor = new Color(1f, 0.5f, 0f, 1f); // Orange
-                    Color p2Color = new Color(0f, 0.8f, 0f, 1f); // P2 capture color (green)
+                    Color playerColor = GetP1CaptureColor(); // Orange (from Battle Front UI or fallback)
+                    Color p2Color = GetP2CaptureColor();     // Green  (from Battle Front UI or fallback)
                     
                     float colorTolerance = 0.1f;
                     if (Mathf.Abs(borderColor.r - playerColor.r) < colorTolerance &&
@@ -321,6 +326,64 @@ namespace CardGame.Managers
             if (defaultMoverOpp != null) return false;
             
             return true;
+        }
+
+        /// <summary>
+        /// Gets P1's capture color in a way that matches the Battle Front Influence bar
+        /// and CardDropArea.GetPlayerCaptureColor.
+        /// </summary>
+        private Color GetP1CaptureColor()
+        {
+            if (cachedP1Color.HasValue)
+            {
+                return cachedP1Color.Value;
+            }
+
+            // Try to get color from Battle Front Influence bar for consistency
+            CardFrontlineUI frontlineUI = FindObjectOfType<CardFrontlineUI>();
+            if (frontlineUI != null)
+            {
+                Color p1Color = frontlineUI.P1Color;
+                if (p1Color.a > 0f && p1Color != Color.white && p1Color != Color.clear)
+                {
+                    cachedP1Color = p1Color;
+                    return p1Color;
+                }
+            }
+
+            // Fallback: original hard-coded orange
+            Color fallback = new Color(1f, 0.5f, 0f, 1f);
+            cachedP1Color = fallback;
+            return fallback;
+        }
+
+        /// <summary>
+        /// Gets P2's capture color in a way that matches the Battle Front Influence bar
+        /// and CardDropArea.GetP2CaptureColor.
+        /// </summary>
+        private Color GetP2CaptureColor()
+        {
+            if (cachedP2Color.HasValue)
+            {
+                return cachedP2Color.Value;
+            }
+
+            // Try to get color from Battle Front Influence bar for consistency
+            CardFrontlineUI frontlineUI = FindObjectOfType<CardFrontlineUI>();
+            if (frontlineUI != null)
+            {
+                Color p2Color = frontlineUI.P2Color;
+                if (p2Color.a > 0f && p2Color != Color.white && p2Color != Color.clear)
+                {
+                    cachedP2Color = p2Color;
+                    return p2Color;
+                }
+            }
+
+            // Fallback: original hard-coded green
+            Color fallback = new Color(0f, 0.8f, 0f, 1f);
+            cachedP2Color = fallback;
+            return fallback;
         }
     }
 }

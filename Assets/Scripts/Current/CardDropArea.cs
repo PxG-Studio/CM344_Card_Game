@@ -721,30 +721,32 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             }
             
             // HARD GUARANTEE: No comparisons unless cards are strictly adjacent
-            // This prevents any distant cards (e.g., 7.66 units) from being evaluated
+            // This prevents any distant cards (e.g., 7.66 units) from being evaluated.
+            // Use lenient tolerance for orthogonal neighbors so that tiles at the real board
+            // spacing (≈2 units apart) are treated as adjacent, while still rejecting far cards.
             float testDistance;
-            if (!AreCardsStrictlyAdjacent(placedPosition, otherCardMover.transform.position, out testDistance))
+            bool isAdjacent = AreCardsStrictlyAdjacent(
+                placedPosition,
+                otherCardMover.transform.position,
+                out testDistance,
+                useLenientForOrthogonal: true);
+            if (!isAdjacent)
             {
                 // Skip this card - not adjacent, don't even check battle
                 continue;
             }
             
-            // Primary check: placed P1 card attacks other card
+            // Primary (and only) check: the placed P1 card may capture adjacent cards
+            // if its relevant stat is higher than the neighbor's opposing stat.
+            // Existing cards do NOT capture the freshly placed card on this turn.
+            // Use lenient orthogonal adjacency inside the battle check as well so that
+            // the inner strict adjacency gate matches the outer check above.
             FlipTarget target = CheckBattleBetweenCardsForRipple(
                 placedPosition, placedCard,
                 otherCardMover.transform.position, otherCardMover.Card,
-                otherCardMover.gameObject, placedCardMover.gameObject);
-            
-            // Secondary symmetric check: allow existing card to capture the newly placed card
-            // when the existing card's stat is higher. This ensures that whichever side
-            // actually has the higher stat can win the battle, regardless of play order.
-            if (target == null)
-            {
-                target = CheckBattleBetweenCardsForRipple(
-                    otherCardMover.transform.position, otherCardMover.Card,
-                    placedPosition, placedCard,
-                    placedCardMover.gameObject, otherCardMover.gameObject);
-            }
+                otherCardMover.gameObject, placedCardMover.gameObject,
+                false,  // isChainCapture
+                true);  // useLenientForOrthogonal
             
             if (target != null)
             {
@@ -832,30 +834,6 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             else
             {
                 Debug.Log($"[NO CAPTURE] {placedCardMover.gameObject.name} cannot capture {otherCardMoverP2.gameObject.name}");
-            }
-            
-            // Secondary symmetric check: allow existing P2 card to capture the newly placed P1 card
-            // when P2's stat is higher.
-            // Use lenient mode for orthogonal neighbors (matches the adjacency check above)
-            if (target == null)
-            {
-                Debug.Log($"[REVERSE BATTLE CHECK] {otherCardMoverP2.gameObject.name} (P2) vs {placedCardMover.gameObject.name} (P1) | " +
-                         $"Checking if P2 can capture P1");
-                
-                target = CheckBattleBetweenCardsForRipple(
-                    otherCardMoverP2.transform.position, otherCardMoverP2.Card,
-                    placedPosition, placedCard,
-                    placedCardMover.gameObject, otherCardMoverP2.gameObject, false, true);
-                
-                if (target != null)
-                {
-                    Debug.Log($"[REVERSE CAPTURE SUCCESS] {otherCardMoverP2.gameObject.name} will capture {placedCardMover.gameObject.name} | " +
-                             $"Color: {target.captureColor}");
-                }
-                else
-                {
-                    Debug.Log($"[REVERSE NO CAPTURE] {otherCardMoverP2.gameObject.name} cannot capture {placedCardMover.gameObject.name}");
-                }
             }
             
             if (target != null)
@@ -1505,16 +1483,24 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 continue; // Skip cards in hands
             }
             
-            // HARD GUARANTEE: No comparisons unless cards are strictly adjacent
-            // This prevents any distant cards (e.g., 7.66 units) from being evaluated
+            // HARD GUARANTEE: No comparisons unless cards are strictly adjacent.
+            // Use lenient tolerance for orthogonal neighbors so tiles at real board
+            // spacing (≈2 units apart) are treated as adjacent, same as P1 logic.
             float testDistance;
-            if (!AreCardsStrictlyAdjacent(placedPosition, otherCardMover.transform.position, out testDistance))
+            bool isAdjacent = AreCardsStrictlyAdjacent(
+                placedPosition,
+                otherCardMover.transform.position,
+                out testDistance,
+                useLenientForOrthogonal: true);
+            if (!isAdjacent)
             {
                 // Skip this card - not adjacent, don't even check battle
                 continue;
             }
             
-            // Primary check: placed P2 card attacks P1 card
+            // Primary (and only) check: the placed P2 card may capture adjacent cards
+            // if its relevant stat is higher than the neighbor's opposing stat.
+            // Existing cards do NOT capture the freshly placed card on this turn.
             float battleDistance = Vector3.Distance(placedPosition, otherCardMover.transform.position);
             Debug.Log($"[BATTLE CHECK] {placedCardMover.gameObject.name} (P2) vs {otherCardMover.gameObject.name} (P1) | " +
                      $"Distance: {battleDistance:F2} | " +
@@ -1522,75 +1508,16 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                      $"Other: T={otherCardMover.Card.CurrentTopStat} R={otherCardMover.Card.CurrentRightStat} " +
                      $"D={otherCardMover.Card.CurrentDownStat} L={otherCardMover.Card.CurrentLeftStat}");
             
+            // Use lenient orthogonal adjacency inside the battle check as well so that
+            // the inner strict adjacency gate matches the outer AreCardsStrictlyAdjacent
+            // call above. This mirrors the P1 path and ensures P2 cards can capture
+            // orthogonal neighbors at the real board spacing (~2 units).
             FlipTarget target = CheckBattleBetweenCardsForRipple(
                 placedPosition, placedCard,
                 otherCardMover.transform.position, otherCardMover.Card,
-                otherCardMover.gameObject, placedCardMover.gameObject);
-            
-            if (target != null)
-            {
-                Debug.Log($"[CAPTURE SUCCESS] {placedCardMover.gameObject.name} will capture {otherCardMover.gameObject.name} | " +
-                         $"Color: {target.captureColor}");
-            }
-            else
-            {
-                Debug.Log($"[NO CAPTURE] {placedCardMover.gameObject.name} cannot capture {otherCardMover.gameObject.name}");
-            }
-            
-            // Secondary symmetric check: allow existing P1 card to capture the newly placed P2 card
-            // when P1's stat is higher.
-            // CRITICAL: Only do secondary check if primary returned null (no capture from placed card's perspective)
-            // The secondary check swaps positions to check if the existing card can capture the placed card
-            // IMPORTANT: The secondary check should only create a flip target for the PLACED card (defender),
-            // not for the existing card. If the existing card wins, it captures the placed card.
-            if (target == null)
-            {
-                Debug.Log($"[REVERSE BATTLE CHECK] {otherCardMover.gameObject.name} (P1) vs {placedCardMover.gameObject.name} (P2) | " +
-                         $"Checking if P1 can capture P2");
-                
-                FlipTarget secondaryTarget = CheckBattleBetweenCardsForRipple(
-                    otherCardMover.transform.position, otherCardMover.Card,
-                    placedPosition, placedCard,
-                    placedCardMover.gameObject, otherCardMover.gameObject);
-                
-                if (secondaryTarget != null)
-                {
-                    Debug.Log($"[REVERSE CAPTURE SUCCESS] {otherCardMover.gameObject.name} will capture {placedCardMover.gameObject.name} | " +
-                             $"Color: {secondaryTarget.captureColor}");
-                }
-                else
-                {
-                    Debug.Log($"[REVERSE NO CAPTURE] {otherCardMover.gameObject.name} cannot capture {placedCardMover.gameObject.name}");
-                }
-                
-                // CRITICAL: The secondary check swaps positions, so if it returns a target,
-                // it should target the placed card (defender), not the existing card (attacker).
-                // This is because we're checking if the existing card can capture the placed card.
-                // If secondaryTarget is null, that means the existing card cannot capture the placed card (correct).
-                // If secondaryTarget targets the placed card, that means the existing card wins and captures the placed card.
-                // If secondaryTarget targets the existing card, that's wrong - ignore it.
-                if (secondaryTarget != null)
-                {
-                    // Verify the target is for the placed card (defender), not the existing card (attacker)
-                    if (secondaryTarget.cardObject == placedCardMover.gameObject)
-                    {
-                        // Existing card wins - it captures the placed card (defender)
-                        target = secondaryTarget;
-                    }
-                    else if (secondaryTarget.cardObject == otherCardMover.gameObject)
-                    {
-                        // This should never happen - if existing card is being captured, primary check should have caught it
-                        // Ignore this to prevent incorrect captures
-                        #if UNITY_EDITOR
-                        if (Application.isEditor)
-                        {
-                            Debug.LogWarning($"[CheckCardBattlesP2] Secondary check returned target for existing card, but primary check returned null. " +
-                                            $"This is unexpected. Ignoring secondary target to prevent incorrect capture.");
-                        }
-                        #endif
-                    }
-                }
-            }
+                otherCardMover.gameObject, placedCardMover.gameObject,
+                false,  // isChainCapture
+                true);  // useLenientForOrthogonal
             
             if (target != null)
             {
@@ -1598,49 +1525,9 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             }
         }
         
-        // Check against P2 CardMovers
-        foreach (CardMoverP2 otherCardMoverP2 in allCardMoverP2s)
-        {
-            // Skip self
-            if (otherCardMoverP2 == placedCardMover) continue;
-            if (otherCardMoverP2.Card == null) continue;
-            
-            // CRITICAL: Skip cards in hands (z = 90) - they should never battle cards on board
-            if (Mathf.Abs(otherCardMoverP2.transform.position.z) > 10f)
-            {
-                continue; // Skip cards in hands
-            }
-            
-            // HARD GUARANTEE: No comparisons unless cards are strictly adjacent
-            // This prevents any distant cards (e.g., 7.66 units) from being evaluated
-            float testDistance;
-            if (!AreCardsStrictlyAdjacent(placedPosition, otherCardMoverP2.transform.position, out testDistance))
-            {
-                // Skip this card - not adjacent, don't even check battle
-                continue;
-            }
-            
-            // Primary check: placed P2 card attacks other P2 card
-            FlipTarget target = CheckBattleBetweenCardsForRipple(
-                placedPosition, placedCard,
-                otherCardMoverP2.transform.position, otherCardMoverP2.Card,
-                otherCardMoverP2.gameObject, placedCardMover.gameObject);
-            
-            // Secondary symmetric check: allow existing P2 card to capture the newly placed P2 card
-            // when its stat is higher. (Same-player battles are filtered out inside the battle method.)
-            if (target == null)
-            {
-                target = CheckBattleBetweenCardsForRipple(
-                    otherCardMoverP2.transform.position, otherCardMoverP2.Card,
-                    placedPosition, placedCard,
-                    placedCardMover.gameObject, otherCardMoverP2.gameObject);
-            }
-            
-            if (target != null)
-            {
-                flipTargets.Add(target);
-            }
-        }
+        // Note: We intentionally do NOT allow placed P2 cards to battle other P2
+        // cards during normal placement resolution. Same-player interactions are
+        // only relevant for diagnostics inside chain capture logic.
         
         // Check if placed card should flip (lost to another card)
         /*foreach (CardMover otherCardMover in allCardMovers)
@@ -2053,7 +1940,14 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             return;
         }
 
-        // CRITICAL LOGGING: Always log when FlipCardGameObject is called to track score update path
+        // High-level debug: flip requested for this card as result of a capture
+        #if UNITY_EDITOR
+        if (Application.isEditor)
+        {
+            Debug.Log($"[FLIP REQUEST] Starting capture flip for {cardObject.name} | " +
+                      $"CaptureColor={captureColor} | Direction={direction}");
+        }
+        #endif
 
         NewCardUI cardUI = cardObject.GetComponent<NewCardUI>();
         if (cardUI == null)
@@ -2086,6 +1980,12 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
 
         if (flipAnim == null)
         {
+            #if UNITY_EDITOR
+            if (Application.isEditor)
+            {
+                Debug.LogWarning($"[FlipCardGameObject] No CardFlipAnimation found on {cardObject.name}. Capture flip cannot play.");
+            }
+            #endif
             return;
         }
 
@@ -2168,7 +2068,8 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         #if UNITY_EDITOR
         if (Application.isEditor)
         {
-            // Debug logging removed for capture mechanics isolation
+            Debug.Log($"[FLIP START] Calling CaptureCard on {cardObject.name} | " +
+                      $"Direction={direction} | CaptureColor={captureColor}");
         }
         #endif
         
@@ -2275,6 +2176,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         string directionName = "";
         int placedCardStat = 0;
         int otherCardStat = 0;
+        int attackerTouchingStat = 0;
         
         // CRITICAL LOGGING: Log delta values to diagnose orthogonal neighbor check failures
         
@@ -2287,14 +2189,16 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             if (delta.x > 0)
             {
                 // Other card is to the RIGHT of placed card
-                placedCardStat = placedCard.CurrentRightStat;
+                // Attacker touching side is RIGHT, defender side is LEFT
+                attackerTouchingStat = placedCard.CurrentRightStat;
                 otherCardStat = otherCard.CurrentLeftStat;
                 directionName = "right";
             }
             else
             {
                 // Other card is to the LEFT of placed card
-                placedCardStat = placedCard.CurrentLeftStat;
+                // Attacker touching side is LEFT, defender side is RIGHT
+                attackerTouchingStat = placedCard.CurrentLeftStat;
                 otherCardStat = otherCard.CurrentRightStat;
                 directionName = "left";
             }
@@ -2307,14 +2211,16 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             if (delta.y > 0)
             {
                 // Other card is ABOVE (top) of placed card
-                placedCardStat = placedCard.CurrentTopStat;
+                // Attacker touching side is TOP, defender side is DOWN
+                attackerTouchingStat = placedCard.CurrentTopStat;
                 otherCardStat = otherCard.CurrentDownStat;
                 directionName = "top";
             }
             else
             {
                 // Other card is BELOW (bottom) of placed card
-                placedCardStat = placedCard.CurrentDownStat;
+                // Attacker touching side is DOWN, defender side is TOP
+                attackerTouchingStat = placedCard.CurrentDownStat;
                 otherCardStat = otherCard.CurrentTopStat;
                 directionName = "down";
             }
@@ -2344,13 +2250,15 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 isOrthogonalNeighbor = true;
                 if (delta.x > 0)
                 {
-                    placedCardStat = placedCard.CurrentRightStat;
+                    // Other card is to the RIGHT of placed card
+                    attackerTouchingStat = placedCard.CurrentRightStat;
                     otherCardStat = otherCard.CurrentLeftStat;
                     directionName = "right";
                 }
                 else
                 {
-                    placedCardStat = placedCard.CurrentLeftStat;
+                    // Other card is to the LEFT of placed card
+                    attackerTouchingStat = placedCard.CurrentLeftStat;
                     otherCardStat = otherCard.CurrentRightStat;
                     directionName = "left";
                 }
@@ -2361,18 +2269,38 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
                 isOrthogonalNeighbor = true;
                 if (delta.y > 0)
                 {
-                    placedCardStat = placedCard.CurrentTopStat;
+                    // Other card is ABOVE (top) of placed card
+                    attackerTouchingStat = placedCard.CurrentTopStat;
                     otherCardStat = otherCard.CurrentDownStat;
                     directionName = "top";
                 }
                 else
                 {
-                    placedCardStat = placedCard.CurrentDownStat;
+                    // Other card is BELOW (bottom) of placed card
+                    attackerTouchingStat = placedCard.CurrentDownStat;
                     otherCardStat = otherCard.CurrentTopStat;
                     directionName = "down";
                 }
             }
         }
+
+        // Rule B: touching-side equality protection.
+        // If the touching sides are equal (attackerTouchingStat == defender touching side),
+        // there is no capture, regardless of the attacker's highest side.
+        if (attackerTouchingStat == otherCardStat)
+        {
+            Debug.Log($"[NO CAPTURE - EQUAL TOUCHING STATS] {placedCardObject?.name} cannot capture {otherCardObject?.name} | " +
+                     $"Reason: Touching stats are equal ({attackerTouchingStat} vs {otherCardStat})");
+            return null;
+        }
+
+        // Highest-side capture rule:
+        // Attacker uses its highest side value, defender uses the touching side determined above.
+        placedCardStat = Mathf.Max(
+            placedCard.CurrentTopStat,
+            placedCard.CurrentRightStat,
+            placedCard.CurrentDownStat,
+            placedCard.CurrentLeftStat);
         
         // CRITICAL LOGGING: Always log stat comparison to diagnose test failures
         
@@ -2476,6 +2404,20 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         // CRITICAL: This check MUST use > (not >=) to prevent captures on equal stats
         if (attackerWins && placedCardStat > otherCardStat)
         {
+            // Rule: freshly played cards cannot be captured on the same turn they were played,
+            // but they *can* capture others. cardsPlayedThisTurn tracks the protected cards.
+            if (IsFreshlyPlayedThisTurn(otherCardObject))
+            {
+                #if UNITY_EDITOR
+                if (Application.isEditor)
+                {
+                    Debug.Log($"[NO CAPTURE - FRESH CARD PROTECTED] Skipping capture of freshly played card {otherCardObject?.name} " +
+                              $"even though attacker {placedCardObject?.name} won the stat comparison.");
+                }
+                #endif
+                return null;
+            }
+
             Color captureColor = placedCardIsPlayer ? 
                 GetPlayerCaptureColor() : GetP2CaptureColor();
             
@@ -2977,6 +2919,16 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             
             tileSpriteRenderer.color = fallbackColor;
         }
+
+        // High-level debug: log tile ownership after update
+        #if UNITY_EDITOR
+        if (Application.isEditor)
+        {
+            string owner = isPlayerCard ? "P1" : "P2";
+            Debug.Log($"[TILE CAPTURE] Tile at {transform.position} now controlled by {owner} " +
+                      $"for card {card.name} | TileColor={tileSpriteRenderer.color}");
+        }
+        #endif
     }
     
     /// <summary>
