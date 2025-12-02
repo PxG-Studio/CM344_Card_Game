@@ -26,34 +26,19 @@ namespace CardGame.Managers
         
         // Event for UI updates (both scores at once)
         public System.Action<int, int> OnScoreUpdated; // (p1Score, p2Score)
-
-        // Cache capture colors so we stay consistent with the Battle Front Influence bar
-        // and CardDropArea without repeatedly doing scene lookups.
-        private static Color? cachedP1Color = null;
-        private static Color? cachedP2Color = null;
         
         private void Awake()
         {
             // CRITICAL: Ensure only one ScoreManager instance exists
             if (Instance != null && Instance != this)
             {
-                // Use DestroyImmediate in editor to avoid play mode exit issues
-                #if UNITY_EDITOR
-                if (!Application.isPlaying)
-                {
-                    DestroyImmediate(gameObject);
-                }
-                else
-                {
-                    Destroy(gameObject);
-                }
-                #else
+                Debug.LogWarning($"[ScoreManager] Duplicate ScoreManager detected on '{gameObject.name}'. Destroying duplicate. Existing instance: '{Instance.gameObject.name}'");
                 Destroy(gameObject);
-                #endif
                 return;
             }
             
             Instance = this;
+            Debug.Log($"[ScoreManager] ✓ ScoreManager instance initialized on '{gameObject.name}' (InstanceID: {GetInstanceID()})");
         }
         
         private void OnDestroy()
@@ -61,6 +46,7 @@ namespace CardGame.Managers
             if (Instance == this)
             {
                 Instance = null;
+                Debug.Log("[ScoreManager] Instance cleared on destroy");
             }
         }
         
@@ -74,11 +60,13 @@ namespace CardGame.Managers
             {
                 p1Score++;
                 OnScoreChanged?.Invoke(true, p1Score);
+                Debug.Log($"Player score: {p1Score}");
             }
             else
             {
                 p2Score++;
                 OnScoreChanged?.Invoke(false, p2Score);
+                Debug.Log($"P2 score: {p2Score}");
             }
             
             // Invoke combined score update event
@@ -105,6 +93,7 @@ namespace CardGame.Managers
             OnScoreChanged?.Invoke(true, p1Score);
             OnScoreChanged?.Invoke(false, p2Score);
             OnScoreUpdated?.Invoke(p1Score, p2Score);
+            Debug.Log("Scores reset");
         }
         
         /// <summary>
@@ -128,11 +117,14 @@ namespace CardGame.Managers
             
             if (allDropAreas == null || allDropAreas.Length == 0)
             {
+                Debug.LogWarning("[ScoreManager] No CardDropArea instances found! Cannot calculate scores.");
                 OnScoreChanged?.Invoke(true, p1Score);
                 OnScoreChanged?.Invoke(false, p2Score);
                 OnScoreUpdated?.Invoke(p1Score, p2Score);
                 return;
             }
+            
+            Debug.Log($"[ScoreManager] Found {allDropAreas.Length} CardDropArea instances. Calculating scores based on spaces controlled...");
             
             // Count spaces controlled by each player
             foreach (CardDropArea dropArea in allDropAreas)
@@ -153,6 +145,7 @@ namespace CardGame.Managers
                 
                 if (occupyingCardField == null)
                 {
+                    Debug.LogWarning($"[ScoreManager] Could not access 'occupyingCard' field on CardDropArea '{dropArea.gameObject.name}'. Skipping.");
                     continue;
                 }
                 
@@ -183,6 +176,8 @@ namespace CardGame.Managers
             OnScoreChanged?.Invoke(true, p1Score);
             OnScoreChanged?.Invoke(false, p2Score);
             OnScoreUpdated?.Invoke(p1Score, p2Score);
+            
+            Debug.Log($"[ScoreManager] Recalculated scores based on {totalSpaces} spaces: P1 controls {p1Score}/{totalSpaces}, P2 controls {p2Score}/{totalSpaces}, Empty: {emptySpaces}/{totalSpaces}");
         }
         
         /// <summary>
@@ -229,8 +224,8 @@ namespace CardGame.Managers
                     }
                     
                     // Check if it's a capture color (not default white/transparent)
-                    Color playerColor = GetP1CaptureColor();
-                    Color p2Color = GetP2CaptureColor();
+                    Color playerColor = new Color(1f, 0.5f, 0f, 1f); // Orange
+                    Color p2Color = new Color(0f, 0.8f, 0f, 1f); // P2 capture color (green)
                     
                     float colorTolerance = 0.1f;
                     if ((Mathf.Abs(borderColor.r - playerColor.r) < colorTolerance &&
@@ -299,8 +294,8 @@ namespace CardGame.Managers
                         }
                     }
                     
-                    Color playerColor = GetP1CaptureColor(); // Orange (from Battle Front UI or fallback)
-                    Color p2Color = GetP2CaptureColor();     // Green  (from Battle Front UI or fallback)
+                    Color playerColor = new Color(1f, 0.5f, 0f, 1f); // Orange
+                    Color p2Color = new Color(0f, 0.8f, 0f, 1f); // P2 capture color (green)
                     
                     float colorTolerance = 0.1f;
                     if (Mathf.Abs(borderColor.r - playerColor.r) < colorTolerance &&
@@ -326,64 +321,6 @@ namespace CardGame.Managers
             if (defaultMoverOpp != null) return false;
             
             return true;
-        }
-
-        /// <summary>
-        /// Gets P1's capture color in a way that matches the Battle Front Influence bar
-        /// and CardDropArea.GetPlayerCaptureColor.
-        /// </summary>
-        private Color GetP1CaptureColor()
-        {
-            if (cachedP1Color.HasValue)
-            {
-                return cachedP1Color.Value;
-            }
-
-            // Try to get color from Battle Front Influence bar for consistency
-            CardFrontlineUI frontlineUI = FindObjectOfType<CardFrontlineUI>();
-            if (frontlineUI != null)
-            {
-                Color p1Color = frontlineUI.P1Color;
-                if (p1Color.a > 0f && p1Color != Color.white && p1Color != Color.clear)
-                {
-                    cachedP1Color = p1Color;
-                    return p1Color;
-                }
-            }
-
-            // Fallback: original hard-coded orange
-            Color fallback = new Color(1f, 0.5f, 0f, 1f);
-            cachedP1Color = fallback;
-            return fallback;
-        }
-
-        /// <summary>
-        /// Gets P2's capture color in a way that matches the Battle Front Influence bar
-        /// and CardDropArea.GetP2CaptureColor.
-        /// </summary>
-        private Color GetP2CaptureColor()
-        {
-            if (cachedP2Color.HasValue)
-            {
-                return cachedP2Color.Value;
-            }
-
-            // Try to get color from Battle Front Influence bar for consistency
-            CardFrontlineUI frontlineUI = FindObjectOfType<CardFrontlineUI>();
-            if (frontlineUI != null)
-            {
-                Color p2Color = frontlineUI.P2Color;
-                if (p2Color.a > 0f && p2Color != Color.white && p2Color != Color.clear)
-                {
-                    cachedP2Color = p2Color;
-                    return p2Color;
-                }
-            }
-
-            // Fallback: original hard-coded green
-            Color fallback = new Color(0f, 0.8f, 0f, 1f);
-            cachedP2Color = fallback;
-            return fallback;
         }
     }
 }

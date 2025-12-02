@@ -17,9 +17,6 @@ public class ScoreUI : MonoBehaviour
     [SerializeField] private TMP_Text player2Label;
 
     private ScoreManager scoreManager;
-    // Tracks whether scores have been explicitly set via SetScores before Start()
-    // so that Start() doesn't overwrite test-driven values.
-    private bool scoresManuallySet = false;
 
     /// <summary>
     /// Initialize and subscribe to score updates.
@@ -31,6 +28,7 @@ public class ScoreUI : MonoBehaviour
         
         if (scoreManager == null)
         {
+            Debug.LogError("ScoreUI: ScoreManager not found in scene!");
             return;
         }
 
@@ -47,15 +45,8 @@ public class ScoreUI : MonoBehaviour
             player2Label.text = "Player 2";
         }
 
-        // Initial score display should reflect the current scores from ScoreManager,
-        // but ONLY if scores haven't already been driven manually via SetScores()
-        // (e.g., in isolated UI tests that don't use ScoreManager at all).
-        if (!scoresManuallySet)
-        {
-            int initialP1 = scoreManager.P1Score;
-            int initialP2 = scoreManager.P2Score;
-            UpdateScoreDisplay(initialP1, initialP2);
-        }
+        // Initial score display
+        UpdateScoreDisplay(0, 0);
     }
 
     /// <summary>
@@ -89,11 +80,9 @@ public class ScoreUI : MonoBehaviour
 
     /// <summary>
     /// Manually update scores (for testing or external calls).
-    /// Marks the UI as manually-driven so Start() won't overwrite values.
     /// </summary>
     public void SetScores(int p1Score, int p2Score)
     {
-        scoresManuallySet = true;
         UpdateScoreDisplay(p1Score, p2Score);
     }
 }
