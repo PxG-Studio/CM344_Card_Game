@@ -21,6 +21,7 @@ namespace CardGame.Testing
         
         [Header("Debug")]
         [SerializeField] private bool showDebugButtons = false;
+#pragma warning disable CS0414 // Field is assigned but never used - may be used in Unity Inspector
         
         private void Awake()
         {

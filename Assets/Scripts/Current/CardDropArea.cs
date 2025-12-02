@@ -1938,4 +1938,28 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             GameEndManager.Instance.CheckGameEnd();
         }
     }
+    
+    /// <summary>
+    /// Gets the current board control counts for P1 and P2
+    /// Returns (p1Control, p2Control) tuple
+    /// </summary>
+    public static (int p1Control, int p2Control) GetBoardControl()
+    {
+        ScoreManager scoreManager = FindObjectOfType<ScoreManager>();
+        if (scoreManager != null)
+        {
+            return (scoreManager.P1Score, scoreManager.P2Score);
+        }
+        return (0, 0);
+    }
+    
+    /// <summary>
+    /// Updates all tile colors on the board
+    /// Stub method for compatibility after develop-1 revert
+    /// </summary>
+    public static void UpdateAllTileColors()
+    {
+        // This method was removed in develop-1 revert
+        // Tile colors are updated automatically when cards are captured
+    }
 }

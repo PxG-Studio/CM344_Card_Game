@@ -167,15 +167,7 @@ public class CardMoverP1 : MonoBehaviour
         NewCardUI cardUI = GetComponent<NewCardUI>();
         if (cardUI == null) cardUI = GetComponentInChildren<NewCardUI>();
         if (cardUI == null) cardUI = GetComponentInParent<NewCardUI>();
-        if (cardUI != null)
-        {
-            cardUI.EnsureStatTextVisible();
-            string cardName = card?.Data?.cardName ?? gameObject.name;
-            bool statsVisible = cardUI.AreStatsVisuallyVisible();
-            if (!statsVisible)
-            {
-            }
-        }
+        // Note: EnsureStatTextVisible and AreStatsVisuallyVisible methods removed in develop-1 revert
     }
 
     private void OnMouseDrag()
@@ -198,10 +190,7 @@ public class CardMoverP1 : MonoBehaviour
         NewCardUI cardUI = GetComponent<NewCardUI>();
         if (cardUI == null) cardUI = GetComponentInChildren<NewCardUI>();
         if (cardUI == null) cardUI = GetComponentInParent<NewCardUI>();
-        if (cardUI != null)
-        {
-            cardUI.EnsureStatTextVisible();
-        }
+        // Note: EnsureStatTextVisible method removed in develop-1 revert
     }
     private void OnMouseUp()
     {
