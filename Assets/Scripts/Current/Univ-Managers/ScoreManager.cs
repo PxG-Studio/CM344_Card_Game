@@ -38,7 +38,7 @@ namespace CardGame.Managers
             }
             
             Instance = this;
-            Debug.Log($"[ScoreManager] ✓ ScoreManager instance initialized on '{gameObject.name}' (InstanceID: {GetInstanceID()})");
+            // ScoreManager instance initialized
         }
         
         private void OnDestroy()
@@ -46,7 +46,7 @@ namespace CardGame.Managers
             if (Instance == this)
             {
                 Instance = null;
-                Debug.Log("[ScoreManager] Instance cleared on destroy");
+                // Instance cleared on destroy
             }
         }
         
@@ -60,13 +60,13 @@ namespace CardGame.Managers
             {
                 p1Score++;
                 OnScoreChanged?.Invoke(true, p1Score);
-                Debug.Log($"Player score: {p1Score}");
+                // Player score updated
             }
             else
             {
                 p2Score++;
                 OnScoreChanged?.Invoke(false, p2Score);
-                Debug.Log($"P2 score: {p2Score}");
+                // P2 score updated
             }
             
             // Invoke combined score update event
@@ -93,7 +93,7 @@ namespace CardGame.Managers
             OnScoreChanged?.Invoke(true, p1Score);
             OnScoreChanged?.Invoke(false, p2Score);
             OnScoreUpdated?.Invoke(p1Score, p2Score);
-            Debug.Log("Scores reset");
+            // Scores reset
         }
         
         /// <summary>
@@ -124,7 +124,7 @@ namespace CardGame.Managers
                 return;
             }
             
-            Debug.Log($"[ScoreManager] Found {allDropAreas.Length} CardDropArea instances. Calculating scores based on spaces controlled...");
+            // Calculating scores based on spaces controlled
             
             // Count spaces controlled by each player
             foreach (CardDropArea dropArea in allDropAreas)
@@ -177,7 +177,7 @@ namespace CardGame.Managers
             OnScoreChanged?.Invoke(false, p2Score);
             OnScoreUpdated?.Invoke(p1Score, p2Score);
             
-            Debug.Log($"[ScoreManager] Recalculated scores based on {totalSpaces} spaces: P1 controls {p1Score}/{totalSpaces}, P2 controls {p2Score}/{totalSpaces}, Empty: {emptySpaces}/{totalSpaces}");
+            // Scores recalculated
         }
         
         /// <summary>

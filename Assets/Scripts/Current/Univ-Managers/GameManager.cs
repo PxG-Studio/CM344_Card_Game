@@ -348,7 +348,7 @@ namespace CardGame.Managers
                 // If still not active, try activating again and wait
                 if (!activeSelf)
                 {
-                    Debug.LogWarning("[GameManager] CoinTossUI GameObject is still inactive. Activating again and waiting...");
+                    // CoinTossUI GameObject still inactive, activating again
                     coinTossObj.SetActive(true);
                     yield return new WaitForEndOfFrame();
                     yield return null;
