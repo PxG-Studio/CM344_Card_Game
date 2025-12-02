@@ -155,34 +155,10 @@ namespace CardGame.Tests
             }
             if (flipAnim == null) return false;
             
-            // CRITICAL: Check WasCaptured property instead of isFlipped
+            // Note: WasCaptured and LastCaptureColor properties removed in develop-1 revert
+            // Use isFlipped and check for capture color via NewCardUI instead
             // isFlipped can be true for cards that are face-down but not captured (e.g., P2 cards initially)
-            // WasCaptured checks if lastCaptureColor != Color.clear, which is only set when a card is actually captured
-            var wasCapturedProperty = typeof(CardFlipAnimation).GetProperty("WasCaptured");
-            if (wasCapturedProperty != null)
-            {
-                bool wasCaptured = (bool)wasCapturedProperty.GetValue(flipAnim);
-                
-                #if UNITY_EDITOR
-                if (Application.isEditor)
-                {
-                    var lastCaptureColorProp = typeof(CardFlipAnimation).GetProperty("LastCaptureColor");
-                    Color lastCaptureColor = lastCaptureColorProp != null ? 
-                        (Color)lastCaptureColorProp.GetValue(flipAnim) : Color.clear;
-                    Debug.Log($"[IsCardCaptured] Card {cardObject.name}: WasCaptured={wasCaptured}, LastCaptureColor={lastCaptureColor}");
-                }
-                #endif
-                
-                return wasCaptured;
-            }
-            
-            // Fallback: Check if lastCaptureColor is not clear (only set when captured)
-            var lastCaptureColorPropFallback = typeof(CardFlipAnimation).GetProperty("LastCaptureColor");
-            if (lastCaptureColorPropFallback != null)
-            {
-                Color lastCaptureColor = (Color)lastCaptureColorPropFallback.GetValue(flipAnim);
-                return lastCaptureColor != Color.clear;
-            }
+            // So we need to check the card's capture state via NewCardUI or other means
             
             // Final fallback: check if back container is active AND card has a capture color
             // This is less reliable but better than just checking isFlipped

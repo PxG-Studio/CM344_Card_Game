@@ -63,17 +63,14 @@ namespace CardGame.Tests
         [Test]
         public void CardFlipAnimation_Has_WasCaptured_Property()
         {
+            // Note: WasCaptured and LastCaptureColor properties removed in develop-1 revert
+            // These properties are not part of the develop-1 CardFlipAnimation implementation
             var wasCapturedProperty = typeof(CardFlipAnimation).GetProperty("WasCaptured");
             var lastCaptureColorProperty = typeof(CardFlipAnimation).GetProperty("LastCaptureColor");
             
-            Assert.IsNotNull(wasCapturedProperty, "CardFlipAnimation should have WasCaptured property");
-            Assert.IsNotNull(lastCaptureColorProperty, "CardFlipAnimation should have LastCaptureColor property");
-            
-            // Verify property types
-            Assert.AreEqual(typeof(bool), wasCapturedProperty.PropertyType,
-                "WasCaptured should return bool");
-            Assert.AreEqual(typeof(Color), lastCaptureColorProperty.PropertyType,
-                "LastCaptureColor should return Color");
+            // In develop-1, these properties don't exist - test verifies they are null
+            Assert.IsNull(wasCapturedProperty, "CardFlipAnimation should NOT have WasCaptured property in develop-1");
+            Assert.IsNull(lastCaptureColorProperty, "CardFlipAnimation should NOT have LastCaptureColor property in develop-1");
         }
 
         [Test]
@@ -94,16 +91,13 @@ namespace CardGame.Tests
             CardFlipAnimation flipAnim = go.AddComponent<CardFlipAnimation>();
             
             // Verify properties can be accessed
+            // Note: WasCaptured and LastCaptureColor properties removed in develop-1 revert
             bool isFlipped = flipAnim.isFlipped;
             bool isAnimating = flipAnim.isAnimating;
-            bool wasCaptured = flipAnim.WasCaptured;
-            Color captureColor = flipAnim.LastCaptureColor;
             
             // Properties should be accessible (values may be default)
             Assert.IsInstanceOf<bool>(isFlipped, "isFlipped should be accessible");
             Assert.IsInstanceOf<bool>(isAnimating, "isAnimating should be accessible");
-            Assert.IsInstanceOf<bool>(wasCaptured, "WasCaptured should be accessible");
-            Assert.IsInstanceOf<Color>(captureColor, "LastCaptureColor should be accessible");
             
             Object.DestroyImmediate(go);
         }

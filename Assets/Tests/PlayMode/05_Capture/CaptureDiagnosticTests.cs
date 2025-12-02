@@ -166,14 +166,14 @@ namespace CardGame.Tests
             
             if (flip1 != null)
             {
-                Debug.Log($"[Diagnostic] Weak1 CardFlipAnimation: WasCaptured={flip1.WasCaptured}, " +
-                         $"LastCaptureColor={flip1.LastCaptureColor}, isFlipped={flip1.isFlipped}");
+                // Note: WasCaptured and LastCaptureColor properties removed in develop-1 revert
+                Debug.Log($"[Diagnostic] Weak1 CardFlipAnimation: isFlipped={flip1.isFlipped}, isAnimating={flip1.isAnimating}");
             }
             
             if (flip2 != null)
             {
-                Debug.Log($"[Diagnostic] Weak2 CardFlipAnimation: WasCaptured={flip2.WasCaptured}, " +
-                         $"LastCaptureColor={flip2.LastCaptureColor}, isFlipped={flip2.isFlipped}");
+                // Note: WasCaptured and LastCaptureColor properties removed in develop-1 revert
+                Debug.Log($"[Diagnostic] Weak2 CardFlipAnimation: isFlipped={flip2.isFlipped}, isAnimating={flip2.isAnimating}");
             }
 
             // This test is diagnostic - we're not asserting, just logging
