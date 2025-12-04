@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cardName: Flame Judge
   description: 
-  artwork: {fileID: 21300000, guid: 470c6a88159c09646b8ad41361474c21, type: 3}
+  artwork: {fileID: 21300000, guid: 0b78c903f2c8e1f4a97f8578e1f7702d, type: 3}
   TopStat: 5
   RightStat: 7
   DownStat: 5
@@ -22,4 +22,3 @@ MonoBehaviour:
   cardType: 0
   effects: []
   cardColor: {r: 0.96862745, g: 0.46666667, b: 0.30588236, a: 1}
-  cardBackSprite: {fileID: 0}

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cardName: Earth Jester
   description: 
-  artwork: {fileID: 21300000, guid: 70b998f4f9f0e994cb68c5a0e59b32c0, type: 3}
+  artwork: {fileID: 21300000, guid: db6b4fec3f785a740a885fc533f7d11d, type: 3}
   TopStat: 6
   RightStat: 3
   DownStat: 6
@@ -22,4 +22,3 @@ MonoBehaviour:
   cardType: 2
   effects: []
   cardColor: {r: 0.19215687, g: 0.7529412, b: 0, a: 1}
-  cardBackSprite: {fileID: 0}
