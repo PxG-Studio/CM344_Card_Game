@@ -39,7 +39,6 @@ namespace CardGame.UI
         private UnityEngine.UI.Image[] frontImages;
         private UnityEngine.UI.Image[] backImages;
         private Coroutine currentFlipCoroutine;
-        AudioManager audioManager;
 
         public bool isFlipped { get; private set; }
         public bool isAnimating => currentFlipCoroutine != null;
@@ -67,7 +66,6 @@ namespace CardGame.UI
             }
             ValidateSetup();
 
-            audioManager = GameObject.FindGameObjectWithTag("Audio").GetComponent<AudioManager>();
         }
         
         private void OnDestroy()
