@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using CardGame.Managers;
 
+
 namespace CardGame.UI
 {
     /// <summary>
@@ -29,7 +30,8 @@ namespace CardGame.UI
         [SerializeField] private AnimationCurve flipEasing = AnimationCurve.EaseInOut(0, 0, 1, 1);
         [SerializeField] private GameObject frontContainer;
         [SerializeField] private GameObject backContainer;
-        
+
+
         private CanvasGroup frontCanvasGroup;
         private CanvasGroup backCanvasGroup;
         private SpriteRenderer[] frontSprites;
@@ -37,7 +39,8 @@ namespace CardGame.UI
         private UnityEngine.UI.Image[] frontImages;
         private UnityEngine.UI.Image[] backImages;
         private Coroutine currentFlipCoroutine;
-        
+        AudioManager audioManager;
+
         public bool isFlipped { get; private set; }
         public bool isAnimating => currentFlipCoroutine != null;
         
@@ -63,6 +66,8 @@ namespace CardGame.UI
                 cardUI = GetComponentInParent<NewCardUI>();
             }
             ValidateSetup();
+
+            audioManager = GameObject.FindGameObjectWithTag("Audio").GetComponent<AudioManager>();
         }
         
         private void OnDestroy()
