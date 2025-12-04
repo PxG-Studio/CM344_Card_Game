@@ -25,7 +25,7 @@ namespace CardGame.UI
     public class CardFlipAnimation : MonoBehaviour
     {
         [Header("Settings")]
-        [SerializeField] private float flipDuration = 0.5f;
+        [SerializeField] private float flipDuration = 0.15f;
         [SerializeField] private AnimationCurve flipEasing = AnimationCurve.EaseInOut(0, 0, 1, 1);
         [SerializeField] private GameObject frontContainer;
         [SerializeField] private GameObject backContainer;

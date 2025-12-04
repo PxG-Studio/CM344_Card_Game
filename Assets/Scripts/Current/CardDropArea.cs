@@ -1388,6 +1388,25 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     }
     
     /// <summary>
+    /// Waits for card flip animation to complete before proceeding
+    /// </summary>
+    private IEnumerator WaitForFlipAnimation(GameObject cardObject)
+    {
+        if (cardObject == null) yield break;
+        
+        CardFlipAnimation flipAnim = cardObject.GetComponentInChildren<CardFlipAnimation>();
+        if (flipAnim == null) 
+        {
+            flipAnim = cardObject.GetComponent<CardFlipAnimation>();
+        }
+        
+        if (flipAnim != null)
+        {
+            yield return new WaitUntil(() => !flipAnim.isAnimating);
+        }
+    }
+    
+    /// <summary>
     /// Checks battle between cards and returns a FlipTarget if the other card should be flipped
     /// Used for ripple effect - collects flip targets instead of flipping immediately
     /// Only checks orthogonal neighbors (top, bottom, left, right)
@@ -1606,9 +1625,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             FlipCardGameObject(target.cardObject, target.card, target.captureColor, target.direction);
             
             // Wait for the flip animation to complete before checking for chain captures
-            // Flip animation takes about 1 second total (0.5s flip to back + 0.5s flip back to front)
-            // Use a safe delay to ensure animation completes
-            yield return new WaitForSeconds(1.1f);
+            yield return StartCoroutine(WaitForFlipAnimation(target.cardObject));
             
             // Check if this newly captured card can capture others (chain capture)
             CheckChainCapture(target.cardObject, target.card);
@@ -1841,8 +1858,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             FlipCardGameObject(target.cardObject, target.card, target.captureColor, target.direction);
             
             // Wait for the flip animation to complete before checking for next chain
-            // Flip animation takes about 1 second total (0.5s flip to back + 0.5s flip back to front)
-            yield return new WaitForSeconds(1.1f); // Wait for animation
+            yield return StartCoroutine(WaitForFlipAnimation(target.cardObject));
             
             // Check if this newly captured card can capture others (recursive chain)
             CheckChainCapture(target.cardObject, target.card);
