@@ -6,7 +6,6 @@ TagManager:
   tags:
   - p1
   - p2
-  - Audio
   layers:
   - Default
   - TransparentFX
@@ -29,7 +28,7 @@ TagManager:
   - 
   - 
   - 
-  - Audio
+  - 
   - 
   - 
   - 
