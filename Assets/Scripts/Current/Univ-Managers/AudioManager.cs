@@ -7,6 +7,7 @@ public class AudioManager : MonoBehaviour
     [SerializeField] AudioSource musicSource;
     [SerializeField] AudioSource SFXSource;
 
+    public AudioClip background;
     public AudioClip PlayCard;
     public AudioClip DrawCard;
     public AudioClip FireCaptureCard;
@@ -17,6 +18,7 @@ public class AudioManager : MonoBehaviour
 
     private void Start()
     {
+        musicSource.clip = background;
         musicSource.Play();
 
     }

@@ -5,8 +5,10 @@ using UnityEngine.SceneManagement;
 
 public class TitleCard : MonoBehaviour
 {
+    AudioManager audioManager;
     public void GoToScene(string sceneName)
     {
+        audioManager.PlaySFX(audioManager.MenuSelect);
         SceneManager.LoadScene(sceneName);
     }
 
@@ -14,5 +16,10 @@ public class TitleCard : MonoBehaviour
     {
         Application.Quit();
         Debug.Log("Application has quit.");
+    }
+
+    public void Awake()
+    {
+        audioManager = GameObject.FindGameObjectWithTag("Audio").GetComponent<AudioManager>();
     }
 }
