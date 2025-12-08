@@ -320,7 +320,7 @@ namespace CardGame.Managers
             // StartCoinToss() activates the GameObject, but activation isn't immediate
             // We need to wait for Unity to process the activation before starting coroutines
             coinTossUI.StartCoinToss();
-            audioManager.PlaySFX(audioManager.CoinFlip);
+            
 
             // Wait for end of frame to ensure GameObject activation is processed
             yield return new WaitForEndOfFrame();

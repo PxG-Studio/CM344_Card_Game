@@ -49,9 +49,10 @@ namespace CardGame.UI
         private bool hasShownResult = false;
         private bool hasBeenActivated = false; // Track if panel has been intentionally activated
         private bool waitingForSelection = false; // Whether we're waiting for player to select heads/tails
-
+        AudioManager audioManager;
         private void Awake()
         {
+            audioManager = GameObject.FindGameObjectWithTag("Audio").GetComponent<AudioManager>();
             // Auto-find CoinTossManager
             if (coinTossManager == null)
             {
@@ -460,9 +461,10 @@ namespace CardGame.UI
             }
 
             waitingForSelection = false;
-
+            audioManager.PlaySFX(audioManager.CoinFlip);
             // Start the coin flip animation
             StartCoinTossAnimation();
+            
         }
 
         /// <summary>
