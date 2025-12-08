@@ -21,6 +21,8 @@ namespace CardGame.Managers
         [SerializeField] private int maxHandSize = 7;
         [SerializeField] private int cardsDrawnPerTurn = 3;
         [SerializeField] private int startingHandSize = 5;
+
+        AudioManager audioManager;
         
         public GameState CurrentState => currentState;
         public int MaxHandSize => maxHandSize;
@@ -57,6 +59,7 @@ namespace CardGame.Managers
             
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            audioManager = GameObject.FindGameObjectWithTag("Audio").GetComponent<AudioManager>();
         }
         
         private void Start()

@@ -16,7 +16,7 @@ namespace CardGame.Managers
         private NewDeck drawPile = new NewDeck();
         private NewDeck hand = new NewDeck();
         private NewDeck discardPile = new NewDeck();
-        
+        AudioManager audioManager;
         public IReadOnlyList<NewCard> Hand => hand.Cards;
         public int DrawPileCount => drawPile.Count;
         public int DiscardPileCount => discardPile.Count;
@@ -33,7 +33,8 @@ namespace CardGame.Managers
             drawPile.Clear();
             hand.Clear();
             discardPile.Clear();
-            
+            audioManager = GameObject.FindGameObjectWithTag("Audio").GetComponent<AudioManager>();
+
             // Create card instances from NewCardData
             foreach (NewCardData.NewCardData cardData in startingDeck)
             {
@@ -102,6 +103,7 @@ namespace CardGame.Managers
             
             if (DrawPileCount != 0)
             { DrawCard();}
+            audioManager.PlaySFX(audioManager.DrawCard);
         }
         
         public void DiscardCard(NewCard card)

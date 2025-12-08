@@ -15,6 +15,8 @@ public class AudioManager : MonoBehaviour
     public AudioClip MenuSelect;
     public AudioClip CoinFlip;
     public AudioClip Tie;
+    public AudioClip Victory;
+    public AudioClip OnStartup;
 
     private void Start()
     {
