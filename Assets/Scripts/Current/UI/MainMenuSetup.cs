@@ -157,7 +157,7 @@ namespace CardGame.UI
             rectTransform.sizeDelta = new Vector2(800, 150);
 
             TextMeshProUGUI titleText = titleObj.AddComponent<TextMeshProUGUI>();
-            titleText.text = "CARD BATTLE";
+            titleText.text = "CARD FRONT";
             titleText.fontSize = 72;
             titleText.fontStyle = FontStyles.Bold;
             titleText.alignment = TextAlignmentOptions.Center;
