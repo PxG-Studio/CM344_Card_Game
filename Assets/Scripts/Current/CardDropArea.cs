@@ -17,6 +17,8 @@ public class FlipTarget
     public CardGame.UI.FlipDirection direction;
     public float distance;
     public Vector3 position;
+
+
     
     public FlipTarget(GameObject obj, NewCard c, Color color, CardGame.UI.FlipDirection dir, float dist, Vector3 pos)
     {
@@ -56,6 +58,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
     
     // Board occupancy tracking
     [SerializeField] private GameObject occupyingCard;
+    AudioManager audioManager;
     public bool IsOccupied => occupyingCard != null;
     
     /// <summary>
@@ -237,7 +240,12 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             FateFlowController.Instance.OnFateChanged += HandleFateWindowShift;
         }
     }
-    
+
+    public void Awake()
+    {
+        audioManager = GameObject.FindGameObjectWithTag("Audio").GetComponent<AudioManager>();
+    }
+
     private void OnDestroy()
     {
         if (FateFlowController.Instance != null)
@@ -396,6 +404,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             if (card != null && deckManagerP1.Hand.Contains(card))
             {
                 deckManagerP1.PlayCard(card);
+                audioManager.PlaySFX(audioManager.PlayCard);
                 // Card played from drop area
                 
                 // [CardFront] Track cards played for statistics
@@ -806,8 +815,9 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
             if (card != null && deckManagerP2.Hand.Contains(card))
             {
                 deckManagerP2.PlayCard(card);
+                audioManager.PlaySFX(audioManager.PlayCard);
                 // Card played from drop area
-                
+
                 // [CardFront] Track cards played for statistics
                 gameCardsPlayed++;
                 
