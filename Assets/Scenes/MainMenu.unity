@@ -402,7 +402,7 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: 45ac9c2741948cc4fb5fe2e2031b6d30, type: 3}
+  m_audioClip: {fileID: 0}
   m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1
@@ -1569,9 +1569,11 @@ MonoBehaviour:
   DrawCard: {fileID: 8300000, guid: 69caf9d5a45729d4b832c2b51fb29d20, type: 3}
   FireCaptureCard: {fileID: 8300000, guid: 231aa3c3781054241bf2833416d5428d, type: 3}
   EarthCaptureCard: {fileID: 8300000, guid: 6992c6a2421a89a46bc33c0345e6a456, type: 3}
-  MenuSelect: {fileID: 8300000, guid: 45ac9c2741948cc4fb5fe2e2031b6d30, type: 3}
+  MenuSelect: {fileID: 8300000, guid: 52bf512b053bc4e4ea0b51600ad824a9, type: 3}
   CoinFlip: {fileID: 8300000, guid: b84c46fbcd9995341866bdbb68ba38a3, type: 3}
   Tie: {fileID: 8300000, guid: 6297f98ddb88cb34b8a71d07d1e6c073, type: 3}
+  Victory: {fileID: 0}
+  OnStartup: {fileID: 0}
 --- !u!4 &1945387692
 Transform:
   m_ObjectHideFlags: 0
