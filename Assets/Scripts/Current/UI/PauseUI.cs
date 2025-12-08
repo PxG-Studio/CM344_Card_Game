@@ -21,7 +21,7 @@ namespace CardGame.UI
 
         private bool isPaused = false;
 
-        AudioManager audioManager;
+        
 
         private void Awake()
         {
@@ -34,7 +34,7 @@ namespace CardGame.UI
             if (restartButton != null)
                 restartButton.onClick.AddListener(RestartGame);
             HidePausePanel();
-            audioManager = GameObject.FindGameObjectWithTag("Audio").GetComponent<AudioManager>();
+            
         }
 
         private void QuitMenu()
@@ -72,7 +72,6 @@ namespace CardGame.UI
             Time.timeScale = 1f;
             if (GameManager.Instance != null)
                 GameManager.Instance.ChangeState(GameState.PlayerTurn); // Or restore previous state
-            audioManager.PlaySFX(audioManager.MenuSelect);
         }
 
         private void ShowPausePanel()
