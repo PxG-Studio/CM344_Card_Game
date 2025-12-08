@@ -1333,6 +1333,7 @@ public class CardDropArea : MonoBehaviour, ICardDropArea
         }
 
         flipAnim.CaptureCard(captureColor, direction);
+        audioManager.PlaySFX(audioManager.PlayCard);
         // Card captured
         
         // [CardFront] Track captures for statistics (only if it's an actual capture, not initial placement)
