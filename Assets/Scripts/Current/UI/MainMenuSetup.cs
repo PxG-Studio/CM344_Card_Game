@@ -11,6 +11,7 @@ namespace CardGame.UI
     [DefaultExecutionOrder(-50)]
     public class MainMenuSetup : MonoBehaviour
     {
+        AudioManager audioManager;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void AutoSetup()
         {
@@ -34,6 +35,7 @@ namespace CardGame.UI
         private void Awake()
         {
             SetupMainMenu();
+            audioManager = GameObject.FindGameObjectWithTag("Audio").GetComponent<AudioManager>();
         }
 
         private void SetupMainMenu()
