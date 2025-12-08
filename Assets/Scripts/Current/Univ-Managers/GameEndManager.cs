@@ -22,6 +22,8 @@ namespace CardGame.Managers
         // References to deck managers (auto-found if not assigned)
         private NewDeckManagerP1 playerDeckManager;
         private NewDeckManagerP2 opponentDeckManager;
+
+        AudioManager audioManager;
         
         private void Awake()
         {
@@ -32,6 +34,7 @@ namespace CardGame.Managers
             }
             
             Instance = this;
+            audioManager = GameObject.FindGameObjectWithTag("Audio").GetComponent<AudioManager>();
         }
         
         private void Start()
@@ -269,17 +272,22 @@ namespace CardGame.Managers
             {
                 GameManager.Instance.ChangeState(GameState.Victory);
                 ShowWinnerUI(true, false, cardsPlayed, capturesMade, longestChain, controlMargin);
+                audioManager.PlaySFX(audioManager.Victory);
+                audioManager.PlaySFX(audioManager.FireCaptureCard);
             }
             else if (p2Control > p1Control)
             {
                 GameManager.Instance.ChangeState(GameState.Defeat);
                 ShowWinnerUI(false, false, cardsPlayed, capturesMade, longestChain, controlMargin);
+                audioManager.PlaySFX(audioManager.Victory);
+                audioManager.PlaySFX(audioManager.EarthCaptureCard);
             }
             else
             {
                 // Tie - both players have equal control
                 GameManager.Instance.ChangeState(GameState.Draw);
                 ShowWinnerUI(true, true, cardsPlayed, capturesMade, longestChain, controlMargin);
+                audioManager.PlaySFX(audioManager.Tie);
             }
         }
         
